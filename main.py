@@ -5,4 +5,9 @@ Created on Mon May 23 22:29:28 2022
 @author: grant
 """
 
-print("snake")
+from snake import Snake
+from tkinter import *
+
+root = Tk()
+game = Snake(root)
+root.mainloop()
