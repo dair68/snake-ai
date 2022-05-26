@@ -27,11 +27,13 @@ class Snake:
         self.cols = 20
         self.rows = 20
         self.squareLength = 15
+        self.grid = [[0 for y in range(self.rows)] for x in range(self.cols)]
+        
         canvasHeight = self.squareLength*self.rows
         canvasWidth = self.squareLength*self.cols
-        
-        self.canvas = Canvas(gameFrame, bg="black", height=canvasHeight, width=canvasWidth)
-        self.drawSnakeSquare(10, 10)
+        self.canvas = Canvas(gameFrame, height=canvasHeight, width=canvasWidth)
+        self.grid[10][10] = 1
+        self.redrawGame()
         self.canvas.pack()
         
     #draws a white snake unit square within game area
@@ -44,8 +46,15 @@ class Snake:
         self.canvas.create_rectangle(x, y, x + k, y + k, fill="white")
         self.canvas.pack()
         
-
-        
-        
-        
-     
+    #redraws game area to match current progress
+    def redrawGame(self):
+       self.canvas.configure(bg="black")
+       
+       #drawing new white squares
+       for i in range(self.cols):
+           for j in range(self.rows):
+               #drawing white square where there's a 1 in grid
+               if self.grid[i][j] == 1:
+                   self.drawSnakeSquare(i, j)
+                   
+       self.canvas.pack()
