@@ -24,9 +24,26 @@ class Snake:
         gameFrame = ttk.Frame(root, style="TFrame")
         gameFrame.grid(column=0, row=1)
         
-        canvas = Canvas(gameFrame, bg="black", height=300, width=300)
-        canvas.create_rectangle(0, 0, 15, 15, fill="white")
-        canvas.pack()
+        self.cols = 20
+        self.rows = 20
+        self.squareLength = 15
+        canvasHeight = self.squareLength*self.rows
+        canvasWidth = self.squareLength*self.cols
+        
+        self.canvas = Canvas(gameFrame, bg="black", height=canvasHeight, width=canvasWidth)
+        self.drawSnakeSquare(10, 10)
+        self.canvas.pack()
+        
+    #draws a white snake unit square within game area
+    #@param col - column number from 0 to 19
+    #@param row - row number from 0 to 19
+    def drawSnakeSquare(self, col, row):
+        k = self.squareLength
+        x = col*k
+        y = row*k
+        self.canvas.create_rectangle(x, y, x + k, y + k, fill="white")
+        self.canvas.pack()
+        
 
         
         
