@@ -9,7 +9,7 @@ from tkinter import *
 from tkinter import ttk
 
 #widget with a game of snake contained within
-class Snake:
+class SnakeGame:
     #constructor
     #@param root - parent tk widget
     def __init__(self, root):
@@ -21,7 +21,7 @@ class Snake:
         scoreText = ttk.Label(root, text="scores")
         scoreText.grid(column=0, row=0)
         
-        gameFrame = ttk.Frame(root, style="TFrame")
+        gameFrame = ttk.Frame(root)
         gameFrame.grid(column=0, row=1)
         
         self.cols = 20
@@ -33,8 +33,17 @@ class Snake:
         canvasWidth = self.squareLength*self.cols
         self.canvas = Canvas(gameFrame, height=canvasHeight, width=canvasWidth)
         self.grid[10][10] = 1
-        self.redrawGame()
+        self.canvas.bind("<Up>", self.up)
+        self.canvas.focus_set()
+        self.redrawGame() 
         self.canvas.pack()
+        
+        self.gameStarted = False
+        
+        self.headRow = 0
+        self.headCol = 0
+        self.headXVelocity = 0
+        self.headYVelocity = 0
         
     #draws a white snake unit square within game area
     #@param col - column number from 0 to 19
@@ -58,3 +67,20 @@ class Snake:
                    self.drawSnakeSquare(i, j)
                    
        self.canvas.pack()
+       
+    #sets movement direction of snake to up
+    #@param event - event object
+    def up(self, event):
+        print("up arrow key pressed")
+        self.headYVelocity = -1
+        self.headXVelocity = 0
+        
+        #starting game if hasn't started yet
+       # if not self.gameStarted:
+       #     self.gameStarted = True
+       #     self.moveSnake()
+            
+    #moves the snake until game ends
+    def moveSnake():
+        milliseconds = 1000
+        self.canvas.after(milliseconds, )

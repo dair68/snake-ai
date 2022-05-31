@@ -5,9 +5,9 @@ Created on Mon May 23 22:29:28 2022
 @author: grant
 """
 
-from snake import Snake
+from snake import SnakeGame
 from tkinter import *
 
 root = Tk()
-game = Snake(root)
+game = SnakeGame(root)
 root.mainloop()
