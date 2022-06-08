@@ -38,36 +38,35 @@ class SnakeGame:
         self.canvas.pack()
         
         self.snakeMoving = False
-        
-        self.headCol = 0
-        self.headRow = 0
         self.headXVelocity = 0
         self.headYVelocity = 0
-        self.tailCol = 0
-        self.tailRow = 0
-        self.prevTailCol = 0
-        self.prevTailRow = 0
         self.pellet = None
         self.pelletCol = 0
         self.pelletRow = 0
-        self.snake = []
+        self.snakeSquares = []
+        self.snakeCoords = []
         
         self.start(10, 10)
         
-    #begins a game of snake with the start snake segment at a certain position
+    #begins new game of snake with start snake segment at a certain position
     #@param col - column number of start snake segment. number from 0-19.
     #@param row - row number of start snake segment. number from 0-19
     def start(self, col=0, row=0):
+        self.snakeMoving = False
+        self.headXVelocity = 0
+        self.headYVelocity = 0
+        self.pellet = None
+        self.pelletCol = 0
+        self.pelletRow = 0
+        self.snakeSquares = []
+        self.snakeCoords = []
+        
         self.grid[col][row] = 1
-        self.headCol = col
-        self.headRow = row
-        self.tailCol = self.headCol
-        self.tailRow = self.headRow
-        self.prevTailCol = self.tailCol
-        self.prevTailRow = self.tailRow
+        self.snakeCoords.append((col, row))
         
         startSquare = self.drawUnitSquare(col, row)
-        self.snake.append(startSquare)
+        self.snakeSquares.append(startSquare)
+        self.printGrid()
         
     #draw white unit square in game area
     #@param col - column number from 0 to 19
@@ -138,18 +137,37 @@ class SnakeGame:
             
     #moves the snake until game ends
     def moveSnake(self):
-        self.headCol += self.headXVelocity
-        self.headRow += self.headYVelocity
-        tail = self.snake[-1]
-        self.grid[self.headCol][self.headRow] = 1
+        headCoords = self.snakeCoords[0]
+        headCol = headCoords[0]
+        headRow = headCoords[1]
         
+        newHeadCoords = (headCol + self.headXVelocity, headRow + self.headYVelocity)
+        newHeadCol = newHeadCoords[0]
+        newHeadRow = newHeadCoords[1]
+        self.snakeCoords.insert(0, newHeadCoords)
+        self.snakeCoords.pop()
+  
         k = self.squareLength
-        x = self.headCol*k
-        y = self.headRow*k
+        x = newHeadCol*k
+        y = newHeadRow*k
  
+        tail = self.snakeSquares[-1]
         self.canvas.coords(tail, x, y, x + k, y + k)
-        self.grid[self.tailCol][self.tailRow] = 0
+        self.grid[newHeadCol][newHeadRow] = 1
+        self.grid[headCol][headRow] = 0
+        self.snakeSquares.insert(0, tail)
+        self.snakeSquares.pop()
         self.canvas.pack()
-            
+        self.printGrid()
+        
         milliseconds = 1000
         self.canvas.after(milliseconds, self.moveSnake)
+        
+    #prints the game grid to the console. 1 means white square, 0 means vacant
+    def printGrid(self):
+        #printing rows one by one
+        for y in range(self.rows):
+            row = [str(self.grid[x][y]) for x in range(self.cols)]
+            rowString = "".join(row)
+            print(rowString)
+                
