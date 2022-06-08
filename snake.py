@@ -149,6 +149,7 @@ class SnakeGame:
  
         self.canvas.coords(tail, x, y, x + k, y + k)
         self.grid[self.tailCol][self.tailRow] = 0
+        self.canvas.pack()
             
         milliseconds = 1000
-        #self.canvas.after(milliseconds, self.moveSnake())
+        self.canvas.after(milliseconds, self.moveSnake)
