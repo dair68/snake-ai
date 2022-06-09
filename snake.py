@@ -32,8 +32,11 @@ class SnakeGame:
         canvasHeight = self.squareLength*self.rows
         canvasWidth = self.squareLength*self.cols
         self.canvas = Canvas(gameFrame, height=canvasHeight, width=canvasWidth)
-        self.canvas.configure(bg="black")
+        self.canvas.configure(bg="black", borderwidth=0, highlightthickness=0)
         self.canvas.bind("<Up>", self.up)
+        self.canvas.bind("<Down>", self.down)
+        self.canvas.bind("<Right>", self.right)
+        self.canvas.bind("<Left>", self.left)
         self.canvas.focus_set()
         self.canvas.pack()
         
@@ -135,6 +138,42 @@ class SnakeGame:
             self.snakeMoving = True
             self.moveSnake()
             
+    #sets movement direction of snake to down
+    #@param event - event object
+    def down(self, event):
+        print("down arrow key pressed")
+        self.headYVelocity = 1
+        self.headXVelocity = 0
+        
+        #starting game if hasn't started yet
+        if not self.snakeMoving:
+            self.snakeMoving = True
+            self.moveSnake()
+            
+    #sets movement direction of snake to right
+    #@param event - event object
+    def right(self, event):
+        print("right arrow key pressed")
+        self.headYVelocity = 0
+        self.headXVelocity = 1
+        
+        #starting game if hasn't started yet
+        if not self.snakeMoving:
+            self.snakeMoving = True
+            self.moveSnake()
+            
+    #sets movement direction of snake to left
+    #@param event - event object
+    def left(self, event):
+        print("left arrow key pressed")
+        self.headYVelocity = 0
+        self.headXVelocity = -1
+         
+        #starting game if hasn't started yet
+        if not self.snakeMoving:
+            self.snakeMoving = True
+            self.moveSnake()
+            
     #moves the snake until game ends
     def moveSnake(self):
         headCoords = self.snakeCoords[0]
@@ -142,10 +181,10 @@ class SnakeGame:
         headRow = headCoords[1]
         
         newHeadCoords = (headCol + self.headXVelocity, headRow + self.headYVelocity)
-        newHeadCol = newHeadCoords[0]
-        newHeadRow = newHeadCoords[1]
         self.snakeCoords.insert(0, newHeadCoords)
         self.snakeCoords.pop()
+        newHeadCol = newHeadCoords[0]
+        newHeadRow = newHeadCoords[1]
   
         k = self.squareLength
         x = newHeadCol*k
