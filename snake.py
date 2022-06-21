@@ -24,10 +24,10 @@ class SnakeGame:
         gameFrame = ttk.Frame(root)
         gameFrame.grid(column=0, row=1)
         
-        self.cols = 20
-        self.rows = 20
+        self.cols = 10
+        self.rows = 10
         self.squareLength = 15
-        self.grid = [[0 for y in range(self.rows)] for x in range(self.cols)]
+        self.grid = []
         
         canvasHeight = self.squareLength*self.rows
         canvasWidth = self.squareLength*self.cols
@@ -49,11 +49,11 @@ class SnakeGame:
         self.snakeSquares = []
         self.snakeCoords = []
         
-        self.start(10, 10)
+        self.start(self.cols//2, self.rows//2)
         
     #begins new game of snake with start snake segment at a certain position
-    #@param col - column number of start snake segment. number from 0-19.
-    #@param row - row number of start snake segment. number from 0-19
+    #@param col - column number of start snake segment. number from 1-20.
+    #@param row - row number of start snake segment. number from 1-20
     def start(self, col=0, row=0):
         self.snakeMoving = False
         self.headXVelocity = 0
@@ -64,7 +64,21 @@ class SnakeGame:
         self.snakeSquares = []
         self.snakeCoords = []
         
-        self.grid[col][row] = 1
+        self.grid = [["o" for y in range(self.rows + 2)] for x in range(self.cols + 2)]
+        borderChar = "#"
+        
+        #labeling border of grid
+        for x in range(len(self.grid)):
+            self.grid[x][0] = borderChar
+            self.grid[x][-1] = borderChar
+            
+        for y in range(len(self.grid[0])):
+            self.grid[0][y] = borderChar
+            self.grid[-1][y] = borderChar
+        
+        self.grid[col][row] = "H"
+        
+        
         self.snakeCoords.append((col, row))
         
         startSquare = self.drawUnitSquare(col, row)
@@ -192,11 +206,12 @@ class SnakeGame:
  
         tail = self.snakeSquares[-1]
         self.canvas.coords(tail, x, y, x + k, y + k)
-        self.grid[newHeadCol][newHeadRow] = 1
-        self.grid[headCol][headRow] = 0
+        self.grid[newHeadCol][newHeadRow] = "H"
+        self.grid[headCol][headRow] = "o"
         self.snakeSquares.insert(0, tail)
         self.snakeSquares.pop()
         self.canvas.pack()
+        print("\n")
         self.printGrid()
         
         milliseconds = 1000
@@ -205,8 +220,8 @@ class SnakeGame:
     #prints the game grid to the console. 1 means white square, 0 means vacant
     def printGrid(self):
         #printing rows one by one
-        for y in range(self.rows):
-            row = [str(self.grid[x][y]) for x in range(self.cols)]
+        for y in range(len(self.grid)):
+            row = [str(self.grid[x][y]) for x in range(len(self.grid[0]))]
             rowString = "".join(row)
             print(rowString)
                 
