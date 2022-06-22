@@ -54,15 +54,15 @@ class SnakeGame:
     #begins new game of snake with start snake segment at a certain position
     #@param col - column number of start snake segment. number from 1-20.
     #@param row - row number of start snake segment. number from 1-20
-    def start(self, col=0, row=0):
+    def start(self, col=1, row=1):
+        print(col)
+        print(row)
         self.snakeMoving = False
         self.headXVelocity = 0
         self.headYVelocity = 0
         self.pellet = None
         self.pelletCol = 0
         self.pelletRow = 0
-        self.snakeSquares = []
-        self.snakeCoords = []
         
         self.grid = [["o" for y in range(self.rows + 2)] for x in range(self.cols + 2)]
         borderChar = "#"
@@ -78,26 +78,37 @@ class SnakeGame:
         
         self.grid[col][row] = "H"
         
-        
+        self.snakeCoords = []
         self.snakeCoords.append((col, row))
         
         startSquare = self.drawUnitSquare(col, row)
+        self.snakeSquares = []
         self.snakeSquares.append(startSquare)
         self.printGrid()
         
     #draw white unit square in game area
-    #@param col - column number from 0 to 19
-    #@param row - row number from 0 to 19
+    #@param col - column number from 1 to 20
+    #@param row - row number from 1 to 20
     #returns reference to square drawn
     def drawUnitSquare(self, col, row):
         k = self.squareLength
-        x = col*k
-        y = row*k
+        x = (col - 1)*k
+        y = (row - 1)*k
         square = self.canvas.create_rectangle(x, y, x + k, y + k)
         self.canvas.itemconfigure(square, fill="white", outline="white")
         self.canvas.pack()
         
         return square
+    
+    #moves an existing white unit square to a particular place in game area
+    #@param square - reference to square drawn
+    #@param col - column number from 1 to 20
+    #@param row - row number from 1 to 20
+    def moveUnitSquare(self, square, col, row):
+        k = self.squareLength
+        x = (col - 1)*k
+        y = (row - 1)*k
+        self.canvas.coords(square, x, y, x + k, y + k)
         
     #draws a white unit square that will be treated as pellet for snake to eat
     #@param col - column number from 0 to 19
@@ -199,13 +210,9 @@ class SnakeGame:
         self.snakeCoords.pop()
         newHeadCol = newHeadCoords[0]
         newHeadRow = newHeadCoords[1]
-  
-        k = self.squareLength
-        x = newHeadCol*k
-        y = newHeadRow*k
  
         tail = self.snakeSquares[-1]
-        self.canvas.coords(tail, x, y, x + k, y + k)
+        self.moveUnitSquare(tail, newHeadCol, newHeadRow)
         self.grid[newHeadCol][newHeadRow] = "H"
         self.grid[headCol][headRow] = "o"
         self.snakeSquares.insert(0, tail)
