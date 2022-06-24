@@ -49,6 +49,7 @@ class SnakeGame:
         self.snakeSquares = []
         self.snakeCoords = []
         
+        self.gameStarted = False
         self.start(self.cols//2, self.rows//2)
         
     #begins new game of snake with start snake segment at a certain position
@@ -85,6 +86,7 @@ class SnakeGame:
         self.snakeSquares = []
         self.snakeSquares.append(startSquare)
         self.printGrid()
+        self.gameStarted = True
         
     #draw white unit square in game area
     #@param col - column number from 1 to 20
@@ -159,7 +161,7 @@ class SnakeGame:
         self.headXVelocity = 0
         
         #starting game if hasn't started yet
-        if not self.snakeMoving:
+        if self.gameStarted and not self.snakeMoving:
             self.snakeMoving = True
             self.moveSnake()
             
@@ -171,7 +173,7 @@ class SnakeGame:
         self.headXVelocity = 0
         
         #starting game if hasn't started yet
-        if not self.snakeMoving:
+        if self.gameStarted and not self.snakeMoving:
             self.snakeMoving = True
             self.moveSnake()
             
@@ -183,7 +185,7 @@ class SnakeGame:
         self.headXVelocity = 1
         
         #starting game if hasn't started yet
-        if not self.snakeMoving:
+        if self.gameStarted and not self.snakeMoving:
             self.snakeMoving = True
             self.moveSnake()
             
@@ -195,9 +197,17 @@ class SnakeGame:
         self.headXVelocity = -1
          
         #starting game if hasn't started yet
-        if not self.snakeMoving:
+        if self.gameStarted and not self.snakeMoving:
             self.snakeMoving = True
             self.moveSnake()
+            
+    #checks if snake has bumped into the edge
+    def snakeTouchingEdge(self):
+        headCoords = self.snakeCoords[0]
+        col = headCoords[0]
+        row = headCoords[1]
+        
+        return col == 0 or col == self.cols + 1 or row == 0 or row == self.rows + 1
             
     #moves the snake until game ends
     def moveSnake(self):
@@ -221,8 +231,20 @@ class SnakeGame:
         print("\n")
         self.printGrid()
         
+        #checking it snake is touching edge
+        if self.snakeTouchingEdge():
+            self.end()
+            return
+        
         milliseconds = 1000
         self.canvas.after(milliseconds, self.moveSnake)
+        
+    #stops the game and displays the result
+    def end(self):
+        print("Game over!")
+        x = 0.5*self.canvas.winfo_width()
+        y = 0.5*self.canvas.winfo_height()
+        self.canvas.create_text(x, y, text="Game Over", fill="white")
         
     #prints the game grid to the console. 1 means white square, 0 means vacant
     def printGrid(self):
