@@ -7,6 +7,7 @@ Created on Tue May 24 15:48:01 2022
 
 from tkinter import *
 from tkinter import ttk
+import random
 
 #widget with a game of snake contained within
 class SnakeGame:
@@ -113,12 +114,12 @@ class SnakeGame:
         self.canvas.coords(square, x, y, x + k, y + k)
         
     #draws a white unit square that will be treated as pellet for snake to eat
-    #@param col - column number from 0 to 19
-    #@param row - row number from 0 to 19
+    #@param col - column number from 1 to 20
+    #@param row - row number from 1 to 20
     def drawPellet(self, col, row):
         self.pelletCol = col
         self.pelletRow = row
-        self.grid[col][row] = 1
+        self.grid[col][row] = "P"
         self.pellet = self.drawUnitSquare(col, row)
         self.canvas.pack()
         
@@ -211,6 +212,12 @@ class SnakeGame:
             
     #moves the snake until game ends
     def moveSnake(self):
+        #creating pellet if there isn't one
+        if self.pellet == None:
+            col = random.randint(1, self.cols)
+            row = random.randint(1, self.rows)
+            self.drawPellet(col, row)
+        
         headCoords = self.snakeCoords[0]
         headCol = headCoords[0]
         headRow = headCoords[1]
