@@ -164,7 +164,7 @@ class SnakeGame:
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
             self.snakeMoving = True
-            self.moveSnake()
+            self.runTurn()
             
     #sets movement direction of snake to down
     #@param event - event object
@@ -176,7 +176,7 @@ class SnakeGame:
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
             self.snakeMoving = True
-            self.moveSnake()
+            self.runTurn()
             
     #sets movement direction of snake to right
     #@param event - event object
@@ -188,7 +188,7 @@ class SnakeGame:
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
             self.snakeMoving = True
-            self.moveSnake()
+            self.runTurn()
             
     #sets movement direction of snake to left
     #@param event - event object
@@ -200,7 +200,7 @@ class SnakeGame:
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
             self.snakeMoving = True
-            self.moveSnake()
+            self.runTurn()
             
     #checks if snake has bumped into the edge
     def snakeTouchingEdge(self):
@@ -210,14 +210,28 @@ class SnakeGame:
         
         return col == 0 or col == self.cols + 1 or row == 0 or row == self.rows + 1
             
-    #moves the snake until game ends
-    def moveSnake(self):
+    #shifts the snake one spot and makes new pellet if none on screen
+    def runTurn(self):
         #creating pellet if there isn't one
         if self.pellet == None:
             col = random.randint(1, self.cols)
             row = random.randint(1, self.rows)
             self.drawPellet(col, row)
         
+        self.moveSnake()
+        print("\n")
+        self.printGrid()
+        
+        #checking it snake is touching edge
+        if self.snakeTouchingEdge():
+            self.end()
+            return
+        
+        milliseconds = 1000
+        self.canvas.after(milliseconds, self.runTurn)
+        
+    #shift the snake one spot
+    def moveSnake(self):
         headCoords = self.snakeCoords[0]
         headCol = headCoords[0]
         headRow = headCoords[1]
@@ -235,16 +249,6 @@ class SnakeGame:
         self.snakeSquares.insert(0, tail)
         self.snakeSquares.pop()
         self.canvas.pack()
-        print("\n")
-        self.printGrid()
-        
-        #checking it snake is touching edge
-        if self.snakeTouchingEdge():
-            self.end()
-            return
-        
-        milliseconds = 1000
-        self.canvas.after(milliseconds, self.moveSnake)
         
     #stops the game and displays the result
     def end(self):
