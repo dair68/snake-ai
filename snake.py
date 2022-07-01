@@ -45,10 +45,12 @@ class SnakeGame:
         self.headXVelocity = 0
         self.headYVelocity = 0
         self.pellet = None
-        self.pelletCol = 0
-        self.pelletRow = 0
+        self.pelletCol = -1
+        self.pelletRow = -1
         self.snakeSquares = []
         self.snakeCoords = []
+        self.prevTailCol = -1
+        self.prevTailRow = -1
         
         self.gameStarted = False
         self.start(self.cols//2, self.rows//2)
@@ -63,8 +65,8 @@ class SnakeGame:
         self.headXVelocity = 0
         self.headYVelocity = 0
         self.pellet = None
-        self.pelletCol = 0
-        self.pelletRow = 0
+        self.pelletCol = -1
+        self.pelletRow = -1
         
         self.grid = [["o" for y in range(self.rows + 2)] for x in range(self.cols + 2)]
         borderChar = "#"
@@ -86,6 +88,8 @@ class SnakeGame:
         startSquare = self.drawUnitSquare(col, row)
         self.snakeSquares = []
         self.snakeSquares.append(startSquare)
+        self.prevTailCol = col
+        self.prevTailRow = row
         self.printGrid()
         self.gameStarted = True
         
@@ -125,15 +129,15 @@ class SnakeGame:
         
     #has the snake eat the pellet currently on screen to elongate it
     def eatPellet(self):
-        self.grid[self.pelletCol][self.pelletRow] = 0
+        self.snakeSquares.append(self.pellet)
+        self.grid[self.prevTailCol][self.prevTailRow] = "S"
+        self.snakeCoords.append((self.prevTailCol, self.prevTailRow))
+        
+        self.grid[self.pelletCol][self.pelletRow] = "o"
         self.pelletCol = -1
         self.pelletRow = -1
         self.pellet = None
-        
-        self.snake.append(self.pellet)
-        self.grid[self.prevTailCol][self.prevTailRow] = 1
-        self.tailCol = self.prevTailCol
-        self.tailRow = self.prevTailRow
+        self.canvas.pack()
         
     #removes white unit square from game area
     #@param col - column number from 0 to 19
@@ -209,6 +213,14 @@ class SnakeGame:
         row = headCoords[1]
         
         return col == 0 or col == self.cols + 1 or row == 0 or row == self.rows + 1
+    
+    #checks if snake head is on same spot as pellet
+    def headTouchingPellet(self):
+        headCoords = self.snakeCoords[0]
+        col = headCoords[0]
+        row = headCoords[1]
+        
+        return col == self.pelletCol and row == self.pelletRow
             
     #shifts the snake one spot and makes new pellet if none on screen
     def runTurn(self):
@@ -218,11 +230,17 @@ class SnakeGame:
             row = random.randint(1, self.rows)
             self.drawPellet(col, row)
         
-        self.moveSnake()
+        self.moveSnake() 
+        
+        #extends snake if eating pellet
+        if self.headTouchingPellet():
+            print("Pellet eaten!")
+            self.eatPellet()
+            
         print("\n")
         self.printGrid()
         
-        #checking it snake is touching edge
+        #game over if snake touches edge
         if self.snakeTouchingEdge():
             self.end()
             return
@@ -242,6 +260,12 @@ class SnakeGame:
         newHeadCol = newHeadCoords[0]
         newHeadRow = newHeadCoords[1]
  
+        tailCoords = self.snakeCoords[-1]
+        tailCol = tailCoords[0]
+        tailRow = tailCoords[1]
+        self.prevTailCol = tailCol
+        self.prevTailRow = tailRow
+        
         tail = self.snakeSquares[-1]
         self.moveUnitSquare(tail, newHeadCol, newHeadRow)
         self.grid[newHeadCol][newHeadRow] = "H"
