@@ -132,8 +132,8 @@ class SnakeGame:
         self.snakeSquares.append(self.pellet)
         self.grid[self.prevTailCol][self.prevTailRow] = "S"
         self.snakeCoords.append((self.prevTailCol, self.prevTailRow))
-        
-        self.grid[self.pelletCol][self.pelletRow] = "o"
+        self.moveUnitSquare(self.pellet, self.prevTailCol, self.prevTailRow)
+    
         self.pelletCol = -1
         self.pelletRow = -1
         self.pellet = None
@@ -251,25 +251,26 @@ class SnakeGame:
     #shift the snake one spot
     def moveSnake(self):
         headCoords = self.snakeCoords[0]
+        prevHeadCol = headCoords[0]
+        prevHeadRow = headCoords[1]
+        self.grid[prevHeadCol][prevHeadRow] = "S"
+        headCoords = (prevHeadCol + self.headXVelocity, prevHeadRow + self.headYVelocity)
         headCol = headCoords[0]
         headRow = headCoords[1]
-        
-        newHeadCoords = (headCol + self.headXVelocity, headRow + self.headYVelocity)
-        self.snakeCoords.insert(0, newHeadCoords)
-        self.snakeCoords.pop()
-        newHeadCol = newHeadCoords[0]
-        newHeadRow = newHeadCoords[1]
+        self.snakeCoords.insert(0, headCoords)
+        self.grid[headCol][headRow] = "H"
  
+        tailCoords = self.snakeCoords[-1]
+        self.prevTailCol = tailCoords[0]
+        self.prevTailRow = tailCoords[1]
+        self.grid[self.prevTailCol][self.prevTailRow] = "o"
+        self.snakeCoords.pop()
         tailCoords = self.snakeCoords[-1]
         tailCol = tailCoords[0]
         tailRow = tailCoords[1]
-        self.prevTailCol = tailCol
-        self.prevTailRow = tailRow
         
         tail = self.snakeSquares[-1]
-        self.moveUnitSquare(tail, newHeadCol, newHeadRow)
-        self.grid[newHeadCol][newHeadRow] = "H"
-        self.grid[headCol][headRow] = "o"
+        self.moveUnitSquare(tail, headCol, headRow)
         self.snakeSquares.insert(0, tail)
         self.snakeSquares.pop()
         self.canvas.pack()
