@@ -130,11 +130,26 @@ class SnakeGame:
         self.canvas.itemconfigure(self.pellet, fill="yellow", outline=self.outlineColor)
         self.canvas.pack()
         
-    #spawns pellet in random location on grid
+    #spawns pellet in random vacant location on grid
     def drawPelletRandom(self):
         col = random.randint(1, self.cols)
         row = random.randint(1, self.rows)
-        self.drawPellet(col, row)
+        
+        emptySpaces = []
+        
+        #compiling all empty spaces
+        for x in range(1, self.cols + 1):
+            for y in range(1, self.rows + 1):
+                #found empty space
+                if self.grid[x][y] == "o":
+                    emptySpaces.append((x, y))
+                    
+        randIndex = random.randrange(len(emptySpaces))
+        pelletCoords = emptySpaces[randIndex]
+        pelletCol = pelletCoords[0]
+        pelletRow = pelletCoords[1]
+                
+        self.drawPellet(pelletCol, pelletRow)
         
     #has the snake eat the pellet currently on screen to elongate it
     def eatPellet(self):
