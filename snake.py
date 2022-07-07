@@ -87,6 +87,8 @@ class SnakeGame:
         self.snakeCoords.append((col, row))
         
         startSquare = self.drawUnitSquare(col, row)
+        self.setUnitSquareColor(startSquare, "blue")
+        
         self.snakeSquares = []
         self.snakeSquares.append(startSquare)
         self.prevTailCol = col
@@ -109,6 +111,12 @@ class SnakeGame:
         
         return square
     
+    #sets the color of a certain unit square drawn on the grid
+    #@param square - square drawn on canvas
+    #@param color - string indication new fill color
+    def setUnitSquareColor(self, square, color):
+        self.canvas.itemconfigure(square, fill=color, outline=self.outlineColor)
+    
     #moves an existing white unit square to a particular place in game area
     #@param square - reference to square drawn
     #@param col - column number from 1 to 20
@@ -127,7 +135,7 @@ class SnakeGame:
         self.pelletRow = row
         self.grid[col][row] = "P"
         self.pellet = self.drawUnitSquare(col, row)
-        self.canvas.itemconfigure(self.pellet, fill="yellow", outline=self.outlineColor)
+        self.setUnitSquareColor(self.pellet, "yellow")
         self.canvas.pack()
         
     #spawns pellet in random vacant location on grid
@@ -157,7 +165,7 @@ class SnakeGame:
         self.grid[self.prevTailCol][self.prevTailRow] = "S"
         self.snakeCoords.append((self.prevTailCol, self.prevTailRow))
         
-        self.canvas.itemconfigure(self.pellet, fill="white", outline=self.outlineColor)
+        self.setUnitSquareColor(self.pellet, "white")
         self.moveUnitSquare(self.pellet, self.prevTailCol, self.prevTailRow)
     
         self.drawPelletRandom()
@@ -276,28 +284,32 @@ class SnakeGame:
         
     #shift the snake one spot
     def moveSnake(self):
+        #turning previous head square to normal body square
         headCoords = self.snakeCoords[0]
         prevHeadCol = headCoords[0]
         prevHeadRow = headCoords[1]
         self.grid[prevHeadCol][prevHeadRow] = "S"
+        prevHead = self.snakeSquares[0]
+        self.setUnitSquareColor(prevHead, "white")
+        
+        #inserting block at snake's new head destination
         headCoords = (prevHeadCol + self.headXVelocity, prevHeadRow + self.headYVelocity)
         headCol = headCoords[0]
         headRow = headCoords[1]
         self.snakeCoords.insert(0, headCoords)
         self.grid[headCol][headRow] = "H"
+        head = self.drawUnitSquare(headCol, headRow)
+        self.setUnitSquareColor(head, "blue")
+        self.snakeSquares.insert(0, head)
  
+        #removing snake's old tail square
         tailCoords = self.snakeCoords[-1]
         self.prevTailCol = tailCoords[0]
         self.prevTailRow = tailCoords[1]
         self.grid[self.prevTailCol][self.prevTailRow] = "o"
+        prevTail = self.snakeSquares[-1]
+        self.canvas.delete(prevTail)
         self.snakeCoords.pop()
-        tailCoords = self.snakeCoords[-1]
-        tailCol = tailCoords[0]
-        tailRow = tailCoords[1]
-        
-        tail = self.snakeSquares[-1]
-        self.moveUnitSquare(tail, headCol, headRow)
-        self.snakeSquares.insert(0, tail)
         self.snakeSquares.pop()
         self.canvas.pack()
         
