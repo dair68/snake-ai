@@ -17,7 +17,7 @@ class SnakeGame:
         root.title("Snake")
         root.rowconfigure(0, weight=1)
         root.rowconfigure(1, weight=5)
-        root.resizable(False, False)
+        #root.resizable(False, False)
         
         scoreText = ttk.Label(root, text="scores")
         scoreText.grid(column=0, row=0)
@@ -162,8 +162,10 @@ class SnakeGame:
     #@param event - event object
     def up(self, event):
         print("up arrow key pressed")
-        self.headYVelocity = -1
-        self.headXVelocity = 0
+        #moving snake up if it's not moving down
+        if not self.headYVelocity == 1:
+            self.headYVelocity = -1
+            self.headXVelocity = 0
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -174,8 +176,10 @@ class SnakeGame:
     #@param event - event object
     def down(self, event):
         print("down arrow key pressed")
-        self.headYVelocity = 1
-        self.headXVelocity = 0
+        #moving snake down if it's not moving up
+        if not self.headYVelocity == -1:
+            self.headYVelocity = 1
+            self.headXVelocity = 0
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -186,8 +190,10 @@ class SnakeGame:
     #@param event - event object
     def right(self, event):
         print("right arrow key pressed")
-        self.headYVelocity = 0
-        self.headXVelocity = 1
+        #moving snake right if it's not going left
+        if not self.headXVelocity == -1: 
+            self.headYVelocity = 0
+            self.headXVelocity = 1
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -198,8 +204,10 @@ class SnakeGame:
     #@param event - event object
     def left(self, event):
         print("left arrow key pressed")
-        self.headYVelocity = 0
-        self.headXVelocity = -1
+        #moving snake left if it's not going right
+        if not self.headXVelocity == 1:
+            self.headYVelocity = 0
+            self.headXVelocity = -1
          
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:

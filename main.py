@@ -9,5 +9,6 @@ from snake import SnakeGame
 from tkinter import *
 
 root = Tk()
+root.resizable(False, False)
 game = SnakeGame(root)
 root.mainloop()
