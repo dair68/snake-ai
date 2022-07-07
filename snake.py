@@ -32,6 +32,7 @@ class SnakeGame:
         
         canvasHeight = self.squareLength*self.rows
         canvasWidth = self.squareLength*self.cols
+        self.outlineColor = "gray"
         self.canvas = Canvas(gameFrame, height=canvasHeight, width=canvasWidth)
         self.canvas.configure(bg="black", borderwidth=0, highlightthickness=0)
         self.canvas.bind("<Up>", self.up)
@@ -91,6 +92,7 @@ class SnakeGame:
         self.prevTailCol = col
         self.prevTailRow = row
         self.printGrid()
+        self.drawPelletRandom()
         self.gameStarted = True
         
     #draw white unit square in game area
@@ -102,7 +104,7 @@ class SnakeGame:
         x = (col - 1)*k
         y = (row - 1)*k
         square = self.canvas.create_rectangle(x, y, x + k, y + k)
-        self.canvas.itemconfigure(square, fill="white", outline="white")
+        self.canvas.itemconfigure(square, fill="white", outline=self.outlineColor)
         self.canvas.pack()
         
         return square
@@ -125,18 +127,25 @@ class SnakeGame:
         self.pelletRow = row
         self.grid[col][row] = "P"
         self.pellet = self.drawUnitSquare(col, row)
+        self.canvas.itemconfigure(self.pellet, fill="yellow", outline=self.outlineColor)
         self.canvas.pack()
+        
+    #spawns pellet in random location on grid
+    def drawPelletRandom(self):
+        col = random.randint(1, self.cols)
+        row = random.randint(1, self.rows)
+        self.drawPellet(col, row)
         
     #has the snake eat the pellet currently on screen to elongate it
     def eatPellet(self):
         self.snakeSquares.append(self.pellet)
         self.grid[self.prevTailCol][self.prevTailRow] = "S"
         self.snakeCoords.append((self.prevTailCol, self.prevTailRow))
+        
+        self.canvas.itemconfigure(self.pellet, fill="white", outline=self.outlineColor)
         self.moveUnitSquare(self.pellet, self.prevTailCol, self.prevTailRow)
     
-        self.pelletCol = -1
-        self.pelletRow = -1
-        self.pellet = None
+        self.drawPelletRandom()
         self.canvas.pack()
         
     #removes white unit square from game area
@@ -232,12 +241,6 @@ class SnakeGame:
             
     #shifts the snake one spot and makes new pellet if none on screen
     def runTurn(self):
-        #creating pellet if there isn't one
-        if self.pellet == None:
-            col = random.randint(1, self.cols)
-            row = random.randint(1, self.rows)
-            self.drawPellet(col, row)
-        
         self.moveSnake() 
         
         #extends snake if eating pellet
