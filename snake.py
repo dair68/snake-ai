@@ -82,15 +82,12 @@ class SnakeGame:
             self.grid[-1][y] = borderChar
         
         self.grid[col][row] = "H"
-        
-        self.snakeCoords = []
-        self.snakeCoords.append((col, row))
+        self.snakeCoords = [(col, row)]
         
         startSquare = self.drawUnitSquare(col, row)
         self.setUnitSquareColor(startSquare, "blue")
         
-        self.snakeSquares = []
-        self.snakeSquares.append(startSquare)
+        self.snakeSquares = [startSquare]
         self.prevTailCol = col
         self.prevTailRow = row
         self.printGrid()
@@ -126,7 +123,47 @@ class SnakeGame:
         x = (col - 1)*k
         y = (row - 1)*k
         self.canvas.coords(square, x, y, x + k, y + k)
-        
+    
+    #gets coordinates of head square
+    #returns coordinates in form (col, row)
+    def getHeadCoords(self):
+        return self.snakeCoords[0]
+    
+    #gets column snake head is in
+    #returns grid column number of head
+    def getHeadCol(self):
+        return self.getHeadCoords()[0]
+    
+    #gets row snake head is in
+    #return grid row number of head
+    def getHeadRow(self):
+        return self.getHeadCoords()[1]
+    
+    #obtains head square
+    #returns reference to head unit square
+    def getHead(self):
+        return self.snakeSquares[0]
+    
+    #obtains tail square
+    #returns reference to tail unit square
+    def getTail(self):
+        return self.snakeSquares[-1]
+    
+    #obtains tail coordinates
+    #returns tail grid coordinates as (col, row)
+    def getTailCoords(self):
+        return self.snakeCoords[-1]
+    
+    #obtains tail column
+    #returns tail grid column number
+    def getTailCol(self):
+        return self.getTailCoords()[0]
+    
+    #obatins tail row
+    #returns tail grid row number
+    def getTailRow(self):
+        return self.getTailCoords()[1]
+    
     #draws a white unit square that will be treated as pellet for snake to eat
     #@param col - column number from 1 to 20
     #@param row - row number from 1 to 20
@@ -170,12 +207,6 @@ class SnakeGame:
     
         self.drawPelletRandom()
         self.canvas.pack()
-        
-    #removes white unit square from game area
-    #@param col - column number from 0 to 19
-    #@param row - row number from 0 to 19
-    def eraseSnakeSquare(self, col, row):
-        pass
         
     #redraws game area to match current progress
     def redrawGame(self):
@@ -248,11 +279,10 @@ class SnakeGame:
             
     #checks if snake has bumped into the edge
     def snakeTouchingEdge(self):
-        headCoords = self.snakeCoords[0]
-        col = headCoords[0]
-        row = headCoords[1]
+        col = self.getHeadCol()
+        row = self.getHeadRow()
         
-        return col == 0 or col == self.cols + 1 or row == 0 or row == self.rows + 1
+        return col == 0 or col == self.cols + 1 or row == 0 or row == self.rows + 1   
     
     #checks if snake head is on same spot as pellet
     def headTouchingPellet(self):
@@ -275,7 +305,7 @@ class SnakeGame:
         self.printGrid()
         
         #game over if snake touches edge
-        if self.snakeTouchingEdge():
+        if self.grid[self.getHeadCol()][self.getHeadRow()] == "X":
             self.end()
             return
         
@@ -285,32 +315,36 @@ class SnakeGame:
     #shift the snake one spot
     def moveSnake(self):
         #turning previous head square to normal body square
-        headCoords = self.snakeCoords[0]
-        prevHeadCol = headCoords[0]
-        prevHeadRow = headCoords[1]
+        prevHeadCol = self.getHeadCol()
+        prevHeadRow = self.getHeadRow()
         self.grid[prevHeadCol][prevHeadRow] = "S"
-        prevHead = self.snakeSquares[0]
-        self.setUnitSquareColor(prevHead, "white")
+        self.setUnitSquareColor(self.getHead(), "white")
         
-        #inserting block at snake's new head destination
-        headCoords = (prevHeadCol + self.headXVelocity, prevHeadRow + self.headYVelocity)
-        headCol = headCoords[0]
-        headRow = headCoords[1]
-        self.snakeCoords.insert(0, headCoords)
-        self.grid[headCol][headRow] = "H"
-        head = self.drawUnitSquare(headCol, headRow)
-        self.setUnitSquareColor(head, "blue")
-        self.snakeSquares.insert(0, head)
- 
         #removing snake's old tail square
-        tailCoords = self.snakeCoords[-1]
-        self.prevTailCol = tailCoords[0]
-        self.prevTailRow = tailCoords[1]
-        self.grid[self.prevTailCol][self.prevTailRow] = "o"
-        prevTail = self.snakeSquares[-1]
-        self.canvas.delete(prevTail)
+        self.prevTailCol = self.getTailCol()
+        self.prevTailRow = self.getTailRow()
+        self.grid[self.getTailCol()][self.getTailRow()] = "o"
+        self.canvas.delete(self.getTail())
         self.snakeCoords.pop()
         self.snakeSquares.pop()
+        
+        #inserting block at snake's new head destination
+        headCol = prevHeadCol + self.headXVelocity
+        headRow = prevHeadRow + self.headYVelocity
+        headCoords = (headCol, headRow)
+        self.snakeCoords.insert(0, headCoords)
+        head = self.drawUnitSquare(headCol, headRow)
+        self.snakeSquares.insert(0, head)
+        headDestination = self.grid[headCol][headRow]
+        
+        #snake has chomped itself or gone out of bounds
+        if headDestination == "#" or headDestination == "S":
+            self.grid[headCol][headRow] = "X"
+            self.setUnitSquareColor(head, "red")
+        else:
+            self.grid[headCol][headRow] = "H"
+            self.setUnitSquareColor(head, "blue")
+            
         self.canvas.pack()
         
     #stops the game and displays the result
