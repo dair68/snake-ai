@@ -17,10 +17,10 @@ class SnakeGame:
         root.title("Snake")
         root.rowconfigure(0, weight=1)
         root.rowconfigure(1, weight=5)
-        #root.resizable(False, False)
         
-        scoreText = ttk.Label(root, text="scores")
-        scoreText.grid(column=0, row=0)
+        self.score = 0
+        self.scoreText = ttk.Label(root, text="Score: 0")
+        self.scoreText.grid(column=0, row=0)
         
         gameFrame = ttk.Frame(root)
         gameFrame.grid(column=0, row=1)
@@ -60,6 +60,7 @@ class SnakeGame:
     #@param col - column number of start snake segment. number from 1-20.
     #@param row - row number of start snake segment. number from 1-20
     def start(self, col=1, row=1):
+        self.score = 0
         print(col)
         print(row)
         self.snakeMoving = False
@@ -204,8 +205,11 @@ class SnakeGame:
         
         self.setUnitSquareColor(self.pellet, "white")
         self.moveUnitSquare(self.pellet, self.prevTailCol, self.prevTailRow)
-        self.canvas.pack()
         
+        self.score += 1
+        self.scoreText.config(text=f"Score: {self.score}")
+        self.canvas.pack()
+       
         self.pellet = None
         self.pelletCol = -1
         self.pelletRow = -1
@@ -300,7 +304,7 @@ class SnakeGame:
         print("\n")
         self.printGrid()
         
-        #game over if snake touches edge
+        #game over if snake touches edge or itself
         if self.grid[self.getHeadCol()][self.getHeadRow()] == "X":
             self.end()
             return
