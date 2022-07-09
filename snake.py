@@ -54,6 +54,7 @@ class SnakeGame:
         self.prevTailRow = -1
         
         self.gameStarted = False
+        self.keyboardInput = True
         self.start(self.cols//2, self.rows//2)
         
     #begins new game of snake with start snake segment at a certain position
@@ -94,6 +95,7 @@ class SnakeGame:
         self.printGrid()
         self.drawPelletRandom()
         self.gameStarted = True
+        self.keyboardInput = True
         
     #draw white unit square in game area
     #@param col - column number from 1 to 20
@@ -232,9 +234,10 @@ class SnakeGame:
     def up(self, event):
         print("up arrow key pressed")
         #moving snake up if it's not moving down
-        if not self.headYVelocity == 1:
+        if self.keyboardInput and not self.headYVelocity == 1:
             self.headYVelocity = -1
             self.headXVelocity = 0
+            self.keyboardInput = False
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -246,9 +249,10 @@ class SnakeGame:
     def down(self, event):
         print("down arrow key pressed")
         #moving snake down if it's not moving up
-        if not self.headYVelocity == -1:
+        if self.keyboardInput and not self.headYVelocity == -1:
             self.headYVelocity = 1
             self.headXVelocity = 0
+            self.keyboardInput = False
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -260,9 +264,10 @@ class SnakeGame:
     def right(self, event):
         print("right arrow key pressed")
         #moving snake right if it's not going left
-        if not self.headXVelocity == -1: 
+        if self.keyboardInput and not self.headXVelocity == -1: 
             self.headYVelocity = 0
             self.headXVelocity = 1
+            self.keyboardInput = False
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -274,9 +279,10 @@ class SnakeGame:
     def left(self, event):
         print("left arrow key pressed")
         #moving snake left if it's not going right
-        if not self.headXVelocity == 1:
+        if self.keyboardInput and not self.headXVelocity == 1:
             self.headYVelocity = 0
             self.headXVelocity = -1
+            self.keyboardInput = False
          
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -301,6 +307,7 @@ class SnakeGame:
     #shifts the snake one spot and makes new pellet if none on screen
     def runTurn(self):
         self.moveSnake() 
+        self.keyboardInput = True
         print("\n")
         self.printGrid()
         
@@ -313,7 +320,7 @@ class SnakeGame:
         if self.pellet == None:
             self.drawPelletRandom()
         
-        milliseconds = 1000
+        milliseconds = 100
         self.canvas.after(milliseconds, self.runTurn)
         
     #shift the snake one spot
