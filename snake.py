@@ -204,9 +204,11 @@ class SnakeGame:
         
         self.setUnitSquareColor(self.pellet, "white")
         self.moveUnitSquare(self.pellet, self.prevTailCol, self.prevTailRow)
-    
-        self.drawPelletRandom()
         self.canvas.pack()
+        
+        self.pellet = None
+        self.pelletCol = -1
+        self.pelletRow = -1
         
     #redraws game area to match current progress
     def redrawGame(self):
@@ -295,12 +297,6 @@ class SnakeGame:
     #shifts the snake one spot and makes new pellet if none on screen
     def runTurn(self):
         self.moveSnake() 
-        
-        #extends snake if eating pellet
-        if self.headTouchingPellet():
-            print("Pellet eaten!")
-            self.eatPellet()
-            
         print("\n")
         self.printGrid()
         
@@ -308,6 +304,10 @@ class SnakeGame:
         if self.grid[self.getHeadCol()][self.getHeadRow()] == "X":
             self.end()
             return
+        
+        #drawing extra pellet if needed
+        if self.pellet == None:
+            self.drawPelletRandom()
         
         milliseconds = 1000
         self.canvas.after(milliseconds, self.runTurn)
@@ -337,13 +337,17 @@ class SnakeGame:
         self.snakeSquares.insert(0, head)
         headDestination = self.grid[headCol][headRow]
         
-        #snake has chomped itself or gone out of bounds
+        #affecting game based on space head touches
         if headDestination == "#" or headDestination == "S":
             self.grid[headCol][headRow] = "X"
             self.setUnitSquareColor(head, "red")
         else:
             self.grid[headCol][headRow] = "H"
             self.setUnitSquareColor(head, "blue")
+            
+            #snake has eaten pellet
+            if headDestination == "P":
+                self.eatPellet()
             
         self.canvas.pack()
         
