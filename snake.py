@@ -19,14 +19,14 @@ class SnakeGame:
         root.rowconfigure(1, weight=5)
         
         self.score = 0
-        self.scoreText = ttk.Label(root, text="Score: 0")
+        self.scoreText = ttk.Label(root, text=f"Score: {self.score}")
         self.scoreText.grid(column=0, row=0)
         
         gameFrame = ttk.Frame(root)
         gameFrame.grid(column=0, row=1)
         
-        self.cols = 10
-        self.rows = 10
+        self.cols = 5
+        self.rows = 5
         self.squareLength = 15
         self.grid = []
         
@@ -74,11 +74,12 @@ class SnakeGame:
         self.grid = [["o" for y in range(self.rows + 2)] for x in range(self.cols + 2)]
         borderChar = "#"
         
-        #labeling border of grid
+        #labeling top and bottom borders of grid
         for x in range(len(self.grid)):
             self.grid[x][0] = borderChar
             self.grid[x][-1] = borderChar
-            
+        
+        #labeling left and right borders of grid
         for y in range(len(self.grid[0])):
             self.grid[0][y] = borderChar
             self.grid[-1][y] = borderChar
@@ -167,7 +168,7 @@ class SnakeGame:
     def getTailRow(self):
         return self.getTailCoords()[1]
     
-    #draws a white unit square that will be treated as pellet for snake to eat
+    #draws a yellow unit square that will be treated as pellet for snake to eat
     #@param col - column number from 1 to 20
     #@param row - row number from 1 to 20
     def drawPellet(self, col, row):
@@ -180,9 +181,6 @@ class SnakeGame:
         
     #spawns pellet in random vacant location on grid
     def drawPelletRandom(self):
-        col = random.randint(1, self.cols)
-        row = random.randint(1, self.rows)
-        
         emptySpaces = []
         
         #compiling all empty spaces
@@ -313,14 +311,19 @@ class SnakeGame:
         
         #game over if snake touches edge or itself
         if self.grid[self.getHeadCol()][self.getHeadRow()] == "X":
-            self.end()
+            self.gameOver()
+            return
+        
+        #checking if game has been won
+        if len(self.snakeSquares) == self.cols*self.rows:
+            self.win()
             return
         
         #drawing extra pellet if needed
         if self.pellet == None:
             self.drawPelletRandom()
         
-        milliseconds = 100
+        milliseconds = 1000
         self.canvas.after(milliseconds, self.runTurn)
         
     #shift the snake one spot
@@ -362,18 +365,24 @@ class SnakeGame:
             
         self.canvas.pack()
         
-    #stops the game and displays the result
-    def end(self):
+    #displays game over
+    def gameOver(self):
         print("Game over!")
         x = 0.5*self.canvas.winfo_width()
         y = 0.5*self.canvas.winfo_height()
-        self.canvas.create_text(x, y, text="Game Over", fill="white")
+        self.canvas.create_text(x, y, text="Game Over", fill="magenta")
         
-    #prints the game grid to the console. 1 means white square, 0 means vacant
+    #displays that the user has won
+    def win(self):
+        print("Congratulations. You won!")
+        x = 0.5*self.canvas.winfo_width()
+        y = 0.5*self.canvas.winfo_height()
+        self.canvas.create_text(x, y, text="Congratulations.\n   You won!", fill="green")
+        
+    #prints the game grid to the console
     def printGrid(self):
         #printing rows one by one
         for y in range(len(self.grid)):
             row = [str(self.grid[x][y]) for x in range(len(self.grid[0]))]
             rowString = "".join(row)
             print(rowString)
-                
