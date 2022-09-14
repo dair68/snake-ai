@@ -27,12 +27,11 @@ class SnakeGame:
         
         self.cols = 5
         self.rows = 5
-        self.squareLength = 15
+        self.squareLength = 20
         self.grid = []
         
         canvasHeight = self.squareLength*self.rows
         canvasWidth = self.squareLength*self.cols
-        self.outlineColor = "gray"
         self.canvas = Canvas(gameFrame, height=canvasHeight, width=canvasWidth)
         self.canvas.configure(bg="black", borderwidth=0, highlightthickness=0)
         self.canvas.bind("<Up>", self.up)
@@ -88,7 +87,7 @@ class SnakeGame:
         self.snakeCoords = [(col, row)]
         
         startSquare = self.drawUnitSquare(col, row)
-        self.setUnitSquareColor(startSquare, "blue")
+        #self.setUnitSquareColor(startSquare, "blue")
         
         self.snakeSquares = [startSquare]
         self.prevTailCol = col
@@ -98,34 +97,50 @@ class SnakeGame:
         self.gameStarted = True
         self.keyboardInput = True
         
-    #draw white unit square in game area
+    #draw unit square in game area of certain color
     #@param col - column number from 1 to 20
     #@param row - row number from 1 to 20
+    #@param color - color string
     #returns reference to square drawn
-    def drawUnitSquare(self, col, row):
-        k = self.squareLength
-        x = (col - 1)*k
-        y = (row - 1)*k
-        square = self.canvas.create_rectangle(x, y, x + k, y + k)
-        self.canvas.itemconfigure(square, fill="white", outline=self.outlineColor)
-        self.canvas.pack()
-        
+    def drawUnitSquare(self, col, row, color="white"):
+        square = self.drawRect(col, row, col, row)
+        self.canvas.itemconfig(square, fill=color)
         return square
     
-    #sets the color of a certain unit square drawn on the grid
-    #@param square - square drawn on canvas
-    #@param color - string indication new fill color
-    def setUnitSquareColor(self, square, color):
-        self.canvas.itemconfigure(square, fill=color, outline=self.outlineColor)
+    #draws rectangle with 2 particular spaces as its corners
+    #@param col1 - column number from 1 to 20
+    #@param row1 - row number from 1 to 20
+    #@param col2 - column number from 1 to 20
+    #@param row2 - row number from 1 to 20
+    #returns reference to rectangle drawn
+    def drawRect(self, col1, row1, col2, row2):
+        #ensuring that col2 is to the right of col1
+        if col2 < col1:
+            self.drawRect(col2, row1, col1, row2)
+        
+        #ensuring that row1 is above row2
+        if row1 > row2:
+            self.drawRect(col1, row2, col2, row1)
+            
+        k = self.squareLength*0.75
+        margin = (self.squareLength - k)/2
+        x = (col1 - 1)*self.squareLength + margin
+        y = (row1 - 1)*self.squareLength + margin
+        width = (col2 - col1)*self.squareLength + k
+        height = (row2 - row1)*self.squareLength + k
+        rect = self.canvas.create_rectangle(x, y, x + width, y + height)
+        self.canvas.pack()
+        return rect
     
     #moves an existing white unit square to a particular place in game area
     #@param square - reference to square drawn
     #@param col - column number from 1 to 20
     #@param row - row number from 1 to 20
     def moveUnitSquare(self, square, col, row):
-        k = self.squareLength
-        x = (col - 1)*k
-        y = (row - 1)*k
+        k = self.squareLength*0.75
+        margin = (self.squareLength - k)/2
+        x = (col - 1)*self.squareLength + margin
+        y = (row - 1)*self.squareLength + margin
         self.canvas.coords(square, x, y, x + k, y + k)
     
     #gets coordinates of head square
@@ -175,8 +190,7 @@ class SnakeGame:
         self.pelletCol = col
         self.pelletRow = row
         self.grid[col][row] = "P"
-        self.pellet = self.drawUnitSquare(col, row)
-        self.setUnitSquareColor(self.pellet, "yellow")
+        self.pellet = self.drawUnitSquare(col, row, "yellow")
         self.canvas.pack()
         
     #spawns pellet in random vacant location on grid
@@ -205,6 +219,12 @@ class SnakeGame:
         
         self.setUnitSquareColor(self.pellet, "white")
         self.moveUnitSquare(self.pellet, self.prevTailCol, self.prevTailRow)
+        
+        connector = self.drawUnitSquare(self.prevTailCol, self.prevTailRow)
+        self.setUnitSquareColor(connector, "white")
+        xShift = (self.snakeCoords[-2][0] - self.snakeCoords[-1][0])/2
+        yShift = (self.snakeCoords[-2][1] - self.snakeCoords[-1][1])/2
+        self.canvas.move(connector, xShift, yShift)
         
         self.score += 1
         self.scoreText.config(text=f"Score: {self.score}")
@@ -332,7 +352,6 @@ class SnakeGame:
         prevHeadCol = self.getHeadCol()
         prevHeadRow = self.getHeadRow()
         self.grid[prevHeadCol][prevHeadRow] = "S"
-        self.setUnitSquareColor(self.getHead(), "white")
         
         #removing snake's old tail square
         self.prevTailCol = self.getTailCol()
@@ -354,15 +373,15 @@ class SnakeGame:
         #affecting game based on space head touches
         if headDestination == "#" or headDestination == "S":
             self.grid[headCol][headRow] = "X"
-            self.setUnitSquareColor(head, "red")
+            self.canvas.itemconfig(head, fill="red")
         else:
             self.grid[headCol][headRow] = "H"
-            self.setUnitSquareColor(head, "blue")
+            self.canvas.itemconfig(head, fill="white")
             
             #snake has eaten pellet
             if headDestination == "P":
-                self.eatPellet()
-            
+                #self.eatPellet()
+                pass
         self.canvas.pack()
         
     #displays game over
