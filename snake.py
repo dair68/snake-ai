@@ -213,23 +213,16 @@ class SnakeGame:
         
     #has the snake eat the pellet currently on screen to elongate it
     def eatPellet(self):
-        self.snakeSquares.append(self.pellet)
         self.grid[self.prevTailCol][self.prevTailRow] = "S"
+        tail = self.drawRect(self.prevTailCol, self.prevTailRow, self.getTailCol(), self.getTailRow())
+        self.snakeSquares.append(tail)
         self.snakeCoords.append((self.prevTailCol, self.prevTailRow))
-        
-        self.setUnitSquareColor(self.pellet, "white")
-        self.moveUnitSquare(self.pellet, self.prevTailCol, self.prevTailRow)
-        
-        connector = self.drawUnitSquare(self.prevTailCol, self.prevTailRow)
-        self.setUnitSquareColor(connector, "white")
-        xShift = (self.snakeCoords[-2][0] - self.snakeCoords[-1][0])/2
-        yShift = (self.snakeCoords[-2][1] - self.snakeCoords[-1][1])/2
-        self.canvas.move(connector, xShift, yShift)
         
         self.score += 1
         self.scoreText.config(text=f"Score: {self.score}")
         self.canvas.pack()
        
+        self.canvas.delete(self.pellet)
         self.pellet = None
         self.pelletCol = -1
         self.pelletRow = -1
@@ -380,8 +373,8 @@ class SnakeGame:
             
             #snake has eaten pellet
             if headDestination == "P":
-                #self.eatPellet()
-                pass
+                self.eatPellet()
+                
         self.canvas.pack()
         
     #displays game over
