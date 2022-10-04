@@ -102,8 +102,7 @@ class SnakeGame:
     #@param color - color string
     #returns reference to square drawn
     def drawUnitSquare(self, col, row, color="white"):
-        square = self.drawRect(col, row, col, row)
-        self.canvas.itemconfig(square, fill=color)
+        square = self.drawRect(col, row, col, row, color)
         return square
     
     #draws rectangle with 2 particular spaces at its corners
@@ -122,14 +121,14 @@ class SnakeGame:
         if row1 > row2:
             return self.drawRect(col1, row2, col2, row1)
             
-        k = self.squareLength*0.75
+        k = self.squareLength*0.55
         margin = (self.squareLength - k)/2
         x = (col1 - 1)*self.squareLength + margin
         y = (row1 - 1)*self.squareLength + margin
         width = (col2 - col1)*self.squareLength + k
         height = (row2 - row1)*self.squareLength + k
         rect = self.canvas.create_rectangle(x, y, x + width, y + height)
-        self.canvas.itemconfig(rect, fill=color)
+        self.canvas.itemconfig(rect, fill=color, outline=color)
         self.canvas.pack()
         return rect
     
