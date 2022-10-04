@@ -87,7 +87,6 @@ class SnakeGame:
         self.snakeCoords = [(col, row)]
         
         startSquare = self.drawUnitSquare(col, row)
-        #self.setUnitSquareColor(startSquare, "blue")
         
         self.snakeSquares = [startSquare]
         self.prevTailCol = col
@@ -107,20 +106,21 @@ class SnakeGame:
         self.canvas.itemconfig(square, fill=color)
         return square
     
-    #draws rectangle with 2 particular spaces as its corners
+    #draws rectangle with 2 particular spaces at its corners
     #@param col1 - column number from 1 to 20
     #@param row1 - row number from 1 to 20
     #@param col2 - column number from 1 to 20
     #@param row2 - row number from 1 to 20
+    #@param color - color string
     #returns reference to rectangle drawn
-    def drawRect(self, col1, row1, col2, row2):
+    def drawRect(self, col1, row1, col2, row2, color="white"):
         #ensuring that col2 is to the right of col1
         if col2 < col1:
-            self.drawRect(col2, row1, col1, row2)
+            return self.drawRect(col2, row1, col1, row2)
         
         #ensuring that row1 is above row2
         if row1 > row2:
-            self.drawRect(col1, row2, col2, row1)
+            return self.drawRect(col1, row2, col2, row1)
             
         k = self.squareLength*0.75
         margin = (self.squareLength - k)/2
@@ -129,6 +129,7 @@ class SnakeGame:
         width = (col2 - col1)*self.squareLength + k
         height = (row2 - row1)*self.squareLength + k
         rect = self.canvas.create_rectangle(x, y, x + width, y + height)
+        self.canvas.itemconfig(rect, fill=color)
         self.canvas.pack()
         return rect
     
@@ -213,19 +214,23 @@ class SnakeGame:
         
     #has the snake eat the pellet currently on screen to elongate it
     def eatPellet(self):
+        print("eating pellet")
         self.grid[self.prevTailCol][self.prevTailRow] = "S"
+        #print(f"prev tail: {self.prevTailCol}, {self.prevTailRow}")
+        #print(f"current tail: {self.getTailCol()}, {self.getTailRow()}")
         tail = self.drawRect(self.prevTailCol, self.prevTailRow, self.getTailCol(), self.getTailRow())
+        #tail = self.drawUnitSquare(self.prevTailCol, self.prevTailRow)
         self.snakeSquares.append(tail)
         self.snakeCoords.append((self.prevTailCol, self.prevTailRow))
         
         self.score += 1
         self.scoreText.config(text=f"Score: {self.score}")
-        self.canvas.pack()
        
         self.canvas.delete(self.pellet)
         self.pellet = None
         self.pelletCol = -1
         self.pelletRow = -1
+        self.canvas.pack()
         
     #redraws game area to match current progress
     def redrawGame(self):
@@ -335,12 +340,16 @@ class SnakeGame:
         #drawing extra pellet if needed
         if self.pellet == None:
             self.drawPelletRandom()
+           # return
         
         milliseconds = 1000
         self.canvas.after(milliseconds, self.runTurn)
         
     #shift the snake one spot
     def moveSnake(self):
+        snakeLength = len(self.snakeSquares)
+        print(f"snakelength: {snakeLength}")
+        
         #turning previous head square to normal body square
         prevHeadCol = self.getHeadCol()
         prevHeadRow = self.getHeadRow()
@@ -351,6 +360,8 @@ class SnakeGame:
         self.prevTailRow = self.getTailRow()
         self.grid[self.getTailCol()][self.getTailRow()] = "o"
         self.canvas.delete(self.getTail())
+        #snakeLength = len(self.snakeSquares)
+        #print(f"snakelength: {snakeLength}")
         self.snakeCoords.pop()
         self.snakeSquares.pop()
         
@@ -358,6 +369,16 @@ class SnakeGame:
         headCol = prevHeadCol + self.headXVelocity
         headRow = prevHeadRow + self.headYVelocity
         headCoords = (headCol, headRow)
+        
+        #replacing old head with rectangle block for snakes of multiple segments
+        if snakeLength > 1:
+            print("replacing head with rectangle")
+            oldHead = self.snakeSquares[0]
+            self.canvas.delete(oldHead)
+            self.snakeSquares.pop(0)
+            rect = self.drawRect(prevHeadCol, prevHeadRow, headCol, headRow)
+            self.snakeSquares.insert(0, rect)
+        
         self.snakeCoords.insert(0, headCoords)
         head = self.drawUnitSquare(headCol, headRow)
         self.snakeSquares.insert(0, head)
