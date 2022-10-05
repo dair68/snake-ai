@@ -18,15 +18,18 @@ class SnakeGame:
         root.rowconfigure(0, weight=1)
         root.rowconfigure(1, weight=5)
         
+        self.gameMsgLabel = ttk.Label(root, text="")
+        self.gameMsgLabel.grid(column=0, row=0)
+        
         self.score = 0
-        self.scoreText = ttk.Label(root, text=f"Score: {self.score}")
-        self.scoreText.grid(column=0, row=0)
+        self.scoreLabel = ttk.Label(root, text=f"Score: {self.score}")
+        self.scoreLabel.grid(column=0, row=1)
         
         gameFrame = ttk.Frame(root)
-        gameFrame.grid(column=0, row=1)
+        gameFrame.grid(column=0, row=2)
         
-        self.cols = 5
-        self.rows = 5
+        self.cols = 10
+        self.rows = 10
         self.squareLength = 20
         self.grid = []
         
@@ -86,7 +89,7 @@ class SnakeGame:
         self.grid[col][row] = "H"
         self.snakeCoords = [(col, row)]
         
-        startSquare = self.drawUnitSquare(col, row)
+        startSquare = self.drawUnitSquare(col, row, "blue", "white")
         
         self.snakeSquares = [startSquare]
         self.prevTailCol = col
@@ -99,10 +102,11 @@ class SnakeGame:
     #draw unit square in game area of certain color
     #@param col - column number from 1 to 20
     #@param row - row number from 1 to 20
-    #@param color - color string
+    #@param fillColor - color string
+    #@param outlineColor - color string
     #returns reference to square drawn
-    def drawUnitSquare(self, col, row, color="white"):
-        square = self.drawRect(col, row, col, row, color)
+    def drawUnitSquare(self, col, row, fillColor="white", outlineColor="white"):
+        square = self.drawRect(col, row, col, row, fillColor, outlineColor)
         return square
     
     #draws rectangle with 2 particular spaces at its corners
@@ -110,16 +114,17 @@ class SnakeGame:
     #@param row1 - row number from 1 to 20
     #@param col2 - column number from 1 to 20
     #@param row2 - row number from 1 to 20
-    #@param color - color string
+    #@param fillColor - color string
+    #@param outlineColor - color string
     #returns reference to rectangle drawn
-    def drawRect(self, col1, row1, col2, row2, color="white"):
+    def drawRect(self, col1, row1, col2, row2, fillColor="white", outlineColor="white"):
         #ensuring that col2 is to the right of col1
         if col2 < col1:
-            return self.drawRect(col2, row1, col1, row2)
+            return self.drawRect(col2, row1, col1, row2, fillColor, outlineColor)
         
         #ensuring that row1 is above row2
         if row1 > row2:
-            return self.drawRect(col1, row2, col2, row1)
+            return self.drawRect(col1, row2, col2, row1, fillColor, outlineColor)
             
         k = self.squareLength*0.55
         margin = (self.squareLength - k)/2
@@ -128,7 +133,7 @@ class SnakeGame:
         width = (col2 - col1)*self.squareLength + k
         height = (row2 - row1)*self.squareLength + k
         rect = self.canvas.create_rectangle(x, y, x + width, y + height)
-        self.canvas.itemconfig(rect, fill=color, outline=color)
+        self.canvas.itemconfig(rect, fill=fillColor, outline=outlineColor)
         self.canvas.pack()
         return rect
     
@@ -190,7 +195,7 @@ class SnakeGame:
         self.pelletCol = col
         self.pelletRow = row
         self.grid[col][row] = "P"
-        self.pellet = self.drawUnitSquare(col, row, "yellow")
+        self.pellet = self.drawUnitSquare(col, row, "yellow", "yellow")
         self.canvas.pack()
         
     #spawns pellet in random vacant location on grid
@@ -218,12 +223,13 @@ class SnakeGame:
         #print(f"prev tail: {self.prevTailCol}, {self.prevTailRow}")
         #print(f"current tail: {self.getTailCol()}, {self.getTailRow()}")
         tail = self.drawRect(self.prevTailCol, self.prevTailRow, self.getTailCol(), self.getTailRow())
+        self.canvas.tag_lower(tail)
         #tail = self.drawUnitSquare(self.prevTailCol, self.prevTailRow)
         self.snakeSquares.append(tail)
         self.snakeCoords.append((self.prevTailCol, self.prevTailRow))
         
         self.score += 1
-        self.scoreText.config(text=f"Score: {self.score}")
+        self.scoreLabel.config(text=f"Score: {self.score}")
        
         self.canvas.delete(self.pellet)
         self.pellet = None
@@ -341,7 +347,8 @@ class SnakeGame:
             self.drawPelletRandom()
            # return
         
-        milliseconds = 1000
+        #milliseconds = 1000
+        milliseconds = 100
         self.canvas.after(milliseconds, self.runTurn)
         
     #shift the snake one spot
@@ -378,6 +385,7 @@ class SnakeGame:
             rect = self.drawRect(prevHeadCol, prevHeadRow, headCol, headRow)
             self.snakeSquares.insert(0, rect)
         
+        #drawing head block with blue unit square
         self.snakeCoords.insert(0, headCoords)
         head = self.drawUnitSquare(headCol, headRow)
         self.snakeSquares.insert(0, head)
@@ -386,10 +394,10 @@ class SnakeGame:
         #affecting game based on space head touches
         if headDestination == "#" or headDestination == "S":
             self.grid[headCol][headRow] = "X"
-            self.canvas.itemconfig(head, fill="red")
+            self.canvas.itemconfig(head, fill="red", outline="white")
         else:
             self.grid[headCol][headRow] = "H"
-            self.canvas.itemconfig(head, fill="white")
+            self.canvas.itemconfig(head, fill="blue", outline="white")
             
             #snake has eaten pellet
             if headDestination == "P":
@@ -399,17 +407,15 @@ class SnakeGame:
         
     #displays game over
     def gameOver(self):
-        print("Game over!")
-        x = 0.5*self.canvas.winfo_width()
-        y = 0.5*self.canvas.winfo_height()
-        self.canvas.create_text(x, y, text="Game Over", fill="magenta")
+        loseText = "Game Over!"
+        print(loseText)
+        self.gameMsgLabel["text"] = loseText
         
     #displays that the user has won
     def win(self):
-        print("Congratulations. You won!")
-        x = 0.5*self.canvas.winfo_width()
-        y = 0.5*self.canvas.winfo_height()
-        self.canvas.create_text(x, y, text="Congratulations.\n   You won!", fill="green")
+        winText = "Congratulations. You won!"
+        print(winText)
+        self.gameMsgLabel["text"] = winText
         
     #prints the game grid to the console
     def printGrid(self):
