@@ -18,16 +18,24 @@ class SnakeGame:
         root.rowconfigure(0, weight=1)
         root.rowconfigure(1, weight=5)
         
-        self.gameMsgLabel = ttk.Label(root, text="")
-        self.gameMsgLabel.grid(column=0, row=0)
-        
         self.score = 0
         self.scoreLabel = ttk.Label(root, text=f"Score: {self.score}")
-        self.scoreLabel.grid(column=0, row=1)
+        self.scoreLabel.grid(column=0, row=0)
         
-        gameFrame = ttk.Frame(root)
-        gameFrame.grid(column=0, row=2)
+        self.gameFrame = ttk.Frame(root)
+        self.gameFrame.grid(column=0, row=1)
         
+        self.gameMsgLabel = ttk.Label(root, text="Press the arrow keys to begin!")
+        self.gameMsgLabel.grid(column=0, row=2)
+        
+        self.buttonFrame = ttk.Frame(root)
+        self.buttonFrame.grid(column=0, row=3)
+        self.playAgainBtn = ttk.Button(self.buttonFrame, text="Play Again", command = self.start)
+        self.playAgainBtn.pack_forget()
+        root.grid_rowconfigure(3, minsize=30, weight=1)
+        
+        #self.cols = 2
+        #self.rows = 2
         self.cols = 10
         self.rows = 10
         self.squareLength = 20
@@ -35,7 +43,7 @@ class SnakeGame:
         
         canvasHeight = self.squareLength*self.rows
         canvasWidth = self.squareLength*self.cols
-        self.canvas = Canvas(gameFrame, height=canvasHeight, width=canvasWidth)
+        self.canvas = Canvas(self.gameFrame, height=canvasHeight, width=canvasWidth)
         self.canvas.configure(bg="black", borderwidth=0, highlightthickness=0)
         self.canvas.bind("<Up>", self.up)
         self.canvas.bind("<Down>", self.down)
@@ -64,6 +72,7 @@ class SnakeGame:
     #@param row - row number of start snake segment. number from 1-20
     def start(self, col=1, row=1):
         self.score = 0
+        self.updateScoreDisplay()
         print(col)
         print(row)
         self.snakeMoving = False
@@ -89,7 +98,12 @@ class SnakeGame:
         self.grid[col][row] = "H"
         self.snakeCoords = [(col, row)]
         
+        self.canvas.delete("all")
+        self.canvas.focus_set()
+        self.playAgainBtn.pack_forget()
+        
         startSquare = self.drawUnitSquare(col, row, "blue", "white")
+        self.gameMsgLabel["text"] = "Move the snake with the arrow keys!"
         
         self.snakeSquares = [startSquare]
         self.prevTailCol = col
@@ -216,6 +230,10 @@ class SnakeGame:
                 
         self.drawPellet(pelletCol, pelletRow)
         
+    #updates the score label to display the current score
+    def updateScoreDisplay(self):
+        self.scoreLabel.config(text=f"Score: {self.score}")
+        
     #has the snake eat the pellet currently on screen to elongate it
     def eatPellet(self):
         print("eating pellet")
@@ -229,7 +247,7 @@ class SnakeGame:
         self.snakeCoords.append((self.prevTailCol, self.prevTailRow))
         
         self.score += 1
-        self.scoreLabel.config(text=f"Score: {self.score}")
+        self.updateScoreDisplay()
        
         self.canvas.delete(self.pellet)
         self.pellet = None
@@ -250,6 +268,13 @@ class SnakeGame:
                    
        self.canvas.pack()
        
+    #begins the snake movement loop
+    #causes the snake to start moving while adjusting game to accomodate
+    def startMovement(self):
+        self.snakeMoving = True
+        self.gameMsgLabel["text"] = ""
+        self.runTurn()
+       
     #sets movement direction of snake to up
     #@param event - event object
     def up(self, event):
@@ -262,8 +287,7 @@ class SnakeGame:
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
-            self.snakeMoving = True
-            self.runTurn()
+            self.startMovement()
             
     #sets movement direction of snake to down
     #@param event - event object
@@ -277,8 +301,7 @@ class SnakeGame:
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
-            self.snakeMoving = True
-            self.runTurn()
+            self.startMovement()
             
     #sets movement direction of snake to right
     #@param event - event object
@@ -292,8 +315,7 @@ class SnakeGame:
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
-            self.snakeMoving = True
-            self.runTurn()
+            self.startMovement()
             
     #sets movement direction of snake to left
     #@param event - event object
@@ -307,8 +329,7 @@ class SnakeGame:
          
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
-            self.snakeMoving = True
-            self.runTurn()
+            self.startMovement()
             
     #checks if snake has bumped into the edge
     def snakeTouchingEdge(self):
@@ -410,17 +431,19 @@ class SnakeGame:
         loseText = "Game Over!"
         print(loseText)
         self.gameMsgLabel["text"] = loseText
+        self.playAgainBtn.pack()
         
     #displays that the user has won
     def win(self):
         winText = "Congratulations. You won!"
         print(winText)
         self.gameMsgLabel["text"] = winText
+        self.playAgainBtn.pack()
         
     #prints the game grid to the console
     def printGrid(self):
         #printing rows one by one
-        for y in range(len(self.grid)):
-            row = [str(self.grid[x][y]) for x in range(len(self.grid[0]))]
+        for y in range(len(self.grid[0])):
+            row = [str(self.grid[x][y]) for x in range(len(self.grid))]
             rowString = "".join(row)
             print(rowString)
