@@ -25,21 +25,22 @@ class SnakeGame:
         self.gameFrame = ttk.Frame(root)
         self.gameFrame.grid(column=0, row=1)
         
-        self.gameMsgLabel = ttk.Label(root, text="Press the arrow keys to begin!")
+        self.gameMsgLabel = ttk.Label(root, text="instructions here")
         self.gameMsgLabel.grid(column=0, row=2)
-        
-        self.buttonFrame = ttk.Frame(root)
-        self.buttonFrame.grid(column=0, row=3)
-        self.playAgainBtn = ttk.Button(self.buttonFrame, text="Play Again", command = self.start)
-        self.playAgainBtn.pack_forget()
-        root.grid_rowconfigure(3, minsize=30, weight=1)
         
         #self.cols = 2
         #self.rows = 2
         self.cols = 10
         self.rows = 10
-        self.squareLength = 20
+        self.squareLength = 25
         self.grid = []
+        
+        self.buttonFrame = ttk.Frame(root)
+        self.buttonFrame.grid(column=0, row=3)
+        self.playAgainBtn = ttk.Button(self.buttonFrame, text="Play Again", 
+                                       command = lambda a=self.cols//2, b=self.rows//2: self.start(a,b))
+        self.playAgainBtn.pack_forget()
+        root.grid_rowconfigure(3, minsize=30, weight=1)
         
         canvasHeight = self.squareLength*self.rows
         canvasWidth = self.squareLength*self.cols
@@ -103,7 +104,7 @@ class SnakeGame:
         self.playAgainBtn.pack_forget()
         
         startSquare = self.drawUnitSquare(col, row, "blue", "white")
-        self.gameMsgLabel["text"] = "Move the snake with the arrow keys!"
+        self.gameMsgLabel["text"] = "Move the blue square with the arrow keys!"
         
         self.snakeSquares = [startSquare]
         self.prevTailCol = col
