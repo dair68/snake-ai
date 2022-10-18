@@ -14,9 +14,9 @@ class SnakeGame:
     #constructor
     #@param root - parent tk widget
     def __init__(self, root):
-        root.title("Snake")
-        root.rowconfigure(0, weight=1)
-        root.rowconfigure(1, weight=5)
+        #root.title("Snake")
+        #root.rowconfigure(0, weight=1)
+        #root.rowconfigure(1, weight=5)
         
         self.score = 0
         self.scoreLabel = ttk.Label(root, text=f"Score: {self.score}")
