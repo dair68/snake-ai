@@ -8,6 +8,7 @@ Created on Tue May 24 15:48:01 2022
 from tkinter import *
 from tkinter import ttk
 import random
+import tkinter.font as tkFont
 
 #widget with a game of snake contained within
 class SnakeGame:
@@ -18,29 +19,47 @@ class SnakeGame:
         #root.rowconfigure(0, weight=1)
         #root.rowconfigure(1, weight=5)
         
+        self.mainFrame = ttk.Frame(root)
+        self.mainFrame.pack()
+    
+        self.labelFont = tkFont.Font(family="Small Fonts", size=14)
+        self.labelStyle = ttk.Style(root)
+        self.labelStyle.configure("Bold.TLabel", font=self.labelFont)
+        
+        self.buttonFont = tkFont.Font(family="Andalus", size=11)
+        self.buttonStyle = ttk.Style(root)
+        self.buttonStyle.configure("Bold.TButton", font=self.buttonFont)
+        
         self.score = 0
-        self.scoreLabel = ttk.Label(root, text=f"Score: {self.score}")
+        self.scoreLabel = ttk.Label(self.mainFrame, text=f"Score: {self.score}", style="Bold.TLabel")
         self.scoreLabel.grid(column=0, row=0)
         
-        self.gameFrame = ttk.Frame(root)
+        self.gameFrame = ttk.Frame(self.mainFrame)
         self.gameFrame.grid(column=0, row=1)
         
-        self.gameMsgLabel = ttk.Label(root, text="instructions here")
+        self.gameMsgLabel = ttk.Label(self.mainFrame, text="Select mode below", style="Bold.TLabel")
+        self.gameMsgLabel.config(wraplength=200, justify="center")
         self.gameMsgLabel.grid(column=0, row=2)
+        self.mainFrame.grid_rowconfigure(2, minsize=48, weight=1)
         
         #self.cols = 2
         #self.rows = 2
         self.cols = 10
         self.rows = 10
-        self.squareLength = 25
+        self.squareLength = 30
         self.grid = []
         
-        self.buttonFrame = ttk.Frame(root)
+        self.buttonFrame = ttk.Frame(self.mainFrame)
         self.buttonFrame.grid(column=0, row=3)
-        self.playAgainBtn = ttk.Button(self.buttonFrame, text="Play Again", 
-                                       command = lambda a=self.cols//2, b=self.rows//2: self.start(a,b))
-        self.playAgainBtn.pack_forget()
-        root.grid_rowconfigure(3, minsize=30, weight=1)
+        self.playAgainBtn = ttk.Button(self.buttonFrame, text="Play", 
+                                       command = self.startCentered, style="Bold.TButton")
+        self.mainFrame.grid_rowconfigure(3, minsize=30, weight=1)
+        #self.playAgainBtn.pack()
+        self.playAgainBtn.grid(column=0, row=0)
+        
+        self.aiBtn = ttk.Button(self.buttonFrame, text="Run AI", style="Bold.TButton")
+        #self.aiBtn.pack()
+        self.aiBtn.grid(column=1, row=0)
         
         canvasHeight = self.squareLength*self.rows
         canvasWidth = self.squareLength*self.cols
@@ -66,7 +85,7 @@ class SnakeGame:
         
         self.gameStarted = False
         self.keyboardInput = True
-        self.start(self.cols//2, self.rows//2)
+        #self.start(self.cols//2, self.rows//2)
         
     #begins new game of snake with start snake segment at a certain position
     #@param col - column number of start snake segment. number from 1-20.
@@ -101,7 +120,8 @@ class SnakeGame:
         
         self.canvas.delete("all")
         self.canvas.focus_set()
-        self.playAgainBtn.pack_forget()
+        self.playAgainBtn.grid_remove()
+        self.aiBtn.grid_remove()
         
         startSquare = self.drawUnitSquare(col, row, "blue", "white")
         self.gameMsgLabel["text"] = "Move the blue square with the arrow keys!"
@@ -113,6 +133,10 @@ class SnakeGame:
         self.drawPelletRandom()
         self.gameStarted = True
         self.keyboardInput = True
+        
+    #starts game with snake in middle of screen
+    def startCentered(self):
+        self.start(self.cols//2, self.rows//2)
         
     #draw unit square in game area of certain color
     #@param col - column number from 1 to 20
@@ -141,7 +165,7 @@ class SnakeGame:
         if row1 > row2:
             return self.drawRect(col1, row2, col2, row1, fillColor, outlineColor)
             
-        k = self.squareLength*0.55
+        k = self.squareLength*0.60
         margin = (self.squareLength - k)/2
         x = (col1 - 1)*self.squareLength + margin
         y = (row1 - 1)*self.squareLength + margin
@@ -432,14 +456,20 @@ class SnakeGame:
         loseText = "Game Over!"
         print(loseText)
         self.gameMsgLabel["text"] = loseText
-        self.playAgainBtn.pack()
+        self.restoreModeButtons()
         
     #displays that the user has won
     def win(self):
         winText = "Congratulations. You won!"
         print(winText)
         self.gameMsgLabel["text"] = winText
-        self.playAgainBtn.pack()
+        self.restoreModeButtons()
+        
+    #restores the mode selection buttons to screen
+    def restoreModeButtons(self):
+        self.playAgainBtn.config(text="Play Again")
+        self.playAgainBtn.grid()
+        self.aiBtn.grid()
         
     #prints the game grid to the console
     def printGrid(self):
