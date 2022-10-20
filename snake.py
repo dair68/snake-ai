@@ -54,11 +54,10 @@ class SnakeGame:
         self.playAgainBtn = ttk.Button(self.buttonFrame, text="Play", 
                                        command = self.startCentered, style="Bold.TButton")
         self.mainFrame.grid_rowconfigure(3, minsize=30, weight=1)
-        #self.playAgainBtn.pack()
         self.playAgainBtn.grid(column=0, row=0)
         
-        self.aiBtn = ttk.Button(self.buttonFrame, text="Run AI", style="Bold.TButton")
-        #self.aiBtn.pack()
+        self.aiBtn = ttk.Button(self.buttonFrame, text="Run AI", style="Bold.TButton",
+                                command= self.startAICentered)
         self.aiBtn.grid(column=1, row=0)
         
         canvasHeight = self.squareLength*self.rows
@@ -80,8 +79,9 @@ class SnakeGame:
         self.prevTailRow = -1
         
         self.gameStarted = False
+        self.aiMode = False
         
-    #begins new game of snake with start snake segment at a certain position
+    #begins new game of player controlled snake with start snake segment at a certain position
     #@param col - column number of start snake segment. number from 1-20.
     #@param row - row number of start snake segment. number from 1-20
     def start(self, col=1, row=1):
@@ -127,10 +127,25 @@ class SnakeGame:
         self.drawPelletRandom()
         self.gameStarted = True
         self.bindArrowKeys()
-        
-    #starts game with snake in middle of screen
+        self.aiMode = False
+         
+    #starts player controlled game with snake in middle of screen
     def startCentered(self):
         self.start(self.cols//2, self.rows//2)
+        
+    #begins running the ai with snake starting at certain position
+    #@param col - starting column of snake
+    #@param row - starting row of snake
+    def startAI(self, col=1, row=1):
+        print("starting ai")
+        self.start(col, row)
+        self.aiMode = True
+        self.unbindArrowKeys()
+        self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
+        
+    #begins running the ai with snake starting in center space
+    def startAICentered(self):
+        self.startAI(self.cols//2, self.rows//2)
         
     #allows game to respond to arrow key inputs
     def bindArrowKeys(self):
