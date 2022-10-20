@@ -65,10 +65,6 @@ class SnakeGame:
         canvasWidth = self.squareLength*self.cols
         self.canvas = Canvas(self.gameFrame, height=canvasHeight, width=canvasWidth)
         self.canvas.configure(bg="black", borderwidth=0, highlightthickness=0)
-        self.canvas.bind("<Up>", self.up)
-        self.canvas.bind("<Down>", self.down)
-        self.canvas.bind("<Right>", self.right)
-        self.canvas.bind("<Left>", self.left)
         self.canvas.focus_set()
         self.canvas.pack()
         
@@ -84,8 +80,6 @@ class SnakeGame:
         self.prevTailRow = -1
         
         self.gameStarted = False
-        self.keyboardInput = True
-        #self.start(self.cols//2, self.rows//2)
         
     #begins new game of snake with start snake segment at a certain position
     #@param col - column number of start snake segment. number from 1-20.
@@ -132,11 +126,25 @@ class SnakeGame:
         self.printGrid()
         self.drawPelletRandom()
         self.gameStarted = True
-        self.keyboardInput = True
+        self.bindArrowKeys()
         
     #starts game with snake in middle of screen
     def startCentered(self):
         self.start(self.cols//2, self.rows//2)
+        
+    #allows game to respond to arrow key inputs
+    def bindArrowKeys(self):
+        self.canvas.bind("<Up>", self.up)
+        self.canvas.bind("<Down>", self.down)
+        self.canvas.bind("<Right>", self.right)
+        self.canvas.bind("<Left>", self.left)
+        
+    #stops game from responding to arrow key inputs
+    def unbindArrowKeys(self):
+        self.canvas.unbind("<Up>")
+        self.canvas.unbind("<Down>")
+        self.canvas.unbind("<Right>")
+        self.canvas.unbind("<Left>")
         
     #draw unit square in game area of certain color
     #@param col - column number from 1 to 20
@@ -305,10 +313,10 @@ class SnakeGame:
     def up(self, event):
         print("up arrow key pressed")
         #moving snake up if it's not moving down
-        if self.keyboardInput and not self.headYVelocity == 1:
+        if not self.headYVelocity == 1:
             self.headYVelocity = -1
             self.headXVelocity = 0
-            self.keyboardInput = False
+            self.unbindArrowKeys()
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -319,10 +327,10 @@ class SnakeGame:
     def down(self, event):
         print("down arrow key pressed")
         #moving snake down if it's not moving up
-        if self.keyboardInput and not self.headYVelocity == -1:
+        if not self.headYVelocity == -1:
             self.headYVelocity = 1
             self.headXVelocity = 0
-            self.keyboardInput = False
+            self.unbindArrowKeys()
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -333,10 +341,10 @@ class SnakeGame:
     def right(self, event):
         print("right arrow key pressed")
         #moving snake right if it's not going left
-        if self.keyboardInput and not self.headXVelocity == -1: 
+        if not self.headXVelocity == -1: 
             self.headYVelocity = 0
             self.headXVelocity = 1
-            self.keyboardInput = False
+            self.unbindArrowKeys()
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -347,10 +355,10 @@ class SnakeGame:
     def left(self, event):
         print("left arrow key pressed")
         #moving snake left if it's not going right
-        if self.keyboardInput and not self.headXVelocity == 1:
+        if not self.headXVelocity == 1:
             self.headYVelocity = 0
             self.headXVelocity = -1
-            self.keyboardInput = False
+            self.unbindArrowKeys()
          
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -374,7 +382,7 @@ class SnakeGame:
     #shifts the snake one spot and makes new pellet if none on screen
     def runTurn(self):
         self.moveSnake() 
-        self.keyboardInput = True
+        self.bindArrowKeys()
         print("\n")
         self.printGrid()
         
