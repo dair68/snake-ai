@@ -440,6 +440,10 @@ class SnakeGame:
         self.snakeCoords.pop()
         self.snakeSquares.pop()
         
+        #marking tail with "T" on grid if snake has multiple segments
+        if snakeLength > 1:
+            self.grid[self.getTailCol()][self.getTailRow()] = "T"
+        
         #inserting block at snake's new head destination
         headCol = prevHeadCol + self.headXVelocity
         headRow = prevHeadRow + self.headYVelocity
