@@ -80,6 +80,7 @@ class SnakeGame:
         
         self.gameStarted = False
         self.aiMode = False
+        self.steering = False
         
     #begins new game of player controlled snake with start snake segment at a certain position
     #@param col - column number of start snake segment. number from 1-20.
@@ -123,8 +124,8 @@ class SnakeGame:
         self.snakeSquares = [startSquare]
         self.prevTailCol = col
         self.prevTailRow = row
-        self.printGrid()
         self.drawPelletRandom()
+        self.printGrid()
         self.gameStarted = True
         self.bindArrowKeys()
         self.aiMode = False
@@ -142,17 +143,27 @@ class SnakeGame:
         self.aiMode = True
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
+        self.mainFrame.after(3000, self.aiSteerSnake)
         
     #begins running the ai with snake starting in center space
     def startAICentered(self):
         self.startAI(self.cols//2, self.rows//2)
         
+    #has the ai choose which direction the snake will move next
+    def aiSteerSnake(self):
+        self.steering = True
+        self.up()
+        self.right()
+        self.down()
+        self.left()
+    
     #allows game to respond to arrow key inputs
     def bindArrowKeys(self):
         self.canvas.bind("<Up>", self.up)
         self.canvas.bind("<Down>", self.down)
         self.canvas.bind("<Right>", self.right)
         self.canvas.bind("<Left>", self.left)
+        self.steering = True
         
     #stops game from responding to arrow key inputs
     def unbindArrowKeys(self):
@@ -160,6 +171,7 @@ class SnakeGame:
         self.canvas.unbind("<Down>")
         self.canvas.unbind("<Right>")
         self.canvas.unbind("<Left>")
+        self.steering = False
         
     #draw unit square in game area of certain color
     #@param col - column number from 1 to 20
@@ -320,18 +332,22 @@ class SnakeGame:
     #causes the snake to start moving while adjusting game to accomodate
     def startMovement(self):
         self.snakeMoving = True
-        self.gameMsgLabel["text"] = ""
+        self.steering = True
+        
+        #removing text for player controlled game
+        if not self.aiMode:
+            self.gameMsgLabel["text"] = ""
         self.runTurn()
        
     #sets movement direction of snake to up
     #@param event - event object
-    def up(self, event):
+    def up(self, event=None):
         print("up arrow key pressed")
         #moving snake up if it's not moving down
-        if not self.headYVelocity == 1:
+        if not self.headYVelocity == 1 and self.steering == True:
+            self.unbindArrowKeys()
             self.headYVelocity = -1
             self.headXVelocity = 0
-            self.unbindArrowKeys()
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -339,13 +355,13 @@ class SnakeGame:
             
     #sets movement direction of snake to down
     #@param event - event object
-    def down(self, event):
+    def down(self, event=None):
         print("down arrow key pressed")
         #moving snake down if it's not moving up
-        if not self.headYVelocity == -1:
+        if not self.headYVelocity == -1 and self.steering == True:
+            self.unbindArrowKeys()
             self.headYVelocity = 1
             self.headXVelocity = 0
-            self.unbindArrowKeys()
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -353,13 +369,13 @@ class SnakeGame:
             
     #sets movement direction of snake to right
     #@param event - event object
-    def right(self, event):
+    def right(self, event=None):
         print("right arrow key pressed")
         #moving snake right if it's not going left
-        if not self.headXVelocity == -1: 
+        if not self.headXVelocity == -1 and self.steering == True: 
+            self.unbindArrowKeys()
             self.headYVelocity = 0
             self.headXVelocity = 1
-            self.unbindArrowKeys()
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -367,13 +383,13 @@ class SnakeGame:
             
     #sets movement direction of snake to left
     #@param event - event object
-    def left(self, event):
+    def left(self, event=None):
         print("left arrow key pressed")
         #moving snake left if it's not going right
-        if not self.headXVelocity == 1:
+        if not self.headXVelocity == 1 and self.steering == True:
+            self.unbindArrowKeys()
             self.headYVelocity = 0
             self.headXVelocity = -1
-            self.unbindArrowKeys()
          
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -396,10 +412,19 @@ class SnakeGame:
             
     #shifts the snake one spot and makes new pellet if none on screen
     def runTurn(self):
-        self.moveSnake() 
-        self.bindArrowKeys()
-        print("\n")
-        self.printGrid()
+        prevHeadCol = self.getHeadCol()
+        prevHeadRow = self.getHeadRow()
+        self.moveSnake()
+        self.steering = True
+        
+        #returning arrow key movement for player control
+        if not self.aiMode:
+            self.bindArrowKeys()
+        
+        #printing grid if there was a change in snake's position
+        if prevHeadCol != self.getHeadCol() or prevHeadRow != self.getHeadRow():
+            self.printGrid()
+            print("\n")
         
         #game over if snake touches edge or itself
         if self.grid[self.getHeadCol()][self.getHeadRow()] == "X":
@@ -416,14 +441,14 @@ class SnakeGame:
             self.drawPelletRandom()
            # return
         
-        #milliseconds = 1000
-        milliseconds = 100
+        milliseconds = 1000
+        #milliseconds = 100
         self.canvas.after(milliseconds, self.runTurn)
         
     #shift the snake one spot
     def moveSnake(self):
         snakeLength = len(self.snakeSquares)
-        print(f"snakelength: {snakeLength}")
+        #print(f"snakelength: {snakeLength}")
         
         #turning previous head square to normal body square
         prevHeadCol = self.getHeadCol()
