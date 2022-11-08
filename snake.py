@@ -150,17 +150,27 @@ class SnakeGame:
         self.startAI(self.cols//2, self.rows//2)
         
     #has the ai choose which direction the snake will move next
-    def aiSteerSnake(self):
+    def aiSteer(self):
         self.steering = True
-        randNum = random.randrange(4)
+        forwardSpaceCol = self.headCol + self.headXVelocity
+        forwardSpaceRow = self.headRow + self.headYVelocity
+        forwardSpace = self.grid[forwardSpaceCol][forwardSpaceRow]
         
-        #moving snake in direction based on random number
+        #deciding whether or not snake should turn
         
         
-        self.up()
-        self.right()
-        self.down()
-        self.left()
+    #determines whether it's safe for the snake to enter a certain space
+    #@param col - column of space
+    #@param row - row of space
+    #returns true if snake can enter space without inevitable game over
+    def spaceSafe(self, col, row):
+        space = self.grid[col][row]
+        
+        #space not safe if it's a wall or snake segment other than tail
+        if space == "#" or space == "S":
+            return False
+        
+        return False
         
     #has ai move snake in random direction
     def randomAISteer(self):
@@ -319,7 +329,11 @@ class SnakeGame:
     #has the snake eat the pellet currently on screen to elongate it
     def eatPellet(self):
         print("eating pellet")
-        self.grid[self.prevTailCol][self.prevTailRow] = "S"
+        self.grid[self.prevTailCol][self.prevTailRow] = "T"
+        
+        #changing tail of multilength snake to S before it extends.
+        if not self.grid[self.getTailCol()][self.getTailRow()] == "H":
+            self.grid[self.getTailCol()][self.getTailRow()] = "S"
         #print(f"prev tail: {self.prevTailCol}, {self.prevTailRow}")
         #print(f"current tail: {self.getTailCol()}, {self.getTailRow()}")
         tail = self.drawRect(self.prevTailCol, self.prevTailRow, self.getTailCol(), self.getTailRow())
