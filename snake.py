@@ -143,7 +143,7 @@ class SnakeGame:
         self.aiMode = True
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
-        self.mainFrame.after(3000, self.aiSteerSnake)
+        self.mainFrame.after(3000, self.randomAISteer)
         
     #begins running the ai with snake starting in center space
     def startAICentered(self):
@@ -152,10 +152,32 @@ class SnakeGame:
     #has the ai choose which direction the snake will move next
     def aiSteerSnake(self):
         self.steering = True
+        randNum = random.randrange(4)
+        
+        #moving snake in direction based on random number
+        
+        
         self.up()
         self.right()
         self.down()
         self.left()
+        
+    #has ai move snake in random direction
+    def randomAISteer(self):
+        self.steering = True
+        randNum = random.randrange(4)
+        
+        #moving snake depending on random number chosen
+        if randNum == 0:
+            self.up()
+        elif randNum == 1:
+            self.down()
+        elif randNum == 2:
+            self.left()
+        elif randNum == 3:
+            self.right()
+        else:
+            print("Invalid number chosen")
     
     #allows game to respond to arrow key inputs
     def bindArrowKeys(self):
@@ -414,6 +436,11 @@ class SnakeGame:
     def runTurn(self):
         prevHeadCol = self.getHeadCol()
         prevHeadRow = self.getHeadRow()
+        
+        #having ai choose direction in ai mode
+        if self.aiMode:
+            self.randomAISteer()
+        
         self.moveSnake()
         self.steering = True
         
