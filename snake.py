@@ -82,6 +82,8 @@ class SnakeGame:
         self.aiMode = False
         self.steering = False
         
+        self.__debugMode()
+        
     #begins new game of player controlled snake with start snake segment at a certain position
     #@param col - column number of start snake segment. number from 1-20.
     #@param row - row number of start snake segment. number from 1-20
@@ -149,22 +151,72 @@ class SnakeGame:
     def startAICentered(self):
         self.startAI(self.cols//2, self.rows//2)
         
+    #runs app in debug mode
+    def __debugMode(self):
+        print("Entering debug mode!")
+        self.playAgainBtn["state"] = "disable"
+        self.aiBtn["state"] = "disable"
+        
+        self.cols = 10
+        self.rows = 10
+        self.squareLength = 30
+        self.grid = []
+        
+        self.grid = [["o" for y in range(self.rows + 2)] for x in range(self.cols + 2)]
+        borderChar = "#"
+        
+        #labeling top and bottom borders of grid
+        for x in range(len(self.grid)):
+            self.grid[x][0] = borderChar
+            self.grid[x][-1] = borderChar
+        
+        #labeling left and right borders of grid
+        for y in range(len(self.grid[0])):
+            self.grid[0][y] = borderChar
+            self.grid[-1][y] = borderChar
+            
+        self.grid[5][5] = "H"
+        self.snakeCoords.append((5, 5))
+        self.printGrid()
+        
+        self.spaceSafe("up")
+        self.spaceSafe("down")
+        self.spaceSafe("left")
+        self.spaceSafe("right")
+        
     #has the ai choose which direction the snake will move next
     def aiSteer(self):
         self.steering = True
-        forwardSpaceCol = self.headCol + self.headXVelocity
-        forwardSpaceRow = self.headRow + self.headYVelocity
-        forwardSpace = self.grid[forwardSpaceCol][forwardSpaceRow]
         
         #deciding whether or not snake should turn
         
         
-    #determines whether it's safe for the snake to enter a certain space
-    #@param col - column of space
-    #@param row - row of space
-    #returns true if snake can enter space without inevitable game over
-    def spaceSafe(self, col, row):
-        space = self.grid[col][row]
+    #determines whether it's safe for the snake to enter a certain adjacent space
+    #direction - string that says "up", "down", "left", or "right" marking which adjecent space in question
+    #returns true if snake can enter that space without game over
+    def spaceSafe(self, direction):
+        spaceCol = self.getHeadCol()
+        spaceRow = self.getHeadRow()
+        
+        #finding the target space based on direction
+        if direction == "up":
+            spaceRow -= 1
+        elif direction == "down":
+            spaceRow += 1
+        elif direction == "left":
+            spaceCol -= 1
+        elif direction == "right":
+            spaceCol += 1
+        else:
+            print("Error. Invalid direction parameter.")
+            return False
+        
+        space = self.grid[spaceCol][spaceRow]
+        print(f"Head space: ({self.getHeadCol()}, {self.getHeadRow()})")
+        print(f"{direction} space: ({spaceCol}, {spaceRow})")
+        
+        #180 degree turns not permitted
+        #if abs(xVelocity)
         
         #space not safe if it's a wall or snake segment other than tail
         if space == "#" or space == "S":
