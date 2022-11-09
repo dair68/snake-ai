@@ -175,9 +175,19 @@ class SnakeGame:
             self.grid[0][y] = borderChar
             self.grid[-1][y] = borderChar
             
-        self.grid[5][5] = "H"
-        self.snakeCoords.append((5, 5))
+        headCol = 5
+        headRow = 5
+        self.grid[headCol][headRow] = "H"
+        self.snakeCoords.append((headCol, headRow))
+        
+        #self.grid[headCol + 1][headRow] = "S"
+        #self.snakeCoords.append((headCol + 1, headRow))
         self.printGrid()
+        print(f"Head space: ({self.getHeadCol()}, {self.getHeadRow()})")
+        
+        self.headXVelocity = 0
+        self.headYVelocity = 0
+        print(f"Snake moving {self.headDirection()}")
         
         self.spaceSafe("up")
         self.spaceSafe("down")
@@ -190,39 +200,65 @@ class SnakeGame:
         
         #deciding whether or not snake should turn
         
+    #reports current movement of snake
+    #returns "up", "down", "left", "right", or "none"
+    def headDirection(self):
+        #reporting direction of snake head
+        if self.headXVelocity == 0 and self.headYVelocity == 0:
+            return "none"
+        elif self.headXVelocity == 0 and self.headYVelocity == 1:
+            return "down"
+        elif self.headXVelocity == 0 and self.headYVelocity == -1:
+            return "up"
+        elif self.headXVelocity == 1 and self.headYVelocity == 0:
+            return "right"
+        elif self.headXVelocity == -1 and self.headYVelocity == 0:
+            return "left"
+        else:
+            print("Error. Invalid snake movement")
+            return ""
         
     #determines whether it's safe for the snake to enter a certain adjacent space
     #direction - string that says "up", "down", "left", or "right" marking which adjecent space in question
     #returns true if snake can enter that space without game over
     def spaceSafe(self, direction):
-        spaceCol = self.getHeadCol()
-        spaceRow = self.getHeadRow()
+        xChange = 0
+        yChange = 0
         
         #finding the target space based on direction
         if direction == "up":
-            spaceRow -= 1
+            yChange = -1
         elif direction == "down":
-            spaceRow += 1
+            yChange = 1
         elif direction == "left":
-            spaceCol -= 1
+            xChange = -1
         elif direction == "right":
-            spaceCol += 1
+            xChange = 1
         else:
             print("Error. Invalid direction parameter.")
             return False
         
-        space = self.grid[spaceCol][spaceRow]
-        print(f"Head space: ({self.getHeadCol()}, {self.getHeadRow()})")
+        spaceCol = self.getHeadCol() + xChange
+        spaceRow = self.getHeadRow() + yChange
         print(f"{direction} space: ({spaceCol}, {spaceRow})")
         
         #180 degree turns not permitted
-        #if abs(xVelocity)
+        if xChange == -self.headXVelocity and self.headXVelocity != 0:
+            print("Can't make 180 degree turn.")
+            return False
+        if yChange == -self.headYVelocity and self.headYVelocity != 0:
+            print("Can't make 180 degree turn.")
+            return False
+        
+        space = self.grid[spaceCol][spaceRow]
         
         #space not safe if it's a wall or snake segment other than tail
         if space == "#" or space == "S":
+            print("Obstacle in way. Space not safe.")
             return False
         
-        return False
+        print("Space is safe!")
+        return True
         
     #has ai move snake in random direction
     def randomAISteer(self):
