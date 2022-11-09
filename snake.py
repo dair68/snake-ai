@@ -186,7 +186,7 @@ class SnakeGame:
         print(f"Head space: ({self.getHeadCol()}, {self.getHeadRow()})")
         
         self.headXVelocity = 0
-        self.headYVelocity = 0
+        self.headYVelocity = -1
         print(f"Snake moving {self.headDirection()}")
         
         self.spaceSafe("up")
@@ -218,10 +218,10 @@ class SnakeGame:
             print("Error. Invalid snake movement")
             return ""
         
-    #determines whether it's safe for the snake to enter a certain adjacent space
-    #direction - string that says "up", "down", "left", or "right" marking which adjecent space in question
-    #returns true if snake can enter that space without game over
-    def spaceSafe(self, direction):
+    #obtains coordinates for a space adjacent to head space
+    #@param direction - straing that says "up", "down", "left", or "right"
+    #returns (xCol, yCol) of space adjacent to head specified by direction
+    def adjacentSpace(self, direction):
         xChange = 0
         yChange = 0
         
@@ -236,11 +236,24 @@ class SnakeGame:
             xChange = 1
         else:
             print("Error. Invalid direction parameter.")
-            return False
+            return ()
         
         spaceCol = self.getHeadCol() + xChange
         spaceRow = self.getHeadRow() + yChange
-        print(f"{direction} space: ({spaceCol}, {spaceRow})")
+        return (spaceCol, spaceRow)
+        
+    #determines whether it's safe for the snake to enter a certain adjacent space
+    #direction - string that says "up", "down", "left", or "right" marking which adjecent space in question
+    #returns true if snake can enter that space without game over
+    def spaceSafe(self, direction):
+        print(direction)
+        spaceCoords = self.adjacentSpace(direction)
+        spaceCol = spaceCoords[0]
+        spaceRow = spaceCoords[1]
+        xChange = spaceCol - self.getHeadCol()
+        yChange = spaceRow - self.getHeadRow()
+        #print(f"x change: {xChange}")
+        #print(f"y change: {yChange}")
         
         #180 degree turns not permitted
         if xChange == -self.headXVelocity and self.headXVelocity != 0:
@@ -259,6 +272,12 @@ class SnakeGame:
         
         print("Space is safe!")
         return True
+    
+    #checks if moving towards an adjacent space will case snake to trap itself
+    #@param direction - string of form "up", "down", "left", or "right
+    #returns True if moving to space will cause snake inevitably eat itself or hit wall
+    def spaceTrap(self, direction):
+        spaceCoords = self.adjacentSpace(direction)
         
     #has ai move snake in random direction
     def randomAISteer(self):
