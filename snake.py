@@ -177,22 +177,31 @@ class SnakeGame:
             
         headCol = 5
         headRow = 5
-        self.grid[headCol][headRow] = "H"
-        self.snakeCoords.append((headCol, headRow))
+        #self.grid[headCol][headRow] = "H"
+        #self.snakeCoords.append((headCol, headRow))
+        
+        #tailCol = 6
+        #tailRow = 5
+        #self.grid[tailCol][tailRow] = "T"
+        #self.snakeCoords.append((tailCol, tailRow))
         
         #self.grid[headCol + 1][headRow] = "S"
         #self.snakeCoords.append((headCol + 1, headRow))
         self.printGrid()
-        print(f"Head space: ({self.getHeadCol()}, {self.getHeadRow()})")
+        print(f"Head space: {self.getHeadCoords()}")
+        print(f"Tail space: {self.getTailCoords()}")
         
         self.headXVelocity = 0
-        self.headYVelocity = -1
+        self.headYVelocity = 0
         print(f"Snake moving {self.headDirection()}")
         
-        self.spaceSafe("up")
-        self.spaceSafe("down")
-        self.spaceSafe("left")
-        self.spaceSafe("right")
+        testSpace = (headRow, headCol)
+        print(f"Can tail be reached from {testSpace}?")
+        print(self.tailAccessible(testSpace[0], testSpace[1]))
+        #self.spaceSafe("up")
+        #self.spaceSafe("down")
+        #self.spaceSafe("left")
+        #self.spaceSafe("right")
         
     #has the ai choose which direction the snake will move next
     def aiSteer(self):
@@ -279,6 +288,30 @@ class SnakeGame:
     def spaceTrap(self, direction):
         spaceCoords = self.adjacentSpace(direction)
         
+    #checks if a path exists from the given space to the snake's tail
+    #@param col - column number of space in question
+    #@param row - row number of space in question
+    #returns true if there's a path uninterrupted by walls or snake to the tail
+    def tailAccessible(self, col, row):
+        #snakes of length 0 have no tails
+        if len(self.snakeCoords) == 0:
+            return False
+        
+        #ensuring valid column number
+        if col < 1 or col > self.cols:
+            print("invalid column input")
+            return False
+        #ensuring valid row number
+        if row < 1 or row > self.rows:
+            print("invalid row input")
+            return False
+        
+        #snakes of length 1 have head and tail in same spot
+        if len(self.snakeCoords) == 1:
+            return True
+        
+        return False
+        
     #has ai move snake in random direction
     def randomAISteer(self):
         self.steering = True
@@ -360,46 +393,51 @@ class SnakeGame:
         x = (col - 1)*self.squareLength + margin
         y = (row - 1)*self.squareLength + margin
         self.canvas.coords(square, x, y, x + k, y + k)
+        
+    #counts segments in snake
+    #returns numbers of squares making up snake
+    def snakeLength(self):
+        return len(self.snakeCoords)
     
     #gets coordinates of head square
-    #returns coordinates in form (col, row)
+    #returns coordinates in form (col, row). if head doesn't exist returns empty tuple.
     def getHeadCoords(self):
-        return self.snakeCoords[0]
+        return self.snakeCoords[0] if self.snakeLength() > 0 else ()
     
     #gets column snake head is in
-    #returns grid column number of head
+    #returns grid column number of head. if no head returns -1
     def getHeadCol(self):
-        return self.getHeadCoords()[0]
+        return self.getHeadCoords()[0] if self.snakeLength() > 0 else -1
     
     #gets row snake head is in
     #return grid row number of head
     def getHeadRow(self):
-        return self.getHeadCoords()[1]
+        return self.getHeadCoords()[1] if self.snakeLength() > 0 else -1
     
     #obtains head square
-    #returns reference to head unit square
+    #returns reference to head unit square. if none returns None
     def getHead(self):
-        return self.snakeSquares[0]
+        return self.snakeSquares[0] if self.snakeLength() > 0 else None
     
     #obtains tail square
     #returns reference to tail unit square
     def getTail(self):
-        return self.snakeSquares[-1]
+        return self.snakeSquares[-1] if self.snakeLength() > 0 else None
     
     #obtains tail coordinates
-    #returns tail grid coordinates as (col, row)
+    #returns tail grid coordinates as (col, row). if no tail returns empty tuple
     def getTailCoords(self):
-        return self.snakeCoords[-1]
+        return self.snakeCoords[-1] if self.snakeLength() > 0 else ()
     
     #obtains tail column
-    #returns tail grid column number
+    #returns tail grid column number. if no tail returns -1
     def getTailCol(self):
-        return self.getTailCoords()[0]
+        return self.getTailCoords()[0] if self.snakeLength() > 0 else -1
     
     #obatins tail row
-    #returns tail grid row number
+    #returns tail grid row number. if no tail returns -1
     def getTailRow(self):
-        return self.getTailCoords()[1]
+        return self.getTailCoords()[1] if self.snakeLength() > 0 else -1
     
     #draws a yellow unit square that will be treated as pellet for snake to eat
     #@param col - column number from 1 to 20
