@@ -177,8 +177,8 @@ class SnakeGame:
             
         headCol = 5
         headRow = 5
-        #self.grid[headCol][headRow] = "H"
-        #self.snakeCoords.append((headCol, headRow))
+        self.grid[headCol][headRow] = "H"
+        self.snakeCoords.append((headCol, headRow))
         
         #tailCol = 6
         #tailRow = 5
@@ -188,20 +188,28 @@ class SnakeGame:
         #self.grid[headCol + 1][headRow] = "S"
         #self.snakeCoords.append((headCol + 1, headRow))
         self.printGrid()
-        print(f"Head space: {self.getHeadCoords()}")
-        print(f"Tail space: {self.getTailCoords()}")
+        #print(f"Head space: {self.getHeadCoords()}")
+        #print(f"Tail space: {self.getTailCoords()}")
         
         self.headXVelocity = 0
         self.headYVelocity = 0
-        print(f"Snake moving {self.headDirection()}")
+        #print(f"Snake moving {self.headDirection()}")
         
         testSpace = (headRow, headCol)
-        print(f"Can tail be reached from {testSpace}?")
-        print(self.tailAccessible(testSpace[0], testSpace[1]))
+        #print(f"Can tail be reached from {testSpace}?")
+        #print(self.tailAccessible(testSpace[0], testSpace[1]))
+        #print(f"Tail path: {self.findTailPath(testSpace[0], testSpace[1])}")
         #self.spaceSafe("up")
         #self.spaceSafe("down")
         #self.spaceSafe("left")
         #self.spaceSafe("right")
+        
+        testSpace = (10, 10)
+        #print(f"Test space: {testSpace}")
+        #print(f"Test space id: {self.spaceID(testSpace[0], testSpace[1])}")
+        spaceIDs = [[self.spaceID(x, y) for x in range(1, self.cols+1)] for y in range(1, self.rows+1)]
+        print("space ids:")
+        print(spaceIDs)
         
     #has the ai choose which direction the snake will move next
     def aiSteer(self):
@@ -292,11 +300,7 @@ class SnakeGame:
     #@param col - column number of space in question
     #@param row - row number of space in question
     #returns true if there's a path uninterrupted by walls or snake to the tail
-    def tailAccessible(self, col, row):
-        #snakes of length 0 have no tails
-        if len(self.snakeCoords) == 0:
-            return False
-        
+    def tailAccessible(self, col, row): 
         #ensuring valid column number
         if col < 1 or col > self.cols:
             print("invalid column input")
@@ -306,11 +310,43 @@ class SnakeGame:
             print("invalid row input")
             return False
         
+        #snakes of length 0 have no tails
+        if len(self.snakeCoords) == 0:
+            return False
+        
         #snakes of length 1 have head and tail in same spot
         if len(self.snakeCoords) == 1:
             return True
         
+        #searching for a path to the tail
+        
         return False
+    
+    #finds a path to the tail from a given space, if it exists
+    #@param col - column number of start space
+    #@param row - row number of start space
+    #returns list of coords with uninterrupted path to tail. if no such path, returns empty list
+    def findTailPath(self, col, row):
+        #ensuring valid column number
+        if col < 1 or col > self.cols:
+            print("invalid column input")
+            return False
+        #ensuring valid row number
+        if row < 1 or row > self.rows:
+            print("invalid row input")
+            return False
+        
+        #snakes of length 0 have no tails
+        if len(self.snakeCoords) == 0:
+            return []
+        
+        #snakes of length 1 have head and tail in same spot
+        if len(self.snakeCoords) == 1:
+            return [self.getHeadCoords()]
+        
+        path = []
+        
+        return []
         
     #has ai move snake in random direction
     def randomAISteer(self):
@@ -328,6 +364,22 @@ class SnakeGame:
             self.right()
         else:
             print("Invalid number chosen")
+            
+    #obtains id number assigned to a specific space on the grid
+    #@param col - column number
+    #@param row - row number
+    #returns int corresponding to that space. returns -1 for invalid input.
+    def spaceID(self, col, row):
+        #ensuring valid col number
+        if col < 1 or col > self.cols:
+            print("invalid column number")
+            return -1
+        #ensuring valid row number
+        if row < 1 or row > self.rows:
+            print("invalid row number")
+            return -1
+        
+        return (row - 1)*self.cols + col
     
     #allows game to respond to arrow key inputs
     def bindArrowKeys(self):
