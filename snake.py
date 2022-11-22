@@ -9,6 +9,7 @@ from tkinter import *
 from tkinter import ttk
 import random
 import tkinter.font as tkFont
+from queue import Queue
 
 #widget with a game of snake contained within
 class SnakeGame:
@@ -204,12 +205,17 @@ class SnakeGame:
         #self.spaceSafe("left")
         #self.spaceSafe("right")
         
-        testSpace = (10, 10)
-        #print(f"Test space: {testSpace}")
-        #print(f"Test space id: {self.spaceID(testSpace[0], testSpace[1])}")
-        spaceIDs = [[self.spaceID(x, y) for x in range(1, self.cols+1)] for y in range(1, self.rows+1)]
-        print("space ids:")
-        print(spaceIDs)
+        #startSpace = (1, 1)
+        #endSpace = (10, 10)
+        #print(f"searching for path between {startSpace} and {endSpace}")
+        #path = self.findPath(startSpace[0], startSpace[1], endSpace[0], endSpace[1])
+        #print(f"connecting path: {path}")
+        
+        #testing id to coordinates function
+        for i in range(1, self.cols*self.rows + 1):
+            spaceID = i
+            spaceCoords = self.spaceCoords(spaceID)
+            print(f"Coordinates of space {spaceID}: {spaceCoords}")
         
     #has the ai choose which direction the snake will move next
     def aiSteer(self):
@@ -322,6 +328,41 @@ class SnakeGame:
         
         return False
     
+    #finds the shortest uninterrupted path between 2 spaces, if it exists
+    #@param col1 - column number of first space
+    #@param row1 - row number of first space
+    #@param col2 - column number of second space
+    #@param row2 - row number of second space
+    #returns list of coordinates for shortest path connecting spaces. if no path exists, returns empty list.
+    def findPath(self, col1, row1, col2, row2):
+        #ensuring valid column number
+        if col1 < 1 or col1 > self.cols or col2 < 1 or col2 > self.cols:
+            print("invalid column input")
+            return False
+        #ensuring valid row number
+        if row1 < 1 or row1 > self.rows or row2 < 1 or row2 > self.rows:
+            print("invalid row input")
+            return False
+        
+        startSpaceID = self.spaceID(col1, row1)
+        finishSpaceID = self.spaceID(col2, row2)
+        
+        #maps a space's id to the id of its parent space in bfs
+        spaceParents = {startSpaceID: 0}
+        nextNodes = Queue(maxsize = self.cols*self.rows)
+        nextNodes.put_nowait(startSpaceID)
+        
+        #print("Nodes to visit next:")
+        #while not nextNodes.empty():
+        #    print(nextNodes.get())
+        
+        #visiting nodes one by one until target space found
+        while not nextNodes.empty():
+            nodeID = nextNodes.get_nowait()
+            nodeCoords = None
+        
+        return []
+    
     #finds a path to the tail from a given space, if it exists
     #@param col - column number of start space
     #@param row - row number of start space
@@ -380,6 +421,19 @@ class SnakeGame:
             return -1
         
         return (row - 1)*self.cols + col
+    
+    #obtains coordinates for space of a certain id
+    #@param spaceID - positive integer id of space
+    #returns coordinates in form (col, row). returns () for invalid id
+    def spaceCoords(self, spaceID):
+        #ensuring valid id
+        if spaceID < 1 or spaceID > self.cols*self.rows:
+            print("invalid space id")
+            return ()
+        
+        col = (spaceID - 1)%self.cols + 1
+        row = (spaceID - 1)//self.cols + 1 
+        return (col, row)
     
     #allows game to respond to arrow key inputs
     def bindArrowKeys(self):
