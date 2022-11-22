@@ -205,17 +205,19 @@ class SnakeGame:
         #self.spaceSafe("left")
         #self.spaceSafe("right")
         
+        #colNum = 11
+        #print(f"Is column {colNum} valid?")
+        #print(self.validColumn(colNum))
+        
+        rowNum = 0
+        print(f"Is row {rowNum} valid?")
+        print(self.validRow(rowNum))
+        
         #startSpace = (1, 1)
         #endSpace = (10, 10)
         #print(f"searching for path between {startSpace} and {endSpace}")
         #path = self.findPath(startSpace[0], startSpace[1], endSpace[0], endSpace[1])
         #print(f"connecting path: {path}")
-        
-        #testing id to coordinates function
-        for i in range(1, self.cols*self.rows + 1):
-            spaceID = i
-            spaceCoords = self.spaceCoords(spaceID)
-            print(f"Coordinates of space {spaceID}: {spaceCoords}")
         
     #has the ai choose which direction the snake will move next
     def aiSteer(self):
@@ -264,6 +266,25 @@ class SnakeGame:
         spaceCol = self.getHeadCol() + xChange
         spaceRow = self.getHeadRow() + yChange
         return (spaceCol, spaceRow)
+    
+    #finds spaces adjacent to a certain space that are traversable
+    #@param col - column number of space in question
+    #@param row - row number of space in question
+    #returns list of spaces adjacent to inputted space with no wall or snake
+    def spaceNeighbors(self, col, row):
+        return []
+    
+    #checks if a space's column number is valid
+    #@param col - column number
+    #returns true if possible for space to exist at that column
+    def validColumn(self, col):
+        return 1 <= col and col <= self.cols
+    
+    #checks if a space's row number is valid
+    #@param row - row number
+    #returns true if possible for space to exist at that row
+    def validRow(self, row):
+        return 1 <= row and row <= self.rows
         
     #determines whether it's safe for the snake to enter a certain adjacent space
     #direction - string that says "up", "down", "left", or "right" marking which adjecent space in question
@@ -308,11 +329,11 @@ class SnakeGame:
     #returns true if there's a path uninterrupted by walls or snake to the tail
     def tailAccessible(self, col, row): 
         #ensuring valid column number
-        if col < 1 or col > self.cols:
+        if not self.validColumn(col):
             print("invalid column input")
             return False
         #ensuring valid row number
-        if row < 1 or row > self.rows:
+        if not self.validRow(row):
             print("invalid row input")
             return False
         
@@ -336,11 +357,11 @@ class SnakeGame:
     #returns list of coordinates for shortest path connecting spaces. if no path exists, returns empty list.
     def findPath(self, col1, row1, col2, row2):
         #ensuring valid column number
-        if col1 < 1 or col1 > self.cols or col2 < 1 or col2 > self.cols:
+        if not self.validColumn(col1) or self.validColumn(col2):
             print("invalid column input")
             return False
         #ensuring valid row number
-        if row1 < 1 or row1 > self.rows or row2 < 1 or row2 > self.rows:
+        if not self.validRow(row1) or not self.validRow(row2):
             print("invalid row input")
             return False
         
@@ -359,7 +380,9 @@ class SnakeGame:
         #visiting nodes one by one until target space found
         while not nextNodes.empty():
             nodeID = nextNodes.get_nowait()
-            nodeCoords = None
+            nodeCoords = self.spaceCoords(nodeID)
+            
+            
         
         return []
     
@@ -369,11 +392,11 @@ class SnakeGame:
     #returns list of coords with uninterrupted path to tail. if no such path, returns empty list
     def findTailPath(self, col, row):
         #ensuring valid column number
-        if col < 1 or col > self.cols:
+        if not self.validColumn(col):
             print("invalid column input")
             return False
         #ensuring valid row number
-        if row < 1 or row > self.rows:
+        if not self.validRow(row):
             print("invalid row input")
             return False
         
@@ -412,11 +435,11 @@ class SnakeGame:
     #returns int corresponding to that space. returns -1 for invalid input.
     def spaceID(self, col, row):
         #ensuring valid col number
-        if col < 1 or col > self.cols:
+        if not self.validColumn(col):
             print("invalid column number")
             return -1
         #ensuring valid row number
-        if row < 1 or row > self.rows:
+        if not self.validRow(row):
             print("invalid row number")
             return -1
         
