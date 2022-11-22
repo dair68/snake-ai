@@ -181,6 +181,18 @@ class SnakeGame:
         self.grid[headCol][headRow] = "H"
         self.snakeCoords.append((headCol, headRow))
         
+        segCoords = [(headCol-1, headRow), (headCol-1, headRow-1), (headCol, headRow-1),
+                     (headCol-1, headRow+1), (headCol, headRow+1), (headCol+1,headRow+1),
+                     (headCol+1, headRow+1), (headCol+2, headRow+1), (headCol+3, headRow+1),
+                     (headCol+4, headRow+1), (headCol+5,headRow+1)]
+        
+        #adding segments to snake
+        for coords in segCoords:
+            segCol = coords[0]
+            segRow = coords[1]
+            self.grid[segCol][segRow] = "S"
+            self.snakeCoords.append((segCol, segRow))
+        
         #tailCol = 6
         #tailRow = 5
         #self.grid[tailCol][tailRow] = "T"
@@ -196,28 +208,25 @@ class SnakeGame:
         self.headYVelocity = 0
         #print(f"Snake moving {self.headDirection()}")
         
-        testSpace = (headRow, headCol)
-        #print(f"Can tail be reached from {testSpace}?")
-        #print(self.tailAccessible(testSpace[0], testSpace[1]))
-        #print(f"Tail path: {self.findTailPath(testSpace[0], testSpace[1])}")
-        #self.spaceSafe("up")
-        #self.spaceSafe("down")
-        #self.spaceSafe("left")
-        #self.spaceSafe("right")
+        #testSpace = (headCol, headRow)
+        #testCol = testSpace[0]
+        #testRow = testSpace[1]
+        #print(f"test space: {testSpace}")
+        #print("adjacent spaces: ")
+        #print(self.adjacentSpaces(testCol, testRow))
         
-        #colNum = 11
-        #print(f"Is column {colNum} valid?")
-        #print(self.validColumn(colNum))
+        startSpace = (headCol, headRow)
+        endSpace = (10, 10)
+        print(f"searching for path between {startSpace} and {endSpace}")
+        path = self.findPath(startSpace[0], startSpace[1], endSpace[0], endSpace[1])
         
-        rowNum = 0
-        print(f"Is row {rowNum} valid?")
-        print(self.validRow(rowNum))
+        #updating grid with path
+        for i in range(len(path)):
+            space = path[i]
+            self.grid[space[0]][space[1]] = "*"
         
-        #startSpace = (1, 1)
-        #endSpace = (10, 10)
-        #print(f"searching for path between {startSpace} and {endSpace}")
-        #path = self.findPath(startSpace[0], startSpace[1], endSpace[0], endSpace[1])
         #print(f"connecting path: {path}")
+        self.printGrid()
         
     #has the ai choose which direction the snake will move next
     def aiSteer(self):
@@ -243,10 +252,22 @@ class SnakeGame:
             print("Error. Invalid snake movement")
             return ""
         
-    #obtains coordinates for a space adjacent to head space
-    #@param direction - straing that says "up", "down", "left", or "right"
-    #returns (xCol, yCol) of space adjacent to head specified by direction
-    def adjacentSpace(self, direction):
+    #obtains coordinates for a space adjacent to certain space
+    #@param col - column number of space in question
+    #@param row - row number of space in question
+    #@param direction - string that says "up", "down", "left", or "right"
+    #returns (col, row) of space above, below, left, or right of inputted space. () for bad input
+    def adjacentSpace(self, col, row, direction):
+        #checking for valid col
+        if not self.validColumn(col):
+            print("Invalid column number")
+            return ()
+        
+        #checking for valid row
+        if not self.validRow(row):
+            print("Invalid row number")
+            return ()
+        
         xChange = 0
         yChange = 0
         
@@ -263,16 +284,27 @@ class SnakeGame:
             print("Error. Invalid direction parameter.")
             return ()
         
-        spaceCol = self.getHeadCol() + xChange
-        spaceRow = self.getHeadRow() + yChange
+        spaceCol = col + xChange
+        spaceRow = row + yChange
         return (spaceCol, spaceRow)
     
-    #finds spaces adjacent to a certain space that are traversable
+    #finds the 4 spaces adjacent to a certain space
     #@param col - column number of space in question
     #@param row - row number of space in question
-    #returns list of spaces adjacent to inputted space with no wall or snake
-    def spaceNeighbors(self, col, row):
-        return []
+    #returns spaces left, right, above, and below inputted space
+    def adjacentSpaces(self, col, row):
+        #checking for valid column
+        if not self.validColumn(col):
+            print("Invalid column number")
+            return []
+        
+        #checking for valid row
+        if not self.validRow(row):
+            print("Invalid row number")
+            return []
+        
+        directions = ["up", "right", "left", "down"]
+        return [self.adjacentSpace(col, row, direction) for direction in directions]
     
     #checks if a space's column number is valid
     #@param col - column number
@@ -357,7 +389,7 @@ class SnakeGame:
     #returns list of coordinates for shortest path connecting spaces. if no path exists, returns empty list.
     def findPath(self, col1, row1, col2, row2):
         #ensuring valid column number
-        if not self.validColumn(col1) or self.validColumn(col2):
+        if not self.validColumn(col1) or not self.validColumn(col2):
             print("invalid column input")
             return False
         #ensuring valid row number
@@ -366,51 +398,55 @@ class SnakeGame:
             return False
         
         startSpaceID = self.spaceID(col1, row1)
-        finishSpaceID = self.spaceID(col2, row2)
+        targetSpaceID = self.spaceID(col2, row2)
         
         #maps a space's id to the id of its parent space in bfs
         spaceParents = {startSpaceID: 0}
         nextNodes = Queue(maxsize = self.cols*self.rows)
         nextNodes.put_nowait(startSpaceID)
         
-        #print("Nodes to visit next:")
-        #while not nextNodes.empty():
-        #    print(nextNodes.get())
-        
         #visiting nodes one by one until target space found
         while not nextNodes.empty():
             nodeID = nextNodes.get_nowait()
             nodeCoords = self.spaceCoords(nodeID)
+            #print(f"visiting space {nodeCoords}")
             
+            #found target space!
+            if nodeID == targetSpaceID:
+                break    
             
-        
-        return []
-    
-    #finds a path to the tail from a given space, if it exists
-    #@param col - column number of start space
-    #@param row - row number of start space
-    #returns list of coords with uninterrupted path to tail. if no such path, returns empty list
-    def findTailPath(self, col, row):
-        #ensuring valid column number
-        if not self.validColumn(col):
-            print("invalid column input")
-            return False
-        #ensuring valid row number
-        if not self.validRow(row):
-            print("invalid row input")
-            return False
-        
-        #snakes of length 0 have no tails
-        if len(self.snakeCoords) == 0:
-            return []
-        
-        #snakes of length 1 have head and tail in same spot
-        if len(self.snakeCoords) == 1:
-            return [self.getHeadCoords()]
+            nodeCol = nodeCoords[0]
+            nodeRow = nodeCoords[1]
+            nearbySpaces = self.adjacentSpaces(nodeCol, nodeRow)
+            
+            #recording adjacent spaces for later visit
+            for spaceCoords in nearbySpaces:
+                spaceCol = spaceCoords[0]
+                spaceRow = spaceCoords[1]
+                symbol = self.grid[spaceCol][spaceRow]
+                badSpaces = {"H", "S", "T", "#"}
+                
+                #space not accessible
+                if symbol in badSpaces:
+                    continue
+                
+                spaceID = self.spaceID(spaceCol, spaceRow)
+                
+                #space not yet visited. adding to queue.
+                if spaceID not in spaceParents:
+                    spaceParents[spaceID] = nodeID
+                    nextNodes.put_nowait(spaceID)  
         
         path = []
+        spaceID = targetSpaceID
         
-        return []
+        #creating path to target space
+        while spaceID in spaceParents:
+            coords = self.spaceCoords(spaceID)
+            path.insert(0, coords)
+            spaceID = spaceParents[spaceID]
+        
+        return path
         
     #has ai move snake in random direction
     def randomAISteer(self):
