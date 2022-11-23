@@ -181,9 +181,9 @@ class SnakeGame:
         self.grid[headCol][headRow] = "H"
         self.snakeCoords.append((headCol, headRow))
         
-        #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (10,6)]
+        segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (10,6)]
         #segCoords = []
-        segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (6,5)]
+        #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (6,5)]
         
         #adding segments to snake
         for i in range(len(segCoords)):
@@ -216,7 +216,7 @@ class SnakeGame:
         #print(self.adjacentSpaces(testCol, testRow))
         
         startSpace = (5, 5)
-        endSpace = (5, 6)
+        endSpace = (5, 7)
         print(f"searching for path between {startSpace} and {endSpace}")
         path = self.findPath(startSpace[0], startSpace[1], endSpace[0], endSpace[1])
         
@@ -269,7 +269,8 @@ class SnakeGame:
     #@param col - column number of space in question
     #@param row - row number of space in question
     #@param direction - string that says "up", "down", "left", or "right"
-    #returns (col, row) of space above, below, left, or right of inputted space. () for bad input
+    #returns (col, row) of space above, below, left, or right of inputted space. 
+    #() for bad input or no valid space in that direction
     def adjacentSpace(self, col, row, direction):
         #checking for valid col
         if not self.validColumn(col):
@@ -299,12 +300,12 @@ class SnakeGame:
         
         spaceCol = col + xChange
         spaceRow = row + yChange
-        return (spaceCol, spaceRow)
+        return (spaceCol, spaceRow) if self.validCoords(spaceCol, spaceRow) else ()
     
-    #finds the 4 spaces adjacent to a certain space
+    #finds spaces adjacent to a certain space
     #@param col - column number of space in question
     #@param row - row number of space in question
-    #returns spaces left, right, above, and below inputted space
+    #returns valids spaces left, right, above, and below inputted space
     def adjacentSpaces(self, col, row):
         #checking for valid column
         if not self.validColumn(col):
@@ -317,7 +318,17 @@ class SnakeGame:
             return []
         
         directions = ["up", "right", "left", "down"]
-        return [self.adjacentSpace(col, row, direction) for direction in directions]
+        neighbors = []
+        
+        #recording neighbors that are valid spaces
+        for direction in directions:
+            coords = self.adjacentSpace(col, row, direction)
+            
+            #found valid space
+            if self.validSpace(coords):
+                neighbors.append(coords)
+        
+        return neighbors
     
     #checks if a space's column number is valid
     #@param col - column number
@@ -330,6 +341,19 @@ class SnakeGame:
     #returns true if possible for space to exist at that row
     def validRow(self, row):
         return 1 <= row and row <= self.rows
+    
+    #checks if a pair of coordinates describes a valid space
+    #@param col - column number
+    #@param row - row number
+    #returns true if there exists space in game area
+    def validCoords(self, col, row):
+        return self.validColumn(col) and self.validRow(row)
+    
+    #checks if a space is valid
+    #@param coords - tuple of the space's (col, row)
+    #returns true if coords describes space in grid
+    def validSpace(self, coords):
+        return len(coords) == 2 and self.validCoords(coords[0], coords[1])
         
     #determines whether it's safe for the snake to enter a certain adjacent space
     #direction - string that says "up", "down", "left", or "right" marking which adjecent space in question
@@ -441,21 +465,17 @@ class SnakeGame:
             
             nodeCol = nodeCoords[0]
             nodeRow = nodeCoords[1]
-            badSpaces = {"H", "S", "T", "#"}
+            deadEnds = {"H", "S", "T"}
             
             #checking if space has neighbors worth exploring
-            if self.grid[nodeCol][nodeRow] not in badSpaces or nodeID == startSpaceID:    
+            if self.grid[nodeCol][nodeRow] not in deadEnds or nodeID == startSpaceID:    
                 nearbySpaces = self.adjacentSpaces(nodeCol, nodeRow)
+                #print(f"neighbors: {nearbySpaces}")
             
                 #recording adjacent spaces for later visit
                 for spaceCoords in nearbySpaces:
                     spaceCol = spaceCoords[0]
                     spaceRow = spaceCoords[1]
-                
-                    #space not accessible at all
-                    if not self.validColumn(spaceCol) or not self.validRow(spaceRow):
-                        continue
-                
                     spaceID = self.spaceID(spaceCol, spaceRow)
                 
                     #space not yet visited. adding to queue.
