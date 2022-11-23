@@ -181,16 +181,14 @@ class SnakeGame:
         self.grid[headCol][headRow] = "H"
         self.snakeCoords.append((headCol, headRow))
         
-        segCoords = [(headCol-1, headRow), (headCol-1, headRow-1), (headCol, headRow-1),
-                     (headCol-1, headRow+1), (headCol, headRow+1), (headCol+1,headRow+1),
-                     (headCol+1, headRow+1), (headCol+2, headRow+1), (headCol+3, headRow+1),
-                     (headCol+4, headRow+1), (headCol+5,headRow+1)]
+        segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (10,6)]
         
         #adding segments to snake
-        for coords in segCoords:
+        for i in range(len(segCoords)):
+            coords = segCoords[i]
             segCol = coords[0]
             segRow = coords[1]
-            self.grid[segCol][segRow] = "S"
+            self.grid[segCol][segRow] = "T" if i == len(segCoords) - 1 else "S"
             self.snakeCoords.append((segCol, segRow))
         
         #tailCol = 6
@@ -215,8 +213,8 @@ class SnakeGame:
         #print("adjacent spaces: ")
         #print(self.adjacentSpaces(testCol, testRow))
         
-        startSpace = (headCol, headRow)
-        endSpace = (10, 10)
+        startSpace = (5, 5)
+        endSpace = (5, 7)
         print(f"searching for path between {startSpace} and {endSpace}")
         path = self.findPath(startSpace[0], startSpace[1], endSpace[0], endSpace[1])
         
@@ -387,6 +385,7 @@ class SnakeGame:
     #@param col2 - column number of second space
     #@param row2 - row number of second space
     #returns list of coordinates for shortest path connecting spaces. if no path exists, returns empty list.
+    #endpoints of path can contain any symbols, but middle portions can't contain snake or wall
     def findPath(self, col1, row1, col2, row2):
         #ensuring valid column number
         if not self.validColumn(col1) or not self.validColumn(col2):
@@ -417,25 +416,27 @@ class SnakeGame:
             
             nodeCol = nodeCoords[0]
             nodeRow = nodeCoords[1]
-            nearbySpaces = self.adjacentSpaces(nodeCol, nodeRow)
+            badSpaces = {"H", "S", "T", "#"}
             
-            #recording adjacent spaces for later visit
-            for spaceCoords in nearbySpaces:
-                spaceCol = spaceCoords[0]
-                spaceRow = spaceCoords[1]
-                symbol = self.grid[spaceCol][spaceRow]
-                badSpaces = {"H", "S", "T", "#"}
+            #checking if space has neighbors worth exploring
+            if self.grid[nodeCol][nodeRow] not in badSpaces or nodeID == startSpaceID:    
+                nearbySpaces = self.adjacentSpaces(nodeCol, nodeRow)
+            
+                #recording adjacent spaces for later visit
+                for spaceCoords in nearbySpaces:
+                    spaceCol = spaceCoords[0]
+                    spaceRow = spaceCoords[1]
                 
-                #space not accessible
-                if symbol in badSpaces:
-                    continue
+                    #space not accessible at all
+                    if not self.validColumn(spaceCol) or not self.validRow(spaceRow):
+                        continue
                 
-                spaceID = self.spaceID(spaceCol, spaceRow)
+                    spaceID = self.spaceID(spaceCol, spaceRow)
                 
-                #space not yet visited. adding to queue.
-                if spaceID not in spaceParents:
-                    spaceParents[spaceID] = nodeID
-                    nextNodes.put_nowait(spaceID)  
+                    #space not yet visited. adding to queue.
+                    if spaceID not in spaceParents:
+                        spaceParents[spaceID] = nodeID
+                        nextNodes.put_nowait(spaceID)  
         
         path = []
         spaceID = targetSpaceID
