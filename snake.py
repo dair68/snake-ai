@@ -181,7 +181,9 @@ class SnakeGame:
         self.grid[headCol][headRow] = "H"
         self.snakeCoords.append((headCol, headRow))
         
-        segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (10,6)]
+        #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (10,6)]
+        #segCoords = []
+        segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (6,5)]
         
         #adding segments to snake
         for i in range(len(segCoords)):
@@ -214,9 +216,22 @@ class SnakeGame:
         #print(self.adjacentSpaces(testCol, testRow))
         
         startSpace = (5, 5)
-        endSpace = (5, 7)
+        endSpace = (5, 6)
         print(f"searching for path between {startSpace} and {endSpace}")
         path = self.findPath(startSpace[0], startSpace[1], endSpace[0], endSpace[1])
+        
+        '''
+        startSpace = (5, 5)
+        targetSpaces = {(col + 1, 7) for col in range(self.cols)}
+        
+        #marking target spaces on grid
+        for space in targetSpaces:
+            self.grid[space[0]][space[1]] = "@"
+        self.printGrid()
+        
+        print(f"searching for path between {startSpace} and targets")
+        path = self.findSubgraphPath(startSpace[0], startSpace[1], targetSpaces)
+        '''
         
         #updating grid with path
         for i in range(len(path)):
@@ -387,22 +402,31 @@ class SnakeGame:
     #returns list of coordinates for shortest path connecting spaces. if no path exists, returns empty list.
     #endpoints of path can contain any symbols, but middle portions can't contain snake or wall
     def findPath(self, col1, row1, col2, row2):
+        return self.findSubgraphPath(col1, row1, {(col2, row2)})
+    
+    #finds shortest path from a certain space to a collection of spaces
+    #@param col - column number of space in question
+    #@param row - row number of space in question
+    #@param subgraph - set of space coordinates
+    #returns shortest uninteruppted path from inputted space to any of the spaces in subgraph
+    def findSubgraphPath(self, col, row, subgraph):
         #ensuring valid column number
-        if not self.validColumn(col1) or not self.validColumn(col2):
+        if not self.validColumn(col):
             print("invalid column input")
-            return False
+            return []
         #ensuring valid row number
-        if not self.validRow(row1) or not self.validRow(row2):
+        if not self.validRow(row):
             print("invalid row input")
-            return False
+            return []
         
-        startSpaceID = self.spaceID(col1, row1)
-        targetSpaceID = self.spaceID(col2, row2)
+        startSpaceID = self.spaceID(col, row)
+        targetSpaceIDs = {self.spaceID(coords[0], coords[1]) for coords in subgraph}
         
         #maps a space's id to the id of its parent space in bfs
         spaceParents = {startSpaceID: 0}
         nextNodes = Queue(maxsize = self.cols*self.rows)
         nextNodes.put_nowait(startSpaceID)
+        finalSpaceID = 0
         
         #visiting nodes one by one until target space found
         while not nextNodes.empty():
@@ -410,8 +434,9 @@ class SnakeGame:
             nodeCoords = self.spaceCoords(nodeID)
             #print(f"visiting space {nodeCoords}")
             
-            #found target space!
-            if nodeID == targetSpaceID:
+            #found member of subgraph!
+            if nodeID in targetSpaceIDs:
+                finalSpaceID = nodeID
                 break    
             
             nodeCol = nodeCoords[0]
@@ -439,7 +464,7 @@ class SnakeGame:
                         nextNodes.put_nowait(spaceID)  
         
         path = []
-        spaceID = targetSpaceID
+        spaceID = finalSpaceID
         
         #creating path to target space
         while spaceID in spaceParents:
