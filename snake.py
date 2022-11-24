@@ -176,14 +176,23 @@ class SnakeGame:
             self.grid[0][y] = borderChar
             self.grid[-1][y] = borderChar
             
-        headCol = 5
-        headRow = 5
-        self.grid[headCol][headRow] = "H"
-        self.snakeCoords.append((headCol, headRow))
+        #headCol = 5
+        #headRow = 5
+        #self.grid[headCol][headRow] = "H"
+        #self.snakeCoords.append((headCol, headRow))
         
-        segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (10,6)]
+        #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (10,6)]
         #segCoords = []
         #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (6,5)]
+        #segCoords = [(5,6), (5,7), (5,8), (5,9), (5,10), (6,10), (6,9), (6,8), 
+        #             (6,7), (6,6), (6,5), (6,4), (6,3), (6,2), (6,1)]
+        
+        headCol = 5
+        headRow = 2
+        self.grid[headCol][headRow] = "H"
+        self.snakeCoords.append((headCol, headRow))
+        segCoords = [(5,3), (4,3), (3,3), (2,3), (2,2), (2,1), (3,1), (4,1), (5,1),
+                     (6,1), (7,1), (8,1)]
         
         #adding segments to snake
         for i in range(len(segCoords)):
@@ -193,32 +202,21 @@ class SnakeGame:
             self.grid[segCol][segRow] = "T" if i == len(segCoords) - 1 else "S"
             self.snakeCoords.append((segCol, segRow))
         
-        #tailCol = 6
-        #tailRow = 5
-        #self.grid[tailCol][tailRow] = "T"
-        #self.snakeCoords.append((tailCol, tailRow))
-        
-        #self.grid[headCol + 1][headRow] = "S"
-        #self.snakeCoords.append((headCol + 1, headRow))
+       
         self.printGrid()
-        #print(f"Head space: {self.getHeadCoords()}")
-        #print(f"Tail space: {self.getTailCoords()}")
-        
         self.headXVelocity = 0
         self.headYVelocity = 0
         #print(f"Snake moving {self.headDirection()}")
         
-        #testSpace = (headCol, headRow)
-        #testCol = testSpace[0]
-        #testRow = testSpace[1]
-        #print(f"test space: {testSpace}")
-        #print("adjacent spaces: ")
-        #print(self.adjacentSpaces(testCol, testRow))
+        print(f"Head can go: {self.availableSpaces()}")
+        print(f"Safe moves: {self.safeSpaces()}")
         
+        '''
         startSpace = (5, 5)
-        endSpace = (5, 7)
+        endSpace = (10, 7)
         print(f"searching for path between {startSpace} and {endSpace}")
         path = self.findPath(startSpace[0], startSpace[1], endSpace[0], endSpace[1])
+        '''
         
         '''
         startSpace = (5, 5)
@@ -233,6 +231,7 @@ class SnakeGame:
         path = self.findSubgraphPath(startSpace[0], startSpace[1], targetSpaces)
         '''
         
+        '''
         #updating grid with path
         for i in range(len(path)):
             space = path[i]
@@ -240,6 +239,7 @@ class SnakeGame:
         
         #print(f"connecting path: {path}")
         self.printGrid()
+        '''
         
     #has the ai choose which direction the snake will move next
     def aiSteer(self):
@@ -354,69 +354,6 @@ class SnakeGame:
     #returns true if coords describes space in grid
     def validSpace(self, coords):
         return len(coords) == 2 and self.validCoords(coords[0], coords[1])
-        
-    #determines whether it's safe for the snake to enter a certain adjacent space
-    #direction - string that says "up", "down", "left", or "right" marking which adjecent space in question
-    #returns true if snake can enter that space without game over
-    def spaceSafe(self, direction):
-        print(direction)
-        spaceCoords = self.adjacentSpace(direction)
-        spaceCol = spaceCoords[0]
-        spaceRow = spaceCoords[1]
-        xChange = spaceCol - self.getHeadCol()
-        yChange = spaceRow - self.getHeadRow()
-        #print(f"x change: {xChange}")
-        #print(f"y change: {yChange}")
-        
-        #180 degree turns not permitted
-        if xChange == -self.headXVelocity and self.headXVelocity != 0:
-            print("Can't make 180 degree turn.")
-            return False
-        if yChange == -self.headYVelocity and self.headYVelocity != 0:
-            print("Can't make 180 degree turn.")
-            return False
-        
-        space = self.grid[spaceCol][spaceRow]
-        
-        #space not safe if it's a wall or snake segment other than tail
-        if space == "#" or space == "S":
-            print("Obstacle in way. Space not safe.")
-            return False
-        
-        print("Space is safe!")
-        return True
-    
-    #checks if moving towards an adjacent space will case snake to trap itself
-    #@param direction - string of form "up", "down", "left", or "right
-    #returns True if moving to space will cause snake inevitably eat itself or hit wall
-    def spaceTrap(self, direction):
-        spaceCoords = self.adjacentSpace(direction)
-        
-    #checks if a path exists from the given space to the snake's tail
-    #@param col - column number of space in question
-    #@param row - row number of space in question
-    #returns true if there's a path uninterrupted by walls or snake to the tail
-    def tailAccessible(self, col, row): 
-        #ensuring valid column number
-        if not self.validColumn(col):
-            print("invalid column input")
-            return False
-        #ensuring valid row number
-        if not self.validRow(row):
-            print("invalid row input")
-            return False
-        
-        #snakes of length 0 have no tails
-        if len(self.snakeCoords) == 0:
-            return False
-        
-        #snakes of length 1 have head and tail in same spot
-        if len(self.snakeCoords) == 1:
-            return True
-        
-        #searching for a path to the tail
-        
-        return False
     
     #finds the shortest uninterrupted path between 2 spaces, if it exists
     #@param col1 - column number of first space
@@ -493,6 +430,36 @@ class SnakeGame:
             spaceID = spaceParents[spaceID]
         
         return path
+    
+    #finds spaces that head can move to on next turn
+    #returns list of adjacent spaces that do not result in immediate game over
+    def availableSpaces(self):
+        neighbors = self.adjacentSpaces(self.getHeadCol(), self.getHeadRow())
+        occupiedSymbols = {"#", "H", "S"}
+        return [space for space in neighbors if self.grid[space[0]][space[1]] not in occupiedSymbols]
+    
+    #determines which nearby spaces are safe for head to travel to next
+    #returns list of adjacent spaces snake can travel to without inevitable game over
+    def safeSpaces(self):
+        neighbors = self.availableSpaces()
+        safeMoves = []
+        tailAccessibleSpaces = {(self.getTailCol(), self.getTailRow())}
+        
+        #deducing spaces that can be safely entered
+        for coords in neighbors:
+            col = coords[0]
+            row = coords[1]
+            tailPath = self.findSubgraphPath(col, row, tailAccessibleSpaces)
+            
+            #space is safe!
+            if len(tailPath) > 0:
+                safeMoves.append(coords)
+                
+                #adding current path to spaces that can reach tail
+                for pathCoords in tailPath:
+                    tailAccessibleSpaces.add(pathCoords)
+                
+        return safeMoves
         
     #has ai move snake in random direction
     def randomAISteer(self):
