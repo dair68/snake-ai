@@ -176,23 +176,23 @@ class SnakeGame:
             self.grid[0][y] = borderChar
             self.grid[-1][y] = borderChar
             
-        #headCol = 5
-        #headRow = 5
-        #self.grid[headCol][headRow] = "H"
-        #self.snakeCoords.append((headCol, headRow))
+        headCol = 5
+        headRow = 5
+        self.grid[headCol][headRow] = "X" if self.edgeSpace((headCol, headRow)) else "H"
+        self.snakeCoords.append((headCol, headRow))
         
         #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (10,6)]
         #segCoords = []
         #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (6,5)]
-        #segCoords = [(5,6), (5,7), (5,8), (5,9), (5,10), (6,10), (6,9), (6,8), 
-        #             (6,7), (6,6), (6,5), (6,4), (6,3), (6,2), (6,1)]
+        segCoords = [(5,6), (5,7), (5,8), (5,9), (5,10), (6,10), (6,9), (6,8), 
+                     (6,7), (6,6), (6,5), (6,4), (6,3), (6,2), (6,1)]
         
-        headCol = 5
-        headRow = 2
-        self.grid[headCol][headRow] = "H"
-        self.snakeCoords.append((headCol, headRow))
-        segCoords = [(5,3), (4,3), (3,3), (2,3), (2,2), (2,1), (3,1), (4,1), (5,1),
-                     (6,1), (7,1), (8,1)]
+        #headCol = 5
+        #headRow = 2
+        #self.grid[headCol][headRow] = "H"
+        #self.snakeCoords.append((headCol, headRow))
+        #segCoords = [(5,3), (4,3), (3,3), (2,3), (2,2), (2,1), (3,1), (4,1), (5,1),
+        #             (6,1), (7,1), (8,1)]
         
         #adding segments to snake
         for i in range(len(segCoords)):
@@ -207,9 +207,15 @@ class SnakeGame:
         self.headXVelocity = 0
         self.headYVelocity = 0
         #print(f"Snake moving {self.headDirection()}")
+        #neighbors = self.adjacentSpaces(self.getHeadCol(), self.getHeadRow())
+        #print(f"Nearby spaces: {neighbors}")
+        #print(f"Movable spaces: {self.movableSpaces()}")
+        #print(f"Spaces without insta game over: {self.freeMovableSpaces()}")
+        #print(f"Safe moves: {self.safeSpaces()}")
         
-        print(f"Head can go: {self.availableSpaces()}")
-        print(f"Safe moves: {self.safeSpaces()}")
+        for i in range(-44, 0):
+            coords = self.spaceCoords(i)
+            print(f"Space {i} has coordinates {coords}")
         
         '''
         startSpace = (5, 5)
@@ -305,7 +311,7 @@ class SnakeGame:
     #finds spaces adjacent to a certain space
     #@param col - column number of space in question
     #@param row - row number of space in question
-    #returns valids spaces left, right, above, and below inputted space
+    #returns spaces left, right, above, and below inputted space that are within grid
     def adjacentSpaces(self, col, row):
         #checking for valid column
         if not self.validColumn(col):
@@ -334,13 +340,13 @@ class SnakeGame:
     #@param col - column number
     #returns true if possible for space to exist at that column
     def validColumn(self, col):
-        return 1 <= col and col <= self.cols
+        return 0 <= col and col <= self.cols + 1
     
     #checks if a space's row number is valid
     #@param row - row number
     #returns true if possible for space to exist at that row
     def validRow(self, row):
-        return 1 <= row and row <= self.rows
+        return 0 <= row and row <= self.rows + 1
     
     #checks if a pair of coordinates describes a valid space
     #@param col - column number
@@ -354,6 +360,39 @@ class SnakeGame:
     #returns true if coords describes space in grid
     def validSpace(self, coords):
         return len(coords) == 2 and self.validCoords(coords[0], coords[1])
+    
+    #checks if a col is at the very edge of the grid
+    #@param col - column number
+    #returns true if col is at grid edge that would result in game over
+    def edgeCol(self, col):
+        #checking that column number is valid
+        if not self.validColumn(col):
+            print("invalid column input")
+            return False
+        
+        return col == 0 or col == self.cols + 1
+    
+    #checks if a row is at the very edge of the grid that results in game over
+    #@param row - row number
+    #returns true if row is at grid edge that would result in game over
+    def edgeRow(self, row):
+        #checking that row number is valid
+        if not self.validRow(row):
+            print("invalid row input")
+            return False
+        
+        return row == 0 or row == self.rows + 1
+    
+    #checks if space is at very edge of grid
+    #@param space - pair of space coordinates
+    #returns true if space is at edge of grid where game over would occur
+    def edgeSpace(self, space):
+        #checking for valid space
+        if not self.validSpace(space):
+            print("Invalid space input")
+            return False
+        
+        return self.edgeCol(space[0]) or self.edgeRow(space[1])
     
     #finds the shortest uninterrupted path between 2 spaces, if it exists
     #@param col1 - column number of first space
@@ -402,7 +441,7 @@ class SnakeGame:
             
             nodeCol = nodeCoords[0]
             nodeRow = nodeCoords[1]
-            deadEnds = {"H", "S", "T"}
+            deadEnds = {"H", "S", "T", "#"}
             
             #checking if space has neighbors worth exploring
             if self.grid[nodeCol][nodeRow] not in deadEnds or nodeID == startSpaceID:    
@@ -432,16 +471,43 @@ class SnakeGame:
         return path
     
     #finds spaces that head can move to on next turn
-    #returns list of adjacent spaces that do not result in immediate game over
-    def availableSpaces(self):
+    #returns list of adjacent spaces head can move to, regardless of if they result in game over
+    def movableSpaces(self):
+        #head can't move if game over
+        if self.grid[self.getHeadCol()][self.getHeadRow()] == "X":
+            return []
+        
         neighbors = self.adjacentSpaces(self.getHeadCol(), self.getHeadRow())
+        destinations = []
+        
+        #finding spaces head can move to
+        for space in neighbors:
+            col = space[0]
+            row = space[1]
+            xChange = col - self.getHeadCol()
+            yChange = row - self.getHeadRow()
+            
+            #snake can' make 180 degree turn
+            if self.headXVelocity != 0 and xChange == -self.headXVelocity:
+                continue
+            if self.headYVelocity != 0 and yChange == - self.headYVelocity:
+                continue
+                
+            destinations.append(space)
+            
+        return destinations
+    
+    #finds spaces that head can move to on next turn without game over
+    #returns list of adjacent spaces that do not result in immediate game over
+    def freeMovableSpaces(self):
+        neighbors = self.movableSpaces()
         occupiedSymbols = {"#", "H", "S"}
         return [space for space in neighbors if self.grid[space[0]][space[1]] not in occupiedSymbols]
     
     #determines which nearby spaces are safe for head to travel to next
     #returns list of adjacent spaces snake can travel to without inevitable game over
     def safeSpaces(self):
-        neighbors = self.availableSpaces()
+        neighbors = self.freeMovableSpaces()
         safeMoves = []
         tailAccessibleSpaces = {(self.getTailCol(), self.getTailRow())}
         
@@ -492,20 +558,69 @@ class SnakeGame:
             print("invalid row number")
             return -1
         
-        return (row - 1)*self.cols + col
+        #non-edge space
+        if not self.edgeSpace((col, row)):
+            return (row - 1)*self.cols + col
+       
+        #calculating id for edge spaces
+        #edges are numbered -1 to -(numEdgeSpaces) with upper left -1 and numbering clockwise
+        if row == 0:
+            return -(col + 1)
+        elif col == self.cols + 1:
+            upperRightID = self.spaceID(self.cols + 1, 0)
+            return upperRightID - row
+        elif row == self.rows + 1:
+            lowerRightID = self.spaceID(self.cols + 1, self.rows + 1)
+            return lowerRightID - (self.cols + 1 - col)
+        else:
+            lowerLeftID = self.spaceID(0, self.rows + 1)
+            return lowerLeftID - (self.rows + 1 - row)
+        
+    #checks if a spaceID is valid
+    #@param spaceID - integer space id
+    #returns true if there's a space in grid with that id
+    def validSpaceID(self, spaceID):
+        #space in middle of grid
+        if 1 <= spaceID and spaceID <= self.cols*self.rows:
+            return True
+        
+        edgeSpaces = 2*(self.cols + 1) + 2*(self.rows + 1)
+        
+        #space on edge of grid
+        if -edgeSpaces <= spaceID and spaceID <= -1:
+            return True
+        
+        return False
     
     #obtains coordinates for space of a certain id
     #@param spaceID - positive integer id of space
     #returns coordinates in form (col, row). returns () for invalid id
     def spaceCoords(self, spaceID):
         #ensuring valid id
-        if spaceID < 1 or spaceID > self.cols*self.rows:
+        if not self.validSpaceID(spaceID):
             print("invalid space id")
             return ()
         
-        col = (spaceID - 1)%self.cols + 1
-        row = (spaceID - 1)//self.cols + 1 
-        return (col, row)
+        #not edge space
+        if spaceID > 0:
+            col = (spaceID - 1)%self.cols + 1
+            row = (spaceID - 1)//self.cols + 1 
+            return (col, row)
+        
+        absoluteID = abs(spaceID)
+        
+        #dealing with edge space ids
+        if 1 <= absoluteID and absoluteID <= self.cols + 2:
+            return (absoluteID - 1, 0)
+        elif absoluteID <= self.cols + 2 + self.rows + 1:
+            return (self.cols + 1, absoluteID - (self.rows + 2))
+        elif absoluteID <= 2*(self.cols + 2) + self.rows:
+            absBottomLeftID = 2*(self.cols + 2) + self.rows
+            return (absBottomLeftID - absoluteID, self.rows + 1)
+        else:
+            absBottomLeftID = 2*(self.cols + 2) + self.rows
+            magicNum = absoluteID - absBottomLeftID
+            return (0, self.rows + 1 - magicNum)
     
     #allows game to respond to arrow key inputs
     def bindArrowKeys(self):
