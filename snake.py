@@ -83,7 +83,7 @@ class SnakeGame:
         self.aiMode = False
         self.steering = False
         
-        self.__debugMode()
+        #self.__debugMode()
         
     #begins new game of player controlled snake with start snake segment at a certain position
     #@param col - column number of start snake segment. number from 1-20.
@@ -205,17 +205,13 @@ class SnakeGame:
        
         self.printGrid()
         self.headXVelocity = 0
-        self.headYVelocity = 0
-        #print(f"Snake moving {self.headDirection()}")
+        self.headYVelocity = -1
+        print(f"Snake moving {self.headDirection()}")
         #neighbors = self.adjacentSpaces(self.getHeadCol(), self.getHeadRow())
         #print(f"Nearby spaces: {neighbors}")
         #print(f"Movable spaces: {self.movableSpaces()}")
         #print(f"Spaces without insta game over: {self.freeMovableSpaces()}")
-        #print(f"Safe moves: {self.safeSpaces()}")
-        
-        for i in range(-44, 0):
-            coords = self.spaceCoords(i)
-            print(f"Space {i} has coordinates {coords}")
+        print(f"Safe moves: {self.safeSpaces()}")
         
         '''
         startSpace = (5, 5)
@@ -543,6 +539,32 @@ class SnakeGame:
             self.right()
         else:
             print("Invalid number chosen")
+            
+    #has the ai move snake to space that will avoid resulting in inevitable game over
+    #chooses random space if all options will result in a loss
+    def surviveAISteer(self):
+        goodSpaces = self.safeSpaces()
+        
+        #no safe spaces found. choosing random move
+        if len(goodSpaces) == 0:
+            self.randomAISteer()
+            return
+        
+        randIndex = random.randrange(len(goodSpaces))
+        space = goodSpaces[randIndex]
+        
+        xVelocity = space[0] - self.getHeadCol()
+        yVelocity = space[1] - self.getHeadRow()
+        
+        #selecting arrow key direction that leads to chosen space
+        if xVelocity == 1:
+            self.right()
+        elif xVelocity == -1:
+            self.left()
+        elif yVelocity == 1:
+            self.down()
+        else:
+            self.up()
             
     #obtains id number assigned to a specific space on the grid
     #@param col - column number
@@ -891,7 +913,8 @@ class SnakeGame:
         
         #having ai choose direction in ai mode
         if self.aiMode:
-            self.randomAISteer()
+            #self.randomAISteer()
+            self.surviveAISteer()
         
         self.moveSnake()
         self.steering = True
@@ -920,8 +943,8 @@ class SnakeGame:
             self.drawPelletRandom()
            # return
         
-        milliseconds = 1000
-        #milliseconds = 100
+        #milliseconds = 1000
+        milliseconds = 100
         self.canvas.after(milliseconds, self.runTurn)
         
     #shift the snake one spot
