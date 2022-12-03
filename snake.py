@@ -176,23 +176,27 @@ class SnakeGame:
             self.grid[0][y] = borderChar
             self.grid[-1][y] = borderChar
             
-        headCol = 5
-        headRow = 5
-        self.grid[headCol][headRow] = "X" if self.edgeSpace((headCol, headRow)) else "H"
-        self.snakeCoords.append((headCol, headRow))
+        #headCol = 5
+        #headRow = 5
+        #self.grid[headCol][headRow] = "X" if self.edgeSpace((headCol, headRow)) else "H"
+        #self.snakeCoords.append((headCol, headRow))
         
         #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (10,6)]
         #segCoords = []
         #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (6,5)]
-        segCoords = [(5,6), (5,7), (5,8), (5,9), (5,10), (6,10), (6,9), (6,8), 
-                     (6,7), (6,6), (6,5), (6,4), (6,3), (6,2), (6,1)]
+        #segCoords = [(5,6), (5,7), (5,8), (5,9), (5,10), (6,10), (6,9), (6,8), 
+        #             (6,7), (6,6), (6,5), (6,4), (6,3), (6,2), (6,1)]
         
-        #headCol = 5
-        #headRow = 2
-        #self.grid[headCol][headRow] = "H"
-        #self.snakeCoords.append((headCol, headRow))
+        self.drawPellet(0, 0)
+        #self.drawPellet(6, 2)
+        
+        headCol = 5
+        headRow = 2
+        self.grid[headCol][headRow] = "X" if self.edgeSpace((headCol, headRow)) else "H"
+        self.snakeCoords.append((headCol, headRow))
         #segCoords = [(5,3), (4,3), (3,3), (2,3), (2,2), (2,1), (3,1), (4,1), (5,1),
         #             (6,1), (7,1), (8,1)]
+        segCoords = [(4,2), (4,3), (5,3), (6,3), (7,3), (7,2), (7,1), (6,1), (5,1)]
         
         #adding segments to snake
         for i in range(len(segCoords)):
@@ -201,11 +205,10 @@ class SnakeGame:
             segRow = coords[1]
             self.grid[segCol][segRow] = "T" if i == len(segCoords) - 1 else "S"
             self.snakeCoords.append((segCol, segRow))
-        
        
         self.printGrid()
         self.headXVelocity = 0
-        self.headYVelocity = -1
+        self.headYVelocity = 0
         print(f"Snake moving {self.headDirection()}")
         #neighbors = self.adjacentSpaces(self.getHeadCol(), self.getHeadRow())
         #print(f"Nearby spaces: {neighbors}")
@@ -405,6 +408,8 @@ class SnakeGame:
     #@param row - row number of space in question
     #@param subgraph - set of space coordinates
     #returns shortest uninteruppted path from inputted space to any of the spaces in subgraph
+    #if nonempty list returned, it is a path with no snake, wall, or pellet spaces 
+    #aside from those at endpoints and subgraph spaces
     def findSubgraphPath(self, col, row, subgraph):
         #ensuring valid column number
         if not self.validColumn(col):
@@ -437,7 +442,7 @@ class SnakeGame:
             
             nodeCol = nodeCoords[0]
             nodeRow = nodeCoords[1]
-            deadEnds = {"H", "S", "T", "#"}
+            deadEnds = {"H", "S", "T", "#", "P"}
             
             #checking if space has neighbors worth exploring
             if self.grid[nodeCol][nodeRow] not in deadEnds or nodeID == startSpaceID:    
@@ -506,11 +511,25 @@ class SnakeGame:
         neighbors = self.freeMovableSpaces()
         safeMoves = []
         tailAccessibleSpaces = {(self.getTailCol(), self.getTailRow())}
+        pelletTailPath = self.findSubgraphPath(self.pelletCol, self.pelletRow, tailAccessibleSpaces)
+        
+        #adding path from pellet to tail as subgraph if it exists
+        if len(pelletTailPath) > 0:
+            tailAccessibleSpaces = set(pelletTailPath)
+        
+        #adding penultimate segment as future tail location, if it exists
+        if len(self.snakeCoords) > 1:
+            tailAccessibleSpaces.add(self.snakeCoords[-2])
         
         #deducing spaces that can be safely entered
         for coords in neighbors:
             col = coords[0]
             row = coords[1]
+            
+            #skipping space if it contains a pellet and no pellet to tail path exists
+            if self.grid[col][row] == "P" and len(pelletTailPath) == 0:
+                continue
+            
             tailPath = self.findSubgraphPath(col, row, tailAccessibleSpaces)
             
             #space is safe!
