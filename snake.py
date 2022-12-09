@@ -10,6 +10,7 @@ from tkinter import ttk
 import random
 import tkinter.font as tkFont
 from queue import Queue
+from queue import LifoQueue
 
 #widget with a game of snake contained within
 class SnakeGame:
@@ -175,28 +176,51 @@ class SnakeGame:
         for y in range(len(self.grid[0])):
             self.grid[0][y] = borderChar
             self.grid[-1][y] = borderChar
-            
-        #headCol = 5
-        #headRow = 5
-        #self.grid[headCol][headRow] = "X" if self.edgeSpace((headCol, headRow)) else "H"
-        #self.snakeCoords.append((headCol, headRow))
+         
+        '''    
+        headCol = 5
+        headRow = 5
+        self.grid[headCol][headRow] = "X" if self.edgeSpace((headCol, headRow)) else "H"
+        self.snakeCoords.append((headCol, headRow))
+        '''
         
         #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (10,6)]
         #segCoords = []
         #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (6,5)]
+        #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (6,5), (6,4)]
         #segCoords = [(5,6), (5,7), (5,8), (5,9), (5,10), (6,10), (6,9), (6,8), 
         #             (6,7), (6,6), (6,5), (6,4), (6,3), (6,2), (6,1)]
         
-        self.drawPellet(0, 0)
+        #self.drawPellet(1, 1)
         #self.drawPellet(6, 2)
         
+        '''
         headCol = 5
         headRow = 2
         self.grid[headCol][headRow] = "X" if self.edgeSpace((headCol, headRow)) else "H"
         self.snakeCoords.append((headCol, headRow))
-        #segCoords = [(5,3), (4,3), (3,3), (2,3), (2,2), (2,1), (3,1), (4,1), (5,1),
-        #             (6,1), (7,1), (8,1)]
-        segCoords = [(4,2), (4,3), (5,3), (6,3), (7,3), (7,2), (7,1), (6,1), (5,1)]
+        segCoords = [(5,3), (4,3), (3,3), (2,3), (2,2), (2,1), (3,1), (4,1), (5,1),
+                     (6,1), (7,1), (8,1)]
+        #segCoords = [(4,2), (4,3), (5,3), (6,3), (7,3), (7,2), (7,1), (6,1), (5,1)]
+        '''
+        
+        '''
+        headCol = 4
+        headRow = 1
+        self.grid[headCol][headRow] = "X" if self.edgeSpace((headCol, headRow)) else "H"
+        self.snakeCoords.append((headCol, headRow))
+        #segCoords = [(4,2), (4,3), (5,3), (6,3), (7,3), (7,2), (7,1), (8,1)]
+        segCoords = [(4,2), (4,3), (5,3), (6,3), (7,3), (7,2), (7,1), (8,1), (9,1)]
+        '''
+        
+        self.drawPellet(9, 10)
+        headCol = 8
+        headRow = 7
+        self.grid[headCol][headRow] = "X" if self.edgeSpace((headCol, headRow)) else "H"
+        self.snakeCoords.append((headCol, headRow))
+        segCoords = [(8,8), (7,8), (6,8), (6,9), (7,9), (7,10), (8,10), (8,9), (9,9),
+                     (10,9), (10,8), (10,7), (9,7), (9,6), (10,6), (10,5)]
+        
         
         #adding segments to snake
         for i in range(len(segCoords)):
@@ -208,13 +232,17 @@ class SnakeGame:
        
         self.printGrid()
         self.headXVelocity = 0
-        self.headYVelocity = 0
+        self.headYVelocity = -1
         print(f"Snake moving {self.headDirection()}")
-        #neighbors = self.adjacentSpaces(self.getHeadCol(), self.getHeadRow())
-        #print(f"Nearby spaces: {neighbors}")
-        #print(f"Movable spaces: {self.movableSpaces()}")
-        #print(f"Spaces without insta game over: {self.freeMovableSpaces()}")
-        print(f"Safe moves: {self.safeSpaces()}")
+        neighbors = self.adjacentSpaces(self.getHeadCol(), self.getHeadRow())
+        print(f"Nearby spaces: {neighbors}")
+        print(f"Movable spaces: {self.possibleMoves()}")
+        print(f"Spaces without insta game over: {self.freeMoves()}")
+        print(f"Safe moves: {self.safeMoves()}")
+        
+        #connectedSpaces = self.connectedVacantSpaces(headCol, headRow)
+        #print(f"Empty accesible spaces: {connectedSpaces}")
+        #print(len(connectedSpaces))
         
         '''
         startSpace = (5, 5)
@@ -233,7 +261,7 @@ class SnakeGame:
         self.printGrid()
         
         print(f"searching for path between {startSpace} and targets")
-        path = self.findSubgraphPath(startSpace[0], startSpace[1], targetSpaces)
+        path = self.find(startSpace[0], startSpace[1], targetSpaces)
         '''
         
         '''
@@ -425,7 +453,7 @@ class SnakeGame:
         
         #maps a space's id to the id of its parent space in bfs
         spaceParents = {startSpaceID: 0}
-        nextNodes = Queue(maxsize = self.cols*self.rows)
+        nextNodes = Queue(maxsize=(self.cols+2)*(self.rows+2))
         nextNodes.put_nowait(startSpaceID)
         finalSpaceID = 0
         
@@ -442,10 +470,9 @@ class SnakeGame:
             
             nodeCol = nodeCoords[0]
             nodeRow = nodeCoords[1]
-            deadEnds = {"H", "S", "T", "#", "P"}
             
             #checking if space has neighbors worth exploring
-            if self.grid[nodeCol][nodeRow] not in deadEnds or nodeID == startSpaceID:    
+            if self.grid[nodeCol][nodeRow] == "o" or nodeID == startSpaceID:    
                 nearbySpaces = self.adjacentSpaces(nodeCol, nodeRow)
                 #print(f"neighbors: {nearbySpaces}")
             
@@ -471,9 +498,39 @@ class SnakeGame:
         
         return path
     
+    #checks if there exists a path between a space and subgraph
+    #@param col - column number of space in question
+    #@param row - row number of space in question
+    #@param subgraph - set of space coordinates forming subgraph
+    #returns true if there exists at least one uninterrupted path between space and
+    # any space in the subgraph. path is uninterruped if it has no pellet, snake, or wall
+    # in it except for endpoints
+    def pathExists(self, col, row, subgraph):
+        return len(self.findSubgraphPath(col, row, subgraph)) > 0
+    
+    #finds all vacant spaces reachable from a certain space
+    #@param col - column number of space in question
+    #@param row - row number of space in question
+    #@discovered - set of vacant spaces discovered by previous iteration of function
+    #returns set of all spaces reachable from inputted space using paths containing
+    # no pellets, snake, or wall. set excludes inputted space
+    def connectedVacantSpaces(self, col, row, discovered=set()):
+        neighbors = self.adjacentSpaces(col, row)
+        
+        #exploring neighboring spaces
+        for space in neighbors:
+            symbol = self.grid[space[0]][space[1]]
+            
+            #found an empty space!
+            if symbol == "o" and space not in discovered:
+                discovered.add(space)
+                self.connectedVacantSpaces(space[0], space[1], discovered)
+                
+        return discovered
+    
     #finds spaces that head can move to on next turn
     #returns list of adjacent spaces head can move to, regardless of if they result in game over
-    def movableSpaces(self):
+    def possibleMoves(self):
         #head can't move if game over
         if self.grid[self.getHeadCol()][self.getHeadRow()] == "X":
             return []
@@ -498,20 +555,20 @@ class SnakeGame:
             
         return destinations
     
-    #finds spaces that head can move to on next turn without game over
+    #finds spaces that head can move to on next turn without immediate game over
     #returns list of adjacent spaces that do not result in immediate game over
-    def freeMovableSpaces(self):
-        neighbors = self.movableSpaces()
+    def freeMoves(self):
+        neighbors = self.possibleMoves()
         occupiedSymbols = {"#", "H", "S"}
         return [space for space in neighbors if self.grid[space[0]][space[1]] not in occupiedSymbols]
     
     #determines which nearby spaces are safe for head to travel to next
     #returns list of adjacent spaces snake can travel to without inevitable game over
-    def safeSpaces(self):
-        neighbors = self.freeMovableSpaces()
+    def safeMoves(self):
+        neighbors = self.freeMoves()
         safeMoves = []
-        tailAccessibleSpaces = {(self.getTailCol(), self.getTailRow())}
-        pelletTailPath = self.findSubgraphPath(self.pelletCol, self.pelletRow, tailAccessibleSpaces)
+        tailAccessibleSpaces = {self.getTailCoords()}
+        pelletTailPath = self.findPath(self.pelletCol, self.pelletRow, self.getTailCol(), self.getTailRow())
         
         #adding path from pellet to tail as subgraph if it exists
         if len(pelletTailPath) > 0:
@@ -520,6 +577,8 @@ class SnakeGame:
         #adding penultimate segment as future tail location, if it exists
         if len(self.snakeCoords) > 1:
             tailAccessibleSpaces.add(self.snakeCoords[-2])
+        
+        #print(f"tail accessible spaces: {tailAccessibleSpaces}")
         
         #deducing spaces that can be safely entered
         for coords in neighbors:
@@ -535,11 +594,8 @@ class SnakeGame:
             #space is safe!
             if len(tailPath) > 0:
                 safeMoves.append(coords)
-                
-                #adding current path to spaces that can reach tail
-                for pathCoords in tailPath:
-                    tailAccessibleSpaces.add(pathCoords)
-                
+                tailAccessibleSpaces = tailAccessibleSpaces.union(tailPath)
+             
         return safeMoves
         
     #has ai move snake in random direction
@@ -562,10 +618,11 @@ class SnakeGame:
     #has the ai move snake to space that will avoid resulting in inevitable game over
     #chooses random space if all options will result in a loss
     def surviveAISteer(self):
-        goodSpaces = self.safeSpaces()
+        goodSpaces = self.safeMoves()
         
         #no safe spaces found. choosing random move
         if len(goodSpaces) == 0:
+            print("no safe moves found :(")
             self.randomAISteer()
             return
         
