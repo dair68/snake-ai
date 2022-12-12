@@ -642,6 +642,40 @@ class SnakeGame:
         else:
             self.up()
             
+    #has the ai choose next space snake will visit based on what's sensible
+    #chooses random space if all available moves will result in a loss
+    def smartAISteer(self):
+        goodSpaces = self.safeMoves()
+        
+        #no safe spaces found. choosing random move
+        if len(goodSpaces) == 0:
+            print("no safe moves found :(")
+            self.randomAISteer()
+            return
+        
+        pelletPath = self.findSubgraphPath(self.pelletCol, self.pelletRow, set(goodSpaces))
+        space = ()
+        
+        #found path to pellet!
+        if len(pelletPath) > 0:
+            space = pelletPath[-1]
+        else:
+            randIndex = random.randrange(len(goodSpaces))
+            space = goodSpaces[randIndex]
+            
+        xVelocity = space[0] - self.getHeadCol()
+        yVelocity = space[1] - self.getHeadRow()
+         
+        #selecting arrow key direction that leads to chosen space
+        if xVelocity == 1:
+            self.right()
+        elif xVelocity == -1:
+            self.left()
+        elif yVelocity == 1:
+            self.down()
+        else:
+            self.up()
+            
     #obtains id number assigned to a specific space on the grid
     #@param col - column number
     #@param row - row number
@@ -990,7 +1024,8 @@ class SnakeGame:
         #having ai choose direction in ai mode
         if self.aiMode:
             #self.randomAISteer()
-            self.surviveAISteer()
+            #self.surviveAISteer()
+            self.smartAISteer()
         
         self.moveSnake()
         self.steering = True
