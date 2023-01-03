@@ -67,10 +67,10 @@ class SnakeGame:
         self.gameMsgLabel.grid(column=0, row=2)
         self.mainFrame.grid_rowconfigure(2, minsize=48, weight=1)
         
+        self.cols = 10
+        self.rows = 10
         #self.cols = 2
-        #self.rows = 2
-        self.cols = 2
-        self.rows = 4
+        #self.rows = 4
         self.squareLength = 30
         self.grid = []
         
@@ -173,8 +173,8 @@ class SnakeGame:
         self.aiMode = True
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
-        #self.mainFrame.after(3000, self.randomAISteer)
-        self.mainFrame.after(3000, self.loopAiSteer)
+        self.mainFrame.after(3000, self.randomAISteer)
+        #self.mainFrame.after(3000, self.loopAiSteer)
         
     #begins running the ai with snake starting in center space
     def startAICentered(self):
@@ -709,14 +709,7 @@ class SnakeGame:
         yVelocity = space[1] - self.getHeadRow()
         
         #selecting arrow key direction that leads to chosen space
-        if xVelocity == 1:
-            self.right()
-        elif xVelocity == -1:
-            self.left()
-        elif yVelocity == 1:
-            self.down()
-        else:
-            self.up()
+        self.steerSnake(xVelocity, yVelocity)
             
     #has the ai choose next space snake will visit based on what's sensible
     #chooses random space if all available moves will result in a loss
@@ -738,39 +731,37 @@ class SnakeGame:
             
         xVelocity = space[0] - self.getHeadCol()
         yVelocity = space[1] - self.getHeadRow()
-         
-        #selecting arrow key direction that leads to chosen space
-        if xVelocity == 1:
-            self.right()
-        elif xVelocity == -1:
-            self.left()
-        elif yVelocity == 1:
-            self.down()
-        else:
-            self.up()
+        self.steerSnake(xVelocity, yVelocity)
                     
     #figures out next move that allows snake to move within loop that covers most of game area
-    def loopAiSteer(self):
+    def loopAiSteer(self):  
+        #steer snake based on grid dimensions
+        if self.rows == 2 or self.cols == 2:
+            self.rectLoopAISteer()
+        elif self.cols*self.rows % 2 == 0:
+            self.combLoopAISteer()
+        else:
+            self.randomAISteer()
+                
+    #steer snake in direction that forms rectangle spanning edges of board
+    def rectLoopAISteer(self):
         col = self.getHeadCol()
         row = self.getHeadRow()
         
-        #checking if grid is exactly 2 rows tall
-        if self.rows == 2 or self.cols == 2:
-            #moving snake based on edges of board
-            if col == self.cols and row > 1:
-                self.up()
-            elif row == 1 and col > 1:
-                self.left()
-            elif col == 1 and row < self.rows:
-                self.down()
-            elif row == self.rows and col < self.cols:
-                self.right()
-            else:
-                self.randomAISteer()
-        
+        #moving snake based on edges of board
+        if col == self.cols and row > 1:
+            self.up()
+        elif row == 1 and col > 1:
+            self.left()
+        elif col == 1 and row < self.rows:
+            self.down()
+        else:
+            self.right()
             
-        
-        
+    #steers snake in direction that forms comb shaped loop spanning board
+    def combLoopAISteer(self):
+        pass
+            
     #obtains id number assigned to a specific space on the grid
     #@param col - column number
     #@param row - row number
@@ -1095,6 +1086,23 @@ class SnakeGame:
         if self.gameStarted and not self.snakeMoving:
             self.startMovement()
             
+    #steers snake based on velocities inputed. snake can't make 180 degree turn
+    #@param xVelocity - -1, 0, or 1
+    #@param yVelocity - -1, 0, or 1
+    #steers snake based on x and y velocities. if parameters are invalid, snake persists in current direction
+    def steerSnake(self, xVelocity, yVelocity):
+        #selecting arrow key direction that leads to chosen space
+        if xVelocity == 1 and yVelocity == 0:
+            self.right()
+        elif xVelocity == -1 and yVelocity == 0:
+            self.left()
+        elif yVelocity == 1 and xVelocity == 0:
+            self.down()
+        elif yVelocity == -1 and xVelocity == 0:
+            self.up()
+        else:
+            print("Error. Invalid x and/or y velocities inputed.")
+            
     #checks if snake has bumped into the edge
     def snakeTouchingEdge(self):
         col = self.getHeadCol()
@@ -1119,8 +1127,8 @@ class SnakeGame:
         if self.aiMode:
             #self.randomAISteer()
             #self.surviveAISteer()
-            #self.smartAISteer()
-            self.loopAiSteer()
+            self.smartAISteer()
+            #self.loopAiSteer()
         
         self.moveSnake()
         self.steering = True
