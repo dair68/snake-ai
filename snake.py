@@ -35,6 +35,12 @@ def randomElement(elements):
     randIndex = random.randrange(len(elements))
     return elements[randIndex]
 
+#reverses the direction of a vector
+#@param vect - vector represented by tuple of numbers
+#returns tuple representing vector with same magnitude but opposite direction acorss origin
+def reverseVector(vect):
+    return tuple(-k for k in vect)
+
 #widget with a game of snake contained within
 class SnakeGame:
     #constructor
@@ -81,8 +87,10 @@ class SnakeGame:
         self.mainFrame.grid_rowconfigure(3, minsize=30, weight=1)
         self.playAgainBtn.grid(column=0, row=0)
         
+        #self.aiBtn = ttk.Button(self.buttonFrame, text="Run AI", style="Bold.TButton",
+        #                        command= self.startAICentered)
         self.aiBtn = ttk.Button(self.buttonFrame, text="Run AI", style="Bold.TButton",
-                                command= self.startAICentered)
+                                command = lambda : self.startAI(1, 1))
         self.aiBtn.grid(column=1, row=0)
         
         canvasHeight = self.squareLength*self.rows
@@ -173,8 +181,8 @@ class SnakeGame:
         self.aiMode = True
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
-        self.mainFrame.after(3000, self.randomAISteer)
-        #self.mainFrame.after(3000, self.loopAiSteer)
+        #self.mainFrame.after(3000, self.randomAISteer)
+        self.mainFrame.after(3000, self.loopAiSteer)
         
     #begins running the ai with snake starting in center space
     def startAICentered(self):
@@ -733,34 +741,79 @@ class SnakeGame:
         yVelocity = space[1] - self.getHeadRow()
         self.steerSnake(xVelocity, yVelocity)
                     
-    #figures out next move that allows snake to move within loop that covers most of game area
-    def loopAiSteer(self):  
+    #moves snake a space to allow it to move in loop that covers most of game area
+    def loopAiSteer(self):
+        velocities = ()
+    
         #steer snake based on grid dimensions
         if self.rows == 2 or self.cols == 2:
-            self.rectLoopAISteer()
+            velocities = self.rectLoopDirection()
         elif self.cols*self.rows % 2 == 0:
-            self.combLoopAISteer()
+            velocities = self.combLoopAIDirection()
         else:
             self.randomAISteer()
+            return
+        
+        self.steerSnake(velocities[0], velocities[1])
                 
-    #steer snake in direction that forms rectangle spanning edges of board
-    def rectLoopAISteer(self):
+    #finds direction that helps snake move in rectangle shape spanning board edges
+    #returns tuple of form (xVelocity, yVelocity) of where snake should go next
+    def rectLoopDirection(self):
         col = self.getHeadCol()
         row = self.getHeadRow()
+        xVelocity = 0
+        yVelocity = 0
         
         #moving snake based on edges of board
-        if col == self.cols and row > 1:
-            self.up()
-        elif row == 1 and col > 1:
-            self.left()
-        elif col == 1 and row < self.rows:
-            self.down()
+        if col == self.cols and row < self.rows:
+            yVelocity = 1
+        elif row == 1 and col < self.cols:
+            xVelocity = 1
+        elif col == 1 and row > 1:
+            yVelocity = -1
         else:
-            self.right()
+            xVelocity = -1
+            
+        return (xVelocity, yVelocity)
             
     #steers snake in direction that forms comb shaped loop spanning board
-    def combLoopAISteer(self):
-        pass
+    #returns tuple of form (xVelocity, yVelocity) that point to where snake should go next
+    def combLoopAIDirection(self):
+        col = self.getHeadCol()
+        row = self.getHeadRow()
+        xVelocity = 0
+        yVelocity = 0
+        
+        #movement for top of screen
+        if row == 1:
+            #top left corner
+            if col == self.cols:
+                yVelocity = 1
+            else:
+                xVelocity = 1
+            return (xVelocity, yVelocity)    
+        
+        #movement in column numbers with same parity as far right column num
+        if col % 2 == self.cols % 2:
+            #bottom row
+            if row == self.rows:
+                xVelocity = -1
+            else:
+                yVelocity = 1
+            return (xVelocity, yVelocity)  
+        else:
+            #rows beneath top two rows
+            if row > 2:
+                yVelocity = -1
+                
+            #2nd row from the top
+            if row == 2:
+                #there exists a column to the left to enter
+                if col > 1:
+                    xVelocity = -1
+                else:
+                    yVelocity = -1
+            return (xVelocity, yVelocity)  
             
     #obtains id number assigned to a specific space on the grid
     #@param col - column number
@@ -1127,8 +1180,8 @@ class SnakeGame:
         if self.aiMode:
             #self.randomAISteer()
             #self.surviveAISteer()
-            self.smartAISteer()
-            #self.loopAiSteer()
+            #self.smartAISteer()
+            self.loopAiSteer()
         
         self.moveSnake()
         self.steering = True
