@@ -92,10 +92,12 @@ class SnakeGame:
         self.gameMsgLabel.grid(column=0, row=2)
         self.mainFrame.grid_rowconfigure(2, minsize=48, weight=1)
         
-        #self.cols = 10
-        #self.rows = 10
-        self.cols = 9
+        self.cols = 10
         self.rows = 10
+        #self.cols = 9
+        #self.rows = 10
+        #self.cols = 9
+        #self.rows = 9
         self.squareLength = 30
         self.grid = []
         
@@ -109,7 +111,7 @@ class SnakeGame:
         #self.aiBtn = ttk.Button(self.buttonFrame, text="Run AI", style="Bold.TButton",
         #                        command= self.startAICentered)
         self.aiBtn = ttk.Button(self.buttonFrame, text="Run AI", style="Bold.TButton",
-                                command = lambda : self.startAI(1, 1))
+                                command = lambda : self.startAI(2, 1))
         self.aiBtn.grid(column=1, row=0)
         
         canvasHeight = self.squareLength*self.rows
@@ -770,8 +772,7 @@ class SnakeGame:
         elif self.cols*self.rows % 2 == 0:
             velocities = self.combLoopAIDirection()
         else:
-            self.randomAISteer()
-            return
+            velocities = self.tongLoopDirection()
         
         self.steerSnake(velocities[0], velocities[1])
                 
@@ -857,6 +858,31 @@ class SnakeGame:
                     xVelocity = -1
                 else:
                     yVelocity = -1
+        return (xVelocity, yVelocity)
+    
+    #chooses direction that will allow snake to move about grid in tong shaped loop
+    #returns tuple of (xVelocity, yVelocity) indicating how snake should move next
+    def tongLoopDirection(self):
+        col = self.getHeadCol()
+        row = self.getHeadRow()
+        xVelocity = 0
+        yVelocity = 0
+        
+        #moving snake based on where it lies in grid
+        if col > 2:
+            return self.__combLoopHelper(col - 1, row, self.cols - 1, self.rows)
+        elif col == 2:
+            if row == 1:
+                xVelocity = 1
+            elif row % 2 == 0:
+                yVelocity = -1
+            else:
+                xVelocity = -1
+        else:
+             if row % 2 == 0:
+                 xVelocity = 1
+             else:
+                 yVelocity = -1
         return (xVelocity, yVelocity)
     
     #obtains id number assigned to a specific space on the grid
