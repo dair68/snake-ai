@@ -11,6 +11,7 @@ import random
 import tkinter.font as tkFont
 from queue import Queue
 from queue import LifoQueue
+import math
 
 #prints a 2d array to the console
 #@param matrix - a 2d array
@@ -40,6 +41,24 @@ def randomElement(elements):
 #returns tuple representing vector with same magnitude but opposite direction acorss origin
 def reverseVector(vect):
     return tuple(-k for k in vect)
+
+#rotates a 2d vector a certain number of radians counterclockwise
+#@param vect - 2d vector represented by tuple of numbers
+#@param angle - angle in radians
+#returns tuple representing resulting vector after rotating around origin
+def rotateVector(vect, angle):
+    x1 = vect[0]
+    x2 = vect[1]
+    y1 = x1*math.cos(angle) - x2*math.sin(angle)
+    y2 = x1*math.sin(angle) + x2*math.cos(angle)
+    return (y1, y2)
+
+#rotates 2d vector 90 degrees counterclockwise
+#@param x - x-coordinate of 2d vector
+#@param y - y-coorindate of 2d vector
+#returns tuple representing vector after rotation after origin
+def rotateVector90Deg(x, y):
+    return (-y, x)
 
 #widget with a game of snake contained within
 class SnakeGame:
@@ -73,10 +92,10 @@ class SnakeGame:
         self.gameMsgLabel.grid(column=0, row=2)
         self.mainFrame.grid_rowconfigure(2, minsize=48, weight=1)
         
-        self.cols = 10
+        #self.cols = 10
+        #self.rows = 10
+        self.cols = 9
         self.rows = 10
-        #self.cols = 2
-        #self.rows = 4
         self.squareLength = 30
         self.grid = []
         
@@ -779,28 +798,53 @@ class SnakeGame:
     #steers snake in direction that forms comb shaped loop spanning board
     #returns tuple of form (xVelocity, yVelocity) that point to where snake should go next
     def combLoopAIDirection(self):
-        col = self.getHeadCol()
-        row = self.getHeadRow()
+        col = 0
+        row = 0
+        cols = 0
+        rows = 0
+        
+        #checking if even number of columns
+        if self.cols % 2 == 0:
+            col = self.getHeadCol()
+            row = self.getHeadRow()
+            cols = self.cols
+            rows = self.rows
+            return self.__combLoopHelper(col, row, cols, rows)
+        else:
+            col = self.getHeadRow()
+            row = self.cols - self.getHeadCol() + 1
+            cols = self.rows
+            rows = self.cols
+            
+            velocities = self.__combLoopHelper(col, row, cols, rows)
+            x = velocities[0]
+            y = velocities[1]
+            return (-y, x)
+            
+    #helper function for comb loop function
+    #@param col - head's column number
+    #@param row - head's row number
+    #@param cols - number of columns in grid
+    #@param rows - number of rows in grid
+    #returns tuple representing (xVelocity, yVelocity) for where snake should move next
+    def __combLoopHelper(self, col, row, cols, rows):
         xVelocity = 0
         yVelocity = 0
         
         #movement for top of screen
         if row == 1:
             #top left corner
-            if col == self.cols:
+            if col == cols:
                 yVelocity = 1
             else:
                 xVelocity = 1
-            return (xVelocity, yVelocity)    
-        
         #movement in column numbers with same parity as far right column num
-        if col % 2 == self.cols % 2:
+        elif col % 2 == cols % 2:
             #bottom row
-            if row == self.rows:
+            if row == rows:
                 xVelocity = -1
             else:
-                yVelocity = 1
-            return (xVelocity, yVelocity)  
+                yVelocity = 1   
         else:
             #rows beneath top two rows
             if row > 2:
@@ -813,8 +857,8 @@ class SnakeGame:
                     xVelocity = -1
                 else:
                     yVelocity = -1
-            return (xVelocity, yVelocity)  
-            
+        return (xVelocity, yVelocity)
+    
     #obtains id number assigned to a specific space on the grid
     #@param col - column number
     #@param row - row number
