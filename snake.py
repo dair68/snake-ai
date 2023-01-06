@@ -203,7 +203,8 @@ class SnakeGame:
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
         #self.mainFrame.after(3000, self.randomAISteer)
-        self.mainFrame.after(3000, self.loopAiSteer)
+        #self.mainFrame.after(3000, self.loopAiSteer)
+        self.mainFrame.after(3000, self.bestAISteer)
         
     #begins running the ai with snake starting in center space
     def startAICentered(self):
@@ -761,9 +762,10 @@ class SnakeGame:
         xVelocity = space[0] - self.getHeadCol()
         yVelocity = space[1] - self.getHeadRow()
         self.steerSnake(xVelocity, yVelocity)
-                    
-    #moves snake a space to allow it to move in loop that covers most of game area
-    def loopAiSteer(self):
+    
+    #provides the direction the snake should move next to produce a loop
+    #returns tuple of form (xVelocity, yVelocity)
+    def loopAIDirection(self):
         velocities = ()
     
         #steer snake based on grid dimensions
@@ -773,7 +775,12 @@ class SnakeGame:
             velocities = self.combLoopAIDirection()
         else:
             velocities = self.tongLoopDirection()
-        
+            
+        return velocities
+                
+    #moves snake a space to allow it to move in loop that covers most of game area
+    def loopAiSteer(self):
+        velocities = self.loopAIDirection()
         self.steerSnake(velocities[0], velocities[1])
                 
     #finds direction that helps snake move in rectangle shape spanning board edges
@@ -834,7 +841,7 @@ class SnakeGame:
         
         #movement for top of screen
         if row == 1:
-            #top left corner
+            #top right corner
             if col == cols:
                 yVelocity = 1
             else:
@@ -884,6 +891,23 @@ class SnakeGame:
              else:
                  yVelocity = -1
         return (xVelocity, yVelocity)
+    
+    #steers snake in optimal direction to move next
+    def bestAISteer(self):
+        #steering snake with smart ai when it's short
+        if len(self.snakeCoords) <= self.cols*self.rows*.5:
+            self.smartAISteer()
+        else:
+            loopVelocities = self.loopAIDirection()
+            loopXVel = loopVelocities[0]
+            loopYVel = loopVelocities[1]
+            loopSpace = (self.getHeadCol() + loopXVel, self.getHeadRow() + loopYVel)
+            
+            #detemining if moving is a loop is safe
+            if loopSpace in self.safeMoves():
+                self.steerSnake(loopXVel, loopYVel)
+            else:
+                self.surviveAISteer()
     
     #obtains id number assigned to a specific space on the grid
     #@param col - column number
@@ -1251,7 +1275,8 @@ class SnakeGame:
             #self.randomAISteer()
             #self.surviveAISteer()
             #self.smartAISteer()
-            self.loopAiSteer()
+            #self.loopAiSteer()
+            self.bestAISteer()
         
         self.moveSnake()
         self.steering = True
