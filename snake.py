@@ -30,7 +30,7 @@ def printMatrix(matrix):
 def randomElement(elements):
     #checking if list is non empty
     if len(elements) == 0:
-        print("Error. Nonempty list inputted.")
+        print("Error. Empty list inputted.")
         return None
     
     randIndex = random.randrange(len(elements))
@@ -137,6 +137,8 @@ class SnakeGame:
         self.steering = False
         
         self.pelletPath = []
+        self.loopMoves = 0
+        self.swirlNeighbors = {}
         
         #self.__debugMode()
         
@@ -188,6 +190,8 @@ class SnakeGame:
         self.bindArrowKeys()
         self.aiMode = False
         self.pelletPath = []
+        self.loopMoves = 0
+        self.__createSwirlNeighborsMap()
          
     #starts player controlled game with snake in middle of screen
     def startCentered(self):
@@ -202,9 +206,7 @@ class SnakeGame:
         self.aiMode = True
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
-        #self.mainFrame.after(3000, self.randomAISteer)
-        #self.mainFrame.after(3000, self.loopAiSteer)
-        self.mainFrame.after(3000, self.bestAISteer)
+        self.mainFrame.after(3000, self.runTurn)
         
     #begins running the ai with snake starting in center space
     def startAICentered(self):
@@ -234,93 +236,24 @@ class SnakeGame:
             self.grid[0][y] = borderChar
             self.grid[-1][y] = borderChar
          
-        '''    
-        headCol = 5
-        headRow = 5
-        self.grid[headCol][headRow] = "X" if self.edgeSpace((headCol, headRow)) else "H"
-        self.snakeCoords.append((headCol, headRow))
-        '''
-        
-        #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (7,6), (8,6), (9,6), (10,6)]
-        #segCoords = []
-        #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (6,5)]
-        #segCoords = [(5,4), (4,4), (4,5), (4,6), (5,6), (6,6), (6,5), (6,4)]
-        #segCoords = [(5,6), (5,7), (5,8), (5,9), (5,10), (6,10), (6,9), (6,8), 
-        #             (6,7), (6,6), (6,5), (6,4), (6,3), (6,2), (6,1)]
-        
-        #self.drawPellet(1, 1)
-        #self.drawPellet(6, 2)
-        #self.drawPellet(1, 8)
-        
-        #headCol = 5
-        #headRow = 2
-        #self.grid[headCol][headRow] = "X" if self.edgeSpace((headCol, headRow)) else "H"
-        #self.snakeCoords.append((headCol, headRow))
-        #segCoords = [(5,3), (4,3), (3,3), (2,3), (2,2), (2,1), (3,1), (4,1), (5,1),
-        #             (6,1), (7,1), (8,1)]
-        #segCoords = [(4,2), (4,3), (5,3), (6,3), (7,3), (7,2), (7,1), (6,1), (5,1)]
-
-        self.drawPellet(6, 9)
-        headCol = 7
-        headRow = 9
-        self.grid[headCol][headRow] = "X" if self.edgeSpace((headCol, headRow)) else "H"
-        self.snakeCoords.append((headCol, headRow))
-        segCoords = [(9, 9), (10, 9), (10, 10), (9, 10), (8, 10), (7, 10), (6, 10), (5, 10), (4, 10), (4, 9), (5, 9), (5, 8), (6, 8), (6, 7), (6, 6), (7, 6), (8, 6), (8, 5), (8, 4), (7, 4), (6, 4), (6, 3), (6, 2), (5, 2), (4, 2), (3, 2), (3, 3), (3, 4), (4, 4), (4, 3), (5, 3), (5, 4), (5, 5), (5, 6), (5, 7), (4, 7), (4, 8), (3, 8), (2, 8), (2, 7), (3, 7), (3, 6), (3, 5), (2, 5), (2, 6), (1, 6), (1, 5), (1, 4), (2, 4), (2, 3), (1, 3), (1, 2), (1, 1), (2, 1), (3, 1), (4, 1), (5, 1), (6, 1), (7, 1), (7, 2), (7, 3), (8, 3), (8, 2), (9, 2), (9, 3), (10, 3), (10, 4), (9, 4), (9, 5), (10, 5), (10, 6), (10, 7), (9, 7)]
-        
-        #adding segments to snake
-        for i in range(len(segCoords)):
-            coords = segCoords[i]
-            segCol = coords[0]
-            segRow = coords[1]
-            self.grid[segCol][segRow] = "T" if i == len(segCoords) - 1 else "S"
-            self.snakeCoords.append((segCol, segRow))
-       
-        self.printGrid()
-        self.headXVelocity = 0
-        self.headYVelocity = -1
-        print(f"Snake moving {self.headDirection()}")
-        neighbors = self.adjacentSpaces(self.getHeadCol(), self.getHeadRow())
-        #print(f"Nearby spaces: {neighbors}")
-        #print(f"Movable spaces: {self.possibleMoves()}")
-        #print(f"Spaces without insta game over: {self.freeMoves()}")
-        #print(f"Safe moves: {self.safeMoves()}")
-        
-        #connectedSpaces = self.connectedVacantSpaces(headCol, headRow)
-        #print(f"Empty accesible spaces: {connectedSpaces}")
-        #print(len(connectedSpaces))
-        
-        self.findPelletPath()
-        
-        '''
-        startSpace = (5, 5)
-        endSpace = (10, 7)
-        print(f"searching for path between {startSpace} and {endSpace}")
-        path = self.findPath(startSpace[0], startSpace[1], endSpace[0], endSpace[1])
-        '''
-        
-        '''
-        startSpace = (5, 5)
-        targetSpaces = {(col + 1, 7) for col in range(self.cols)}
-        
-        #marking target spaces on grid
-        for space in targetSpaces:
-            self.grid[space[0]][space[1]] = "@"
+            
+        self.drawPellet(4, 2)
+        #segments = [(5,5), (5,4), (5,3), (5,2), (5,1), (4,1), (3,1), (3,2), (3,3)]
+        #segments = [(5,5), (5,4), (5,3), (5,2), (5,1), (4,1), (3,1), (3,2)]
+        segments = [(5,5), (5,4), (5,3), (5,2), (5,1), (4,1), (3,1), (2,1), (2,2), (2,3)]
+        self.__buildSnake(segments)
         self.printGrid()
         
-        print(f"searching for path between {startSpace} and targets")
-        path = self.find(startSpace[0], startSpace[1], targetSpaces)
-        '''
-        '''
-        path = self.findPelletPath()
-    
-        #updating grid with path
-        for i in range(len(path)):
-            space = path[i]
-            self.grid[space[0]][space[1]] = "*"
+        self.__createSwirlNeighborsMap()
+        self.findSwirlPelletPath()
         
-        #print(f"connecting path: {path}")
-        self.printGrid()
-        '''
+        #printing path if it exists
+        if len(self.pelletPath) > 0:
+            print("path exists!")
+            print(self.pelletPath)
+            self.__printGridPath(self.pelletPath)
+        else:
+            print("safe path doesn't exist")
         
     #has the ai choose which direction the snake will move next
     def aiSteer(self):
@@ -475,25 +408,28 @@ class SnakeGame:
         return self.edgeCol(space[0]) or self.edgeRow(space[1])
     
     #finds the shortest uninterrupted path between 2 spaces, if it exists
-    #@param col1 - column number of first space
-    #@param row1 - row number of first space
-    #@param col2 - column number of second space
-    #@param row2 - row number of second space
+    #@param firstSpaceID - id number of first space
+    #@param secondSpaceID - id number of second space
+    #@param neighbors - dictionary mapping space ids to neighboring space ids that can be accessed. for directed graphs
     #@param excludedSpaces - set of space coordinates that are not allowed in middle of path
     #returns list of coordinates for shortest path connecting spaces. if no path exists, returns empty list.
     #endpoints of path can contain any symbols, but middle portions can't contain snake or wall
-    def findPath(self, col1, row1, col2, row2, excludedSpaces={}):
-        return self.findSubgraphPath(col1, row1, {(col2, row2)}, excludedSpaces)
+    def findPath(self, firstSpaceID, secondSpaceID, neighbors={}, excludedSpaces=set()):
+        return self.findSubgraphPath(firstSpaceID, {secondSpaceID}, neighbors, excludedSpaces)
     
     #finds shortest path from a certain space to a collection of spaces
-    #@param col - column number of space in question
-    #@param row - row number of space in question
-    #@param subgraph - set of space coordinates
+    #@param spaceID - id number of start space
+    #@param subgraph - set of space ids
+    #@param neighbors - dictionary mapping space ids to neighboring space ids that can be accessed. for directed graphs
     #@param excludedSpaces - set of space coordinates that are not allowed make up middle of path 
     #returns shortest uninteruppted path from inputted space to any of the spaces in subgraph
     #if nonempty list returned, it is a path with no snake, wall, or pellet spaces 
     #aside from those at endpoints and subgraph spaces
-    def findSubgraphPath(self, col, row, subgraph, excludedSpaces={}):
+    def findSubgraphPath(self, spaceID, subgraph, neighbors={}, excludedSpaces=set()):
+        space = self.spaceCoords(spaceID)
+        col = space[0]
+        row = space[1]
+        
         #ensuring valid column number
         if not self.validColumn(col):
             print("invalid column input")
@@ -503,8 +439,10 @@ class SnakeGame:
             print("invalid row input")
             return []
         
+        #print(neighbors)
+        
         startSpaceID = self.spaceID(col, row)
-        targetSpaceIDs = {self.spaceID(coords[0], coords[1]) for coords in subgraph}
+        targetSpaceIDs = {nodeID for nodeID in subgraph}
         
         #maps a space's id to the id of its parent space in bfs
         spaceParents = {startSpaceID: 0}
@@ -528,9 +466,19 @@ class SnakeGame:
             symbol = self.grid[nodeCol][nodeRow]
             
             #checking if space has neighbors worth exploring
-            if nodeID == startSpaceID or (symbol == "o" and nodeCoords not in excludedSpaces):    
-                nearbySpaces = self.adjacentSpaces(nodeCol, nodeRow)
+            if nodeID == startSpaceID or (symbol == "o" and nodeID not in excludedSpaces):    
+                nearbySpaces = []
+                
+                #obtaining nearby spaces
+                if len(neighbors) > 0:    
+                    #print(f"node id: {nodeID}")
+                    neighborsIDs = neighbors[nodeID]
+                    nearbySpaces = [self.spaceCoords(spaceID) for spaceID in neighborsIDs]
+                else:
+                    nearbySpaces = self.adjacentSpaces(nodeCol, nodeRow)
+
                 #print(f"neighbors: {nearbySpaces}")
+                #print(f"visiting {nodeCoords}")
             
                 #recording adjacent spaces for later visit
                 for spaceCoords in nearbySpaces:
@@ -619,25 +567,27 @@ class SnakeGame:
         return [space for space in neighbors if self.grid[space[0]][space[1]] not in occupiedSymbols]
     
     #determines which nearby spaces are safe for head to travel to next
+    #@param neighbors - dictionary mapping space ids to lists of space ids for neighboring nodes. for directed graphs
     #returns list of adjacent spaces snake can travel to without inevitable game over
-    def safeMoves(self):
-        neighbors = self.freeMoves()
+    def safeMoves(self, neighbors={}):
+        adjacent = self.freeMoves()
         safeMoves = []
-        tailAccessibleSpaces = {self.getTailCoords()}
-        pelletTailPath = self.findPath(self.pelletCol, self.pelletRow, self.getTailCol(), self.getTailRow())
+        tailAccessibleSpaces = {self.getTailID()}
+        pelletTailPath = self.findPath(self.getPelletID(), self.getTailID(), neighbors)
         
         #adding path from pellet to tail as subgraph if it exists
         if len(pelletTailPath) > 0:
-            tailAccessibleSpaces = set(pelletTailPath)
+            tailAccessibleSpaces = set(self.pathIDs(pelletTailPath))
         
         #adding penultimate segment as future tail location, if it exists
         if len(self.snakeCoords) > 1:
-            tailAccessibleSpaces.add(self.snakeCoords[-2])
+            penultSeg = self.snakeCoords[-2]
+            tailAccessibleSpaces.add(self.spaceID(penultSeg[0], penultSeg[1]))
         
         #print(f"tail accessible spaces: {tailAccessibleSpaces}")
         
         #deducing spaces that can be safely entered
-        for coords in neighbors:
+        for coords in adjacent:
             col = coords[0]
             row = coords[1]
             
@@ -645,7 +595,8 @@ class SnakeGame:
             if self.grid[col][row] == "P" and len(pelletTailPath) == 0:
                 continue
             
-            tailPath = self.findSubgraphPath(col, row, tailAccessibleSpaces)
+            spaceID = self.spaceID(col, row)
+            tailPath = self.findSubgraphPath(spaceID, tailAccessibleSpaces, neighbors)
             
             #space is safe!
             if len(tailPath) > 0:
@@ -655,10 +606,10 @@ class SnakeGame:
         return safeMoves
         
     #finds a path from the head to the pellet that will avoid endangering the snake along the way
-    #updates self.pelletPath with list of space coords of path found.
+    #updates self.pelletPath with list of space coords of path found. first element is a space adjacent to head
     def findPelletPath(self):
         spaces = self.freeMoves()
-        path1 = self.findPath(self.getTailCol(), self.getTailRow(), self.pelletCol, self.pelletRow)
+        path1 = self.findPath(self.getTailID(), self.getPelletID())
         #print("tail to pellet path:")
         #print(path1)
         
@@ -667,8 +618,8 @@ class SnakeGame:
             return []
         
         forbiddenMoves = set(self.headAdjacentSpaces()).difference(set(self.possibleMoves()))
-        badSpaces = forbiddenMoves.union(set(path1))
-        path2 = self.findPath(self.pelletCol, self.pelletRow, self.getHeadCol(), self.getHeadRow(), badSpaces)
+        badSpaces = forbiddenMoves.union({self.pathIDs(path1)})
+        path2 = self.findPath(self.getPelletID(), self.getHeadID(), {}, badSpaces)
         #print("head to pellet path:")
         #print(path2)
         
@@ -703,6 +654,21 @@ class SnakeGame:
         path2.pop()
         path2.reverse()
         return path2
+    
+    #finds a safe path to the pellet that abides by the swirl movement philosophy
+    #returns list of space coords for path found with first elem being head. 
+    #empty list if no path found
+    def findSwirlPelletPath(self):
+        path1 = self.findPath(self.getHeadID(), self.getPelletID(), self.swirlNeighbors)
+        
+        #found no path to pellet
+        if len(path1) == 0:
+            self.pelletPath = []
+            
+        path2 = self.findPath(self.getPelletID(), self.getTailID(), 
+                              self.swirlNeighbors, set(self.pathIDs(path1)))
+        
+        self.pelletPath = path1 if len(path2) > 0 else []
     
     #has ai move snake in random direction
     def randomAISteer(self):
@@ -879,6 +845,7 @@ class SnakeGame:
         if col > 2:
             return self.__combLoopHelper(col - 1, row, self.cols - 1, self.rows)
         elif col == 2:
+            #taking care of movement for second column from right
             if row == 1:
                 xVelocity = 1
             elif row % 2 == 0:
@@ -886,16 +853,25 @@ class SnakeGame:
             else:
                 xVelocity = -1
         else:
-             if row % 2 == 0:
-                 xVelocity = 1
-             else:
-                 yVelocity = -1
+            #taking care of movement in far left column
+            if row == 1:
+                xVelocity = 1
+            elif row == 2:
+                #moving right at this spot unless there's a pellet above
+                if self.pelletCol == 1 and self.pelletRow == 1:
+                    yVelocity = -1
+                else:
+                    xVelocity = 1
+            elif row % 2 == 0:
+                xVelocity = 1
+            else:
+                yVelocity = -1
         return (xVelocity, yVelocity)
     
     #steers snake in optimal direction to move next
     def bestAISteer(self):
         #steering snake with smart ai when it's short
-        if len(self.snakeCoords) <= self.cols*self.rows*.5:
+        if len(self.snakeCoords) <= self.cols*self.rows*.4:
             self.smartAISteer()
         else:
             loopVelocities = self.loopAIDirection()
@@ -904,10 +880,107 @@ class SnakeGame:
             loopSpace = (self.getHeadCol() + loopXVel, self.getHeadRow() + loopYVel)
             
             #detemining if moving is a loop is safe
-            if loopSpace in self.safeMoves():
+            if self.snakeLength() == self.cols*self.rows - 1:
                 self.steerSnake(loopXVel, loopYVel)
+            #detemining if moving is a loop is safe
+            elif loopSpace in self.safeMoves() and self.loopMoves >= 0:
+                print("loop steer!")
+                self.steerSnake(loopXVel, loopYVel)
+                print(f"loop moves: {self.loopMoves}")
             else:
                 self.surviveAISteer()
+                
+                #lowering number of loop moves if needed
+                if self.loopMoves > 0:
+                    self.loopMoves = -5
+                    
+            #incrementing number of loop moves if needed
+            if self.loopMoves < self.snakeLength():
+                self.loopMoves += 1
+                
+    #steers snake in optimal direction to move next
+    def bestAISteer2(self):
+        #path to pellet already found
+        if len(self.pelletPath) > 0:
+            print("moving down pellet path")
+            print(self.pelletPath)
+            space = self.pelletPath[0]
+            xVelocity = space[0] - self.getHeadCol()
+            yVelocity = space[1] - self.getHeadRow()
+            self.steerSnake(xVelocity, yVelocity)
+            self.pelletPath = self.pelletPath[1:]
+            return
+        
+        #searching for pellet path
+        self.findSwirlPelletPath()
+        self.pelletPath = self.pelletPath[1:]
+        
+        #found path
+        if len(self.pelletPath) > 0:
+            print("pellet path found")
+            #print(self.pelletPath)
+            self.bestAISteer2()
+        else:
+            print("random swirl movement")
+            self.randomSwirlAISteer()
+                
+    #determines velocities at space that allow snake's next move to stay within a loose swirl
+    #velocities determined regardless of snake's current velocity
+    #@param col - column number
+    #@parma row - row number
+    #returns list of tuples of form (xVelocity, yVelocity)
+    def swirlDirections(self, col, row):
+        velocities = []
+        
+        #telling snake where to go next based on position on screen
+        if row == 1:
+            #addressing permissible directions for top row
+            if col == 1:
+                velocities.append((1,0))
+            elif col == self.rows:
+                velocities.append((0,1))
+            else:
+                velocities.extend([(1,0), (0,1)])
+        elif col == self.cols:
+            #addressing posssible directions for rightmost column
+            if row == self.rows:
+                velocities.append((-1,0))
+            else:
+                velocities.extend([(-1,0), (0,1)])
+        elif row == self.rows:
+            #addressing possible directions for leftmost column
+            if col == 1:
+                velocities.append((0,-1))
+            else:
+                velocities.extend([(-1,0), (0,-1)])
+        elif col == 1:
+            velocities.extend([(1,0), (0,-1)])
+        else:
+            velocities.extend([(0,-1), (-1,0), (0,1)])
+        
+        return velocities
+    
+    #finds spaces near given space that allow it to move in swirl on next turn
+    #@param col - column number
+    #@param row - row number
+    #returns list of space coordinates
+    def swirlSpaces(self, col, row):
+        velocities = self.swirlDirections(col, row)
+        return [(col + v[0], row + v[1]) for v in velocities]
+    
+    #has snake randomly move around the board based on a loose swirl pattern
+    #snake will avoid moves that lead to inevitable game over
+    def randomSwirlAISteer(self):
+        velocities = self.swirlDirections(self.getHeadCol(), self.getHeadRow())
+        swirlSpaces = {(self.getHeadCol() + v[0], self.getHeadRow() + v[1]) for v in velocities}
+        #print(f"swirl moves: {swirlSpaces}")
+        possibleMoves = set(self.safeMoves(self.swirlNeighbors))
+        #print(f"possible moves: {possibleMoves}")
+        movePool = swirlSpaces.intersection(possibleMoves)
+            
+        print("swirl steer")
+        space = randomElement(list(movePool)) 
+        self.steerSnake(space[0] - self.getHeadCol(), space[1] - self.getHeadRow())
     
     #obtains id number assigned to a specific space on the grid
     #@param col - column number
@@ -1077,6 +1150,16 @@ class SnakeGame:
     def getHead(self):
         return self.snakeSquares[0] if self.snakeLength() > 0 else None
     
+    #obtains id of space head segment is occupying
+    #returns integer representing space id of head space
+    def getHeadID(self):
+        return self.spaceID(self.getHeadCol(), self.getHeadRow())
+    
+    #obtains id of space pellet is occupying
+    #returns integer representing space id of pellet space
+    def getPelletID(self):
+        return self.spaceID(self.pelletCol, self.pelletRow)
+    
     #obtains tail square
     #returns reference to tail unit square
     def getTail(self):
@@ -1096,6 +1179,11 @@ class SnakeGame:
     #returns tail grid row number. if no tail returns -1
     def getTailRow(self):
         return self.getTailCoords()[1] if self.snakeLength() > 0 else -1
+    
+    #obtains id of space tail is occupying
+    #returns id of space tail of occupying
+    def getTailID(self):
+        return self.spaceID(self.getTailCol(), self.getTailRow())
     
     #draws a yellow unit square that will be treated as pellet for snake to eat
     #@param col - column number from 1 to 20
@@ -1276,7 +1364,9 @@ class SnakeGame:
             #self.surviveAISteer()
             #self.smartAISteer()
             #self.loopAiSteer()
-            self.bestAISteer()
+            #self.bestAISteer()
+            #self.randomSwirlAISteer()
+            self.bestAISteer2()
         
         self.moveSnake()
         self.steering = True
@@ -1397,5 +1487,61 @@ class SnakeGame:
         
     #obtains a copy of the game grid
     #returns 2d array of game grid. Edges of grid represent out of bounds game over zones
-    def getGrid(self):
+    def getGridCopy(self):
         return [[self.grid[x][y] for y in range(self.rows+2)] for x in range(self.cols+2)]
+    
+    #creates dictionary representing neighbors for each space under swirl paths
+    #neighbors found regardless of snake's position of velocity
+    def __createSwirlNeighborsMap(self):
+        self.swirlNeighbors = {}
+        
+        #reporting neighbors for each space in grid
+        for x in range(1, self.cols + 1):
+            for y in range(1, self.rows + 1):
+                spaceID = self.spaceID(x, y)
+                neighborSpaces = self.swirlSpaces(x, y)
+                neighborIDs = [self.spaceID(s[0], s[1]) for s in neighborSpaces]
+                self.swirlNeighbors[spaceID] = neighborIDs
+                
+    #replaces and creates a snake within memory composed in inputted segments
+    #@param segments - list of snake coordinates. 0th element is snake head
+    #does not replicate snake in gui
+    def __buildSnake(self, segments):
+        self.snakeCoords = [(seg[0], seg[1]) for seg in segments]
+        
+        #copying snake over to grid
+        for i in range(len(segments)):
+            seg = segments[i]
+            col = seg[0]
+            row = seg[1]
+            
+            #chooseing grid symbol based on snake segment
+            if i == 0:
+                self.grid[col][row] = "H"
+            elif i == self.snakeLength() - 1:
+                self.grid[col][row] = "T"
+            else:
+                self.grid[col][row] = "S"
+                
+    #prints a certain path onto a copy of the grid
+    #@param path - list of space coords forming path
+    #prints grid to console with path represented by *. stars will not replace snake or pellet spaces
+    def __printGridPath(self, path):
+        gridCopy = self.getGrid()
+        
+        #updating grid copy with path
+        for space in path:
+            col = space[0]
+            row = space[1]
+            
+            #not updating snake segments of pellet with path marks
+            if gridCopy[col][row] not in {"H", "S", "T", "P"}:
+                gridCopy[col][row] = "*"
+                
+        printMatrix(gridCopy)
+        
+    #obtains a list of space ids for a path of space coordinates
+    #@param path - list of space coordinates
+    #returns list of space ids corresponding to the coordinates in path in that order
+    def pathIDs(self, path):
+        return [self.spaceID(coord[0], coord[1]) for coord in path]
