@@ -92,12 +92,12 @@ class SnakeGame:
         self.gameMsgLabel.grid(column=0, row=2)
         self.mainFrame.grid_rowconfigure(2, minsize=48, weight=1)
         
-        self.cols = 10
-        self.rows = 10
-        #self.cols = 9
+        #self.cols = 10
         #self.rows = 10
         #self.cols = 9
-        #self.rows = 9
+        #self.rows = 10
+        self.cols = 9
+        self.rows = 9
         self.squareLength = 30
         self.grid = []
         
@@ -179,7 +179,7 @@ class SnakeGame:
         self.aiMode = False
         self.pelletPath = []
         self.loopMoves = 0
-        self.__createSwirlNeighborsMap()
+        self.__createSwirlNeighborsMap(swirlType="loose")
          
     #starts player controlled game with snake in middle of screen
     def startCentered(self):
@@ -227,7 +227,7 @@ class SnakeGame:
         #marking spaces where snake is allowed to move certain direction
         for x in range(1, self.cols + 1):
             for y in range(1, self.rows + 1):
-                velocities = self.swirlDirections(x, y)
+                velocities = self.looseSwirlDirections(x, y)
                 
                 #checking if snake can move in a certain direction
                 if (0,-1) in velocities:
@@ -659,7 +659,7 @@ class SnakeGame:
     #returns list of space coords for path found with first elem being head. 
     #empty list if no path found
     def findSwirlPelletPath(self):
-        print(f"head id: {self.getHeadID()}")
+        #print(f"head id: {self.getHeadID()}")
         path1 = self.findPath(self.getHeadID(), self.getPelletID(), self.swirlNeighbors)
         
         #found no path to pellet
@@ -883,39 +883,9 @@ class SnakeGame:
             else:
                 yVelocity = -1
         return (xVelocity, yVelocity)
-    
+                
     #steers snake in optimal direction to move next
     def bestAISteer(self):
-        #steering snake with smart ai when it's short
-        if len(self.snakeCoords) <= self.cols*self.rows*.4:
-            self.smartAISteer()
-        else:
-            loopVelocities = self.loopAIDirection()
-            loopXVel = loopVelocities[0]
-            loopYVel = loopVelocities[1]
-            loopSpace = (self.getHeadCol() + loopXVel, self.getHeadRow() + loopYVel)
-            
-            #detemining if moving is a loop is safe
-            if self.snakeLength() == self.cols*self.rows - 1:
-                self.steerSnake(loopXVel, loopYVel)
-            #detemining if moving is a loop is safe
-            elif loopSpace in self.safeMoves() and self.loopMoves >= 0:
-                print("loop steer!")
-                self.steerSnake(loopXVel, loopYVel)
-                print(f"loop moves: {self.loopMoves}")
-            else:
-                self.surviveAISteer()
-                
-                #lowering number of loop moves if needed
-                if self.loopMoves > 0:
-                    self.loopMoves = -5
-                    
-            #incrementing number of loop moves if needed
-            if self.loopMoves < self.snakeLength():
-                self.loopMoves += 1
-                
-    #steers snake in optimal direction to move next
-    def bestAISteer2(self):
         #path to pellet already found
         if len(self.pelletPath) > 0:
             print("moving down pellet path")
@@ -935,17 +905,17 @@ class SnakeGame:
         if len(self.pelletPath) > 0:
             print("pellet path found")
             #print(self.pelletPath)
-            self.bestAISteer2()
+            self.bestAISteer()
         else:
             print("random swirl movement")
             self.randomSwirlAISteer()
                 
-    #determines velocities at space that allow snake's next move to stay within a loose swirl
+    #determines velocities at space that allow snake's next move to stay within a strict swirl
     #velocities determined regardless of snake's current velocity
     #@param col - column number
     #@parma row - row number
     #returns list of tuples of form (xVelocity, yVelocity)
-    def swirlDirections(self, col, row):
+    def strictSwirlDirections(self, col, row):
         velocities = set()
         rightVel = (1, 0)
         
@@ -994,60 +964,72 @@ class SnakeGame:
                 velocities.add(upVel)
             elif col == 2 and self.cols % 2 == 1 and self.rows % 2 != row % 2:
                 velocities.add(upVel)
-            
-        
-        '''
-        #telling snake where to go next based on position on screen
-        if row == 1:
-            #addressing permissible directions for top row
-            if col == 1:
-                velocities.append((1,0))
-            elif col == self.rows:
-                velocities.append((0,1))
-            else:
-                velocities.extend([(1,0), (0,1)])
-        elif col == self.cols:
-            #addressing posssible directions for rightmost column
-            if row == self.rows:
-                velocities.append((-1,0))
-            else:
-                velocities.extend([(-1,0), (0,1)])
-        elif row == self.rows:
-            #addressing possible directions for leftmost column
-            if col == 1:
-                velocities.append((0,-1))
-            else:
-                velocities.extend([(-1,0), (0,-1)])
-        elif col == 1:
-            velocities.extend([(1,0), (0,-1)])
-        else:
-            velocities.extend([(0,-1), (-1,0), (0,1)])
-        '''
         
         return list(velocities)
+    
+    #determines velocities at space that allow snake's next move to stay within a loose swirl
+    #velocities determined regardless of snake's current velocity
+    #@param col - column number
+    #@parma row - row number
+    #returns list of tuples of form (xVelocity, yVelocity)
+    def looseSwirlDirections(self, col, row):
+        directions = set(self.strictSwirlDirections(col, row))
+        
+        #adding right directions if needed
+        if 2 < row and row < self.rows and col < self.cols:
+            directions.add((1,0))
+            
+        #adding up direction if needed
+        if row > 1 and col < self.cols:
+            directions.add((0,-1))
+            
+        #adding down directions if needed
+        if row < self.rows and col > 1:
+            directions.add((0,1))
+            
+        return list(directions)
     
     #finds spaces near given space that allow it to move in swirl on next turn
     #@param col - column number
     #@param row - row number
+    #@param swirlType - "loose" or "strict". determines whether to use loose or strict swirl
     #returns list of space coordinates
-    def swirlSpaces(self, col, row):
-        velocities = self.swirlDirections(col, row)
+    def swirlSpaces(self, col, row, swirlType="strict"):
+        #returning velocities based on type of swirl
+        if swirlType == "strict":
+            velocities = self.strictSwirlDirections(col, row)
+        elif swirlType == "loose":
+            velocities = self.looseSwirlDirections(col, row)
+        else:
+            print("Error. Invalid swirlType inputted.")
+            return []
+        
         return [(col + v[0], row + v[1]) for v in velocities]
     
     #has snake randomly move around the board based on a loose swirl pattern
     #snake will avoid moves that lead to inevitable game over
     def randomSwirlAISteer(self):
-        velocities = self.swirlDirections(self.getHeadCol(), self.getHeadRow())
+        velocities = []
+        
+        #determining velocities based on point in game
+        if self.snakeLength() < self.cols*self.rows // 2:
+            velocities = self.looseSwirlDirections(self.getHeadCol(), self.getHeadRow())
+        else:
+            print("strict random movement")
+            velocities = self.strictSwirlDirections(self.getHeadCol(), self.getHeadRow())
+      
         swirlSpaces = {(self.getHeadCol() + v[0], self.getHeadRow() + v[1]) for v in velocities}
         #print(f"swirl moves: {swirlSpaces}")
         possibleMoves = set(self.safeMoves(self.swirlNeighbors))
         #print(f"possible moves: {possibleMoves}")
         
-        #found no safe moves!
-        if len(possibleMoves) == 0:
-            print("No safe moves found :(")
-        
         movePool = swirlSpaces.intersection(possibleMoves)
+        
+        #found no safe swril moves!
+        if len(movePool) == 0:
+            print("No safe swirl moves found :(")
+            self.surviveAISteer()
+            return
             
         print("swirl steer")
         space = randomElement(list(movePool)) 
@@ -1453,7 +1435,7 @@ class SnakeGame:
             #self.loopAiSteer()
             #self.bestAISteer()
             #self.randomSwirlAISteer()
-            self.bestAISteer2()
+            self.bestAISteer()
         
         self.moveSnake()
         self.steering = True
@@ -1479,7 +1461,11 @@ class SnakeGame:
         #drawing extra pellet if needed
         if self.pellet == None:
             self.drawPelletRandom()
-           # return
+          
+            #adjusting neighbors map for future steering
+            if self.aiMode and self.snakeLength() == self.cols*self.rows // 2:
+                print("switching up neighbors map")
+                self.__createSwirlNeighborsMap("strict")
            
         #printing grid if there was a change in snake's position
         if prevHeadCol != self.getHeadCol() or prevHeadRow != self.getHeadRow():
@@ -1583,15 +1569,16 @@ class SnakeGame:
         return [[self.grid[x][y] for y in range(self.rows+2)] for x in range(self.cols+2)]
     
     #creates dictionary representing neighbors for each space under swirl paths
+    #@param swirlType - "loose" or "strict". determines map form
     #neighbors found regardless of snake's position of velocity
-    def __createSwirlNeighborsMap(self):
+    def __createSwirlNeighborsMap(self, swirlType="strict"):
         self.swirlNeighbors = {}
         
         #reporting neighbors for each space in grid
         for x in range(1, self.cols + 1):
             for y in range(1, self.rows + 1):
                 spaceID = self.spaceID(x, y)
-                neighborSpaces = self.swirlSpaces(x, y)
+                neighborSpaces = self.swirlSpaces(x, y, swirlType)
                 neighborIDs = [self.spaceID(s[0], s[1]) for s in neighborSpaces]
                 self.swirlNeighbors[spaceID] = neighborIDs
                 
