@@ -206,8 +206,8 @@ class SnakeGame:
         self.playAgainBtn["state"] = "disable"
         self.aiBtn["state"] = "disable"
         
-        self.cols = 10
-        self.rows = 10
+        self.cols = 9
+        self.rows = 9
         self.squareLength = 30
         self.grid = self.blankGrid()
             
@@ -220,6 +220,22 @@ class SnakeGame:
         
         self.__createSwirlNeighborsMap()
         
+        
+        print("right spaces: ")
+        gridCopy = self.getGridCopy()
+        
+        #marking spaces where snake is allowed to move certain direction
+        for x in range(1, self.cols + 1):
+            for y in range(1, self.rows + 1):
+                velocities = self.swirlDirections(x, y)
+                
+                #checking if snake can move in a certain direction
+                if (0,-1) in velocities:
+                    gridCopy[x][y] = "^"
+        
+        self.printGrid(gridCopy)
+        
+        '''
         path = [(6,5), (7,5), (8,5)]
         print(f"Snake moving down {path}")
         snake2 = self.futureSnakeCoords(segments, path)
@@ -227,6 +243,7 @@ class SnakeGame:
         grid2 = self.blankGrid()
         self.fillGridWithSnake(grid2, snake2)
         self.printGrid(grid2)
+        '''
         
         '''
         self.findSwirlPelletPath()
@@ -592,12 +609,29 @@ class SnakeGame:
             if len(tailPath) > 0:
                 safeMoves.append(coords)
                 tailAccessibleSpaces = tailAccessibleSpaces.union(tailPath)
+                
+        if self.snakeLength() == self.cols*self.rows - 1:
+            pelletCoords = (self.pelletCol, self.pelletRow)
+            
+            #checking if pellet space near head
+            if abs(self.pelletCol - self.getHeadCol()) == 1 and pelletCoords not in safeMoves:
+                safeMoves.append(pelletCoords)
+            elif abs(self.pelletRow - self.getHeadRow()) == 1 and pelletCoords not in safeMoves:
+                safeMoves.append(pelletCoords)
              
         return safeMoves
         
     #finds a path from the head to the pellet that will avoid endangering the snake along the way
     #updates self.pelletPath with list of space coords of path found. first element is a space adjacent to head
     def findPelletPath(self):
+        #returning pellet space if it'll win the game then and there
+        if self.snakeLength() == self.cols*self.rows - 1:
+            #checking if pellet space near head
+            if abs(self.pelletCol - self.getHeadCol()) == 1:
+                return [(self.pelletCol, self.pelletRow)]
+            elif abs(self.pelletRow - self.getHeadRow()) == 1:
+                return [(self.pelletCol, self.pelletRow)]
+        
         spaces = self.freeMoves()
         path1 = self.findPath(self.getTailID(), self.getPelletID())
         #print("tail to pellet path:")
@@ -616,30 +650,6 @@ class SnakeGame:
         #found no path between head and pellet
         if len(path2) == 0:
             return []
-        
-        '''
-        gridCopy = self.getGrid()
-        specialSpaces = {"T", "P", "H"}
-        
-        #copying paths to grid copy
-        for space in path1:
-            col = space[0]
-            row = space[1]
-            symbol = gridCopy[col][row]
-            #replacing space with path symbol
-            if symbol not in specialSpaces: 
-                gridCopy[col][row] = "@"
-            
-        for space in path2:
-            col = space[0]
-            row = space[1]
-            symbol = gridCopy[col][row]
-            #replacing space with path symbol
-            if symbol not in specialSpaces: 
-                gridCopy[col][row] = "*"
-            
-        printMatrix(gridCopy)
-        '''
         
         path2.pop()
         path2.reverse()
@@ -936,8 +946,57 @@ class SnakeGame:
     #@parma row - row number
     #returns list of tuples of form (xVelocity, yVelocity)
     def swirlDirections(self, col, row):
-        velocities = []
+        velocities = set()
+        rightVel = (1, 0)
         
+        #seeing if space allows snake to move right
+        if row == 1 and col != self.cols:
+            velocities.add(rightVel)
+        if self.cols % 2 == 1 and col == 1:
+            #adding addition spaces where snake can move right depending on rows
+            if self.rows % 2 == 0 and row % 2 == 1:
+                velocities.add(rightVel)
+            elif self.rows % 2 == 1 and row % 2 == 0:
+                velocities.add(rightVel)
+                
+        leftVel = (-1, 0)       
+                
+        #seeing if space allows snake to move left
+        if row >= 2 and col > 2:
+            velocities.add(leftVel)
+        if row >= 2 and col == 2:
+            #checking if number of columns is even
+            if self.cols % 2 == 0:
+                velocities.add(leftVel)
+            elif self.rows % 2 == 0 and row % 2 == 0:
+                velocities.add(leftVel)
+            elif self.rows % 2 == 1 and row % 2 == 1:
+                velocities.add(leftVel)
+        
+        downVel = (0, 1)
+                
+        #seeing if space allows snake to move down
+        if row < self.rows and self.cols % 2 == col % 2 and col > 1:
+            velocities.add(downVel)
+            
+        upVel = (0, -1)
+        
+        #seeing if space allows snake to move up
+        if row > 1:
+            #finding situations where up is permitted
+            if self.cols % 2 == 0 and col % 2 == 1:
+                velocities.add(upVel)
+            elif self.cols % 2 == 1 and col > 2 and col % 2 == 0:
+                velocities.add(upVel)
+            elif col == 1 and row == 2:
+                velocities.add(upVel)
+            elif col == 1 and row % 2 == self.rows % 2:
+                velocities.add(upVel)
+            elif col == 2 and self.cols % 2 == 1 and self.rows % 2 != row % 2:
+                velocities.add(upVel)
+            
+        
+        '''
         #telling snake where to go next based on position on screen
         if row == 1:
             #addressing permissible directions for top row
@@ -963,8 +1022,9 @@ class SnakeGame:
             velocities.extend([(1,0), (0,-1)])
         else:
             velocities.extend([(0,-1), (-1,0), (0,1)])
+        '''
         
-        return velocities
+        return list(velocities)
     
     #finds spaces near given space that allow it to move in swirl on next turn
     #@param col - column number
