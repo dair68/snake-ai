@@ -92,12 +92,12 @@ class SnakeGame:
         self.gameMsgLabel.grid(column=0, row=2)
         self.mainFrame.grid_rowconfigure(2, minsize=48, weight=1)
         
-        #self.cols = 10
-        #self.rows = 10
+        self.cols = 10
+        self.rows = 10
         #self.cols = 9
         #self.rows = 10
-        self.cols = 9
-        self.rows = 9
+        #self.cols = 9
+        #self.rows = 9
         self.squareLength = 30
         self.grid = []
         
@@ -179,7 +179,7 @@ class SnakeGame:
         self.aiMode = False
         self.pelletPath = []
         self.loopMoves = 0
-        self.__createSwirlNeighborsMap(swirlType="loose")
+        self.__createSwirlNeighborsMap(swirlType="strict")
          
     #starts player controlled game with snake in middle of screen
     def startCentered(self):
@@ -660,7 +660,7 @@ class SnakeGame:
     #empty list if no path found
     def findSwirlPelletPath(self):
         #print(f"head id: {self.getHeadID()}")
-        path1 = self.findPath(self.getHeadID(), self.getPelletID(), self.swirlNeighbors)
+        path1 = self.findPath(self.getHeadID(), self.getPelletID())
         
         #found no path to pellet
         if len(path1) == 0:
@@ -681,8 +681,9 @@ class SnakeGame:
         
         #safe path to pellet found
         if len(path2) > 0:
-            print(f"pellet path: {path1}")
-            print(f"future snake: {futureSnake}")
+            #print(f"pellet path: {path1}")
+            #print(f"future snake: {futureSnake}")
+            pass
         
         self.pelletPath = path1 if len(path2) > 0 else []
     
@@ -904,7 +905,7 @@ class SnakeGame:
         #found path
         if len(self.pelletPath) > 0:
             print("pellet path found")
-            #print(self.pelletPath)
+            print(self.pelletPath)
             self.bestAISteer()
         else:
             print("random swirl movement")
@@ -1009,15 +1010,7 @@ class SnakeGame:
     #has snake randomly move around the board based on a loose swirl pattern
     #snake will avoid moves that lead to inevitable game over
     def randomSwirlAISteer(self):
-        velocities = []
-        
-        #determining velocities based on point in game
-        if self.snakeLength() < self.cols*self.rows // 2:
-            velocities = self.looseSwirlDirections(self.getHeadCol(), self.getHeadRow())
-        else:
-            print("strict random movement")
-            velocities = self.strictSwirlDirections(self.getHeadCol(), self.getHeadRow())
-      
+        velocities = self.strictSwirlDirections(self.getHeadCol(), self.getHeadRow())
         swirlSpaces = {(self.getHeadCol() + v[0], self.getHeadRow() + v[1]) for v in velocities}
         #print(f"swirl moves: {swirlSpaces}")
         possibleMoves = set(self.safeMoves(self.swirlNeighbors))
@@ -1027,7 +1020,7 @@ class SnakeGame:
         
         #found no safe swril moves!
         if len(movePool) == 0:
-            print("No safe swirl moves found :(")
+            print("No safe swirl moves found!")
             self.surviveAISteer()
             return
             
@@ -1461,11 +1454,6 @@ class SnakeGame:
         #drawing extra pellet if needed
         if self.pellet == None:
             self.drawPelletRandom()
-          
-            #adjusting neighbors map for future steering
-            if self.aiMode and self.snakeLength() == self.cols*self.rows // 2:
-                print("switching up neighbors map")
-                self.__createSwirlNeighborsMap("strict")
            
         #printing grid if there was a change in snake's position
         if prevHeadCol != self.getHeadCol() or prevHeadRow != self.getHeadRow():
