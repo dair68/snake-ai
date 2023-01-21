@@ -108,10 +108,10 @@ class SnakeGame:
         self.mainFrame.grid_rowconfigure(3, minsize=30, weight=1)
         self.playAgainBtn.grid(column=0, row=0)
         
-        #self.aiBtn = ttk.Button(self.buttonFrame, text="Run AI", style="Bold.TButton",
-        #                        command= self.startAICentered)
         self.aiBtn = ttk.Button(self.buttonFrame, text="Run AI", style="Bold.TButton",
-                                command = lambda : self.startAI(2, 1))
+                                command= self.startAICentered)
+        #self.aiBtn = ttk.Button(self.buttonFrame, text="Run AI", style="Bold.TButton",
+        #                        command = lambda : self.startAI(2, 1))
         self.aiBtn.grid(column=1, row=0)
         
         canvasHeight = self.squareLength*self.rows
@@ -194,6 +194,7 @@ class SnakeGame:
         self.aiMode = True
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
+        self.steering = True
         self.mainFrame.after(3000, self.runTurn)
         
     #begins running the ai with snake starting in center space
@@ -887,6 +888,7 @@ class SnakeGame:
                 
     #steers snake in optimal direction to move next
     def bestAISteer(self):
+        print("best ai steer")
         #path to pellet already found
         if len(self.pelletPath) > 0:
             print("moving down pellet path")
@@ -1319,13 +1321,14 @@ class SnakeGame:
     #begins the snake movement loop
     #causes the snake to start moving while adjusting game to accomodate
     def startMovement(self):
+        print("starting movement")
         self.snakeMoving = True
         self.steering = True
         
         #removing text for player controlled game
         if not self.aiMode:
             self.gameMsgLabel["text"] = ""
-        self.runTurn()
+            self.runTurn()
        
     #sets movement direction of snake to up
     #@param event - event object
@@ -1399,6 +1402,9 @@ class SnakeGame:
             self.up()
         else:
             print("Error. Invalid x and/or y velocities inputed.")
+            print(f"x velocity: {xVelocity}")
+            print(f"y velocity: {yVelocity}")
+            print(f"snake head velocity: ({self.headXVelocity}, {self.headYVelocity})")
             
     #checks if snake has bumped into the edge
     def snakeTouchingEdge(self):
@@ -1426,7 +1432,6 @@ class SnakeGame:
             #self.surviveAISteer()
             #self.smartAISteer()
             #self.loopAiSteer()
-            #self.bestAISteer()
             #self.randomSwirlAISteer()
             self.bestAISteer()
         
