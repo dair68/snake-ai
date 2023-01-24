@@ -12,6 +12,7 @@ import tkinter.font as tkFont
 from queue import Queue
 from queue import LifoQueue
 import math
+from collections import deque
 
 #prints a 2d array to the console
 #@param matrix - a 2d array
@@ -128,7 +129,7 @@ class SnakeGame:
         self.pelletCol = -1
         self.pelletRow = -1
         self.snakeSquares = []
-        self.snakeCoords = []
+        self.snakeCoords = deque()
         self.prevTailCol = -1
         self.prevTailRow = -1
         
@@ -159,7 +160,8 @@ class SnakeGame:
         
         self.grid = self.blankGrid()
         self.grid[col][row] = "H"
-        self.snakeCoords = [(col, row)]
+        self.snakeCoords = deque([(col, row)])
+        #print(self.snakeCoords)
         
         self.canvas.delete("all")
         self.canvas.focus_set()
@@ -588,7 +590,7 @@ class SnakeGame:
             tailAccessibleSpaces = set(self.pathIDs(pelletTailPath))
         
         #adding penultimate segment as future tail location, if it exists
-        if len(self.snakeCoords) > 1:
+        if self.snakeLength() > 1:
             penultSeg = self.snakeCoords[-2]
             tailAccessibleSpaces.add(self.spaceID(penultSeg[0], penultSeg[1]))
         
@@ -669,9 +671,14 @@ class SnakeGame:
             return
             
         futureGrid = self.blankGrid()
-        futureSnake = [path1[1]]
+        #print(path1[1])
+        futureSnake = deque([path1[1]])
+        #print(f"future snake1: {futureSnake}")
         futureSnake.extend(self.snakeCoords)
+        #print(f"future snake2: {futureSnake}")
         futureSnake = self.futureSnakeCoords(futureSnake, path1[2:])
+        print(f"future snake3: {futureSnake}")
+      
         self.fillGridWithSnake(futureGrid, futureSnake)
         
         futureHeadID = self.getHeadID(futureSnake)
@@ -1181,23 +1188,25 @@ class SnakeGame:
     #gets coordinates of head square
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns coordinates in form (col, row). if head doesn't exist returns empty tuple.
-    def getHeadCoords(self, snakeSeg = []):
+    def getHeadCoords(self, snakeSeg = None):
         #using self.snakeCoords if needed
-        if len(snakeSeg) == 0:
+        if snakeSeg is None:
+            #print("using self.snakeCoords")
             snakeSeg = self.snakeCoords
         
+        #print(self.snakeCoords)
         return snakeSeg[0]
     
     #gets column snake head is in
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns grid column number of head. if no head returns -1
-    def getHeadCol(self, snakeSeg = []):
+    def getHeadCol(self, snakeSeg = None):
         return self.getHeadCoords(snakeSeg)[0]
     
     #gets row snake head is in
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #return grid row number of head
-    def getHeadRow(self, snakeSeg = []):
+    def getHeadRow(self, snakeSeg = None):
         return self.getHeadCoords(snakeSeg)[1]
     
     #obtains head square
@@ -1208,7 +1217,7 @@ class SnakeGame:
     #obtains id of space head segment is occupying
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns integer representing space id of head space
-    def getHeadID(self, snakeSeg = []):
+    def getHeadID(self, snakeSeg = None):
         return self.spaceID(self.getHeadCol(snakeSeg), self.getHeadRow(snakeSeg))
     
     #obtains id of space pellet is occupying
@@ -1224,9 +1233,9 @@ class SnakeGame:
     #obtains tail coordinates
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns tail grid coordinates as (col, row). if no tail returns empty tuple
-    def getTailCoords(self, snakeSeg = []):
+    def getTailCoords(self, snakeSeg = None):
         #using self.snakeCoords if needed
-        if len(snakeSeg) == 0:
+        if snakeSeg is None:
             snakeSeg = self.snakeCoords
         
         return snakeSeg[-1]
@@ -1234,19 +1243,19 @@ class SnakeGame:
     #obtains tail column
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns tail grid column number. if no tail returns -1
-    def getTailCol(self, snakeSeg = []):
+    def getTailCol(self, snakeSeg = None):
         return self.getTailCoords(snakeSeg)[0]
     
     #obatins tail row
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns tail grid row number. if no tail returns -1
-    def getTailRow(self, snakeSeg = []):
+    def getTailRow(self, snakeSeg = None):
         return self.getTailCoords(snakeSeg)[1]
     
     #obtains id of space tail is occupying
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns id of space tail of occupying
-    def getTailID(self, snakeSeg = []):
+    def getTailID(self, snakeSeg = None):
         return self.spaceID(self.getTailCol(snakeSeg), self.getTailRow(snakeSeg))
     
     #draws a yellow unit square that will be treated as pellet for snake to eat
@@ -1508,7 +1517,7 @@ class SnakeGame:
             self.snakeSquares.insert(0, rect)
         
         #drawing head block with blue unit square
-        self.snakeCoords.insert(0, headCoords)
+        self.snakeCoords.appendleft(headCoords)
         head = self.drawUnitSquare(headCol, headRow)
         self.snakeSquares.insert(0, head)
         headDestination = self.grid[headCol][headRow]
@@ -1579,7 +1588,7 @@ class SnakeGame:
     #@param segments - list of snake coordinates. 0th element is snake head
     #does not replicate snake in gui
     def __buildSnake(self, segments):
-        self.snakeCoords = [(seg[0], seg[1]) for seg in segments]
+        self.snakeCoords = deque([(seg[0], seg[1]) for seg in segments])
         self.fillGridWithSnake(self.grid, self.snakeCoords)
                 
     #prints a certain path onto a copy of the grid
@@ -1625,7 +1634,7 @@ class SnakeGame:
     
     #updates a grid matrix with snake symbols
     #@param grid - 2 by 2 nested lists representing grid
-    #@param snakeSeg - list of space coordinates making up snake. 0th element is head
+    #@param snakeSeg - deque of space coordinates making up snake. 0th element is head
     #filled inputted grid with snake coordinates. "H" for head, "T" for tail, "S" otherwise
     def fillGridWithSnake(self, grid, snakeSeg):
         #copying snake over to grid
@@ -1643,8 +1652,32 @@ class SnakeGame:
                 grid[col][row] = "S"
                 
     #finds new snake coordinates after it has moved down a certain path
-    #@param snakeSeg - list of space coordinates making up snake. 0th element is head
+    #@param snakeSeg - deque of space coordinates making up snake. 0th element is head
     #@param path - list of space coordinates representing path snake will take
     #returns list coordinates snake will be at after moving down inputted path. assumes no pellets are present.
     def futureSnakeCoords(self, snakeSeg, path):
-        return path[::-1] + snakeSeg[:len(snakeSeg) - len(path)]
+        print(f"path: {path}")
+        print(f"snakeSeg: {snakeSeg}")
+        snakePart1 = deque() 
+        
+        #determining the path spaces present in future snake
+        if len(snakeSeg) < len(path):
+            stopIndex = len(path) - len(snakeSeg) - 1
+            snakePart1 = deque(path[:stopIndex:-1])
+        else:
+            snakePart1 = deque(path[::-1])
+        
+        print(f"snake part1: {snakePart1}")
+        snakePart2 = deque()
+        shift = len(snakeSeg) - len(path)
+        #snakePart2 = snakeSeg[:len(snakeSeg) - len(path)]
+        
+        #trimming unneeded elements from snakePart2
+        for i in range(shift):
+            snakePart2.append(snakeSeg[0])
+            snakeSeg.rotate(-1)
+        print(f"snake part2: {snakePart2}")
+            
+        snakeSeg.rotate(shift)
+        snakePart1.extend(snakePart2)
+        return snakePart1
