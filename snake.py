@@ -128,7 +128,7 @@ class SnakeGame:
         self.pellet = None
         self.pelletCol = -1
         self.pelletRow = -1
-        self.snakeSquares = []
+        self.snakeSquares = deque()
         self.snakeCoords = deque()
         self.prevTailCol = -1
         self.prevTailRow = -1
@@ -171,7 +171,7 @@ class SnakeGame:
         startSquare = self.drawUnitSquare(col, row, "blue", "white")
         self.gameMsgLabel["text"] = "Move the blue square with the arrow keys!"
         
-        self.snakeSquares = [startSquare]
+        self.snakeSquares = deque([startSquare])
         self.prevTailCol = col
         self.prevTailRow = row
         self.drawPelletRandom()
@@ -1459,7 +1459,7 @@ class SnakeGame:
             return
         
         #checking if game has been won
-        if len(self.snakeSquares) == self.cols*self.rows:
+        if self.snakeLength() == self.cols*self.rows:
             self.win()
             self.printGrid()
             print("\n")
@@ -1480,7 +1480,8 @@ class SnakeGame:
         
     #shift the snake one spot
     def moveSnake(self):
-        snakeLength = len(self.snakeSquares)
+        #snakeLength = len(self.snakeSquares)
+        snakeLength = self.snakeLength()
         #print(f"snakelength: {snakeLength}")
         
         #turning previous head square to normal body square
@@ -1512,9 +1513,9 @@ class SnakeGame:
             #print("replacing head with rectangle")
             oldHead = self.snakeSquares[0]
             self.canvas.delete(oldHead)
-            self.snakeSquares.pop(0)
+            self.snakeSquares.popleft()
             rect = self.drawRect(prevHeadCol, prevHeadRow, headCol, headRow)
-            self.snakeSquares.insert(0, rect)
+            self.snakeSquares.appendleft(rect)
         
         #drawing head block with blue unit square
         self.snakeCoords.appendleft(headCoords)
@@ -1677,7 +1678,9 @@ class SnakeGame:
             snakePart2.append(snakeSeg[0])
             snakeSeg.rotate(-1)
         print(f"snake part2: {snakePart2}")
-            
-        snakeSeg.rotate(shift)
+        
+        #rotating snake segment back if needed
+        if len(snakePart2) > 0:
+            snakeSeg.rotate(shift)
         snakePart1.extend(snakePart2)
         return snakePart1
