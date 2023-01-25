@@ -429,7 +429,7 @@ class SnakeGame:
     #@param excludedSpaces - set of space coordinates that are not allowed make up middle of path 
     #@param grid - 2 by 2 nexted lists of grid with 1st index being column and 2nd index being row
     #returns shortest uninteruppted path from inputted space to any of the spaces in subgraph
-    #if nonempty list returned, it is a path with no snake, wall, or pellet spaces 
+    #if nonempty deque returned, it is a path with no snake, wall, or pellet spaces 
     #aside from those at endpoints and subgraph spaces
     def findSubgraphPath(self, spaceID, subgraph, neighbors={}, excludedSpaces=set(), grid=[]):
         #replacing grid with ingame grid if needed
@@ -501,13 +501,13 @@ class SnakeGame:
                         spaceParents[spaceID] = nodeID
                         nextNodes.put_nowait(spaceID)  
         
-        path = []
+        path = deque()
         spaceID = finalSpaceID
         
         #creating path to target space
         while spaceID in spaceParents:
             coords = self.spaceCoords(spaceID)
-            path.insert(0, coords)
+            path.appendleft(coords)
             spaceID = spaceParents[spaceID]
         
         return path
@@ -667,7 +667,7 @@ class SnakeGame:
         
         #found no path to pellet
         if len(path1) == 0:
-            self.pelletPath = []
+            self.pelletPath = deque()
             return
             
         futureGrid = self.blankGrid()
@@ -676,7 +676,11 @@ class SnakeGame:
         #print(f"future snake1: {futureSnake}")
         futureSnake.extend(self.snakeCoords)
         #print(f"future snake2: {futureSnake}")
-        futureSnake = self.futureSnakeCoords(futureSnake, path1[2:])
+        a = path1[0]
+        b = path1[1]
+        path1.popleft()
+        path1.popleft()
+        futureSnake = self.futureSnakeCoords(futureSnake, path1)
         print(f"future snake3: {futureSnake}")
       
         self.fillGridWithSnake(futureGrid, futureSnake)
@@ -693,7 +697,9 @@ class SnakeGame:
             #print(f"future snake: {futureSnake}")
             pass
         
-        self.pelletPath = path1 if len(path2) > 0 else []
+        path1.appendleft(b)
+        path1.appendleft(a)
+        self.pelletPath = path1 if len(path2) > 0 else deque()
     
     #has ai move snake in random direction
     def randomAISteer(self):
@@ -748,7 +754,7 @@ class SnakeGame:
          
         print("Smart steer!")
         space = self.pelletPath[0]
-        self.pelletPath.pop(0)
+        self.pelletPath.popleft()
             
         xVelocity = space[0] - self.getHeadCol()
         yVelocity = space[1] - self.getHeadRow()
@@ -904,15 +910,15 @@ class SnakeGame:
             xVelocity = space[0] - self.getHeadCol()
             yVelocity = space[1] - self.getHeadRow()
             self.steerSnake(xVelocity, yVelocity)
-            self.pelletPath = self.pelletPath[1:]
+            self.pelletPath.popleft()
             return
         
         #searching for pellet path
         self.findSwirlPelletPath()
-        self.pelletPath = self.pelletPath[1:]
         
         #found path
         if len(self.pelletPath) > 0:
+            self.pelletPath.popleft()
             print("pellet path found")
             print(self.pelletPath)
             self.bestAISteer()
@@ -1659,14 +1665,15 @@ class SnakeGame:
     def futureSnakeCoords(self, snakeSeg, path):
         print(f"path: {path}")
         print(f"snakeSeg: {snakeSeg}")
-        snakePart1 = deque() 
-        
+        snakePart1 = deque()
+        stopNum = min(len(snakeSeg), len(path))
+ 
         #determining the path spaces present in future snake
-        if len(snakeSeg) < len(path):
-            stopIndex = len(path) - len(snakeSeg) - 1
-            snakePart1 = deque(path[:stopIndex:-1])
-        else:
-            snakePart1 = deque(path[::-1])
+        for i in range(stopNum):
+            snakePart1.append(path[-1])
+            path.rotate()
+            
+        path.rotate(-stopNum)
         
         print(f"snake part1: {snakePart1}")
         snakePart2 = deque()
