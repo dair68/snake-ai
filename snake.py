@@ -184,7 +184,7 @@ class SnakeGame:
         self.pelletPath = deque()
         self.postPelletPath = deque()
         self.loopMoves = 0
-        self.__createSwirlNeighborsMap(swirlType="strict")
+        self.__createSwirlNeighborsMap("loose")
         self.borderIDs = self.getBorderIDs()
          
     #starts player controlled game with snake in middle of screen
@@ -234,19 +234,19 @@ class SnakeGame:
         self.squareLength = 30
         self.grid = self.blankGrid()
         
-        #self.drawPellet(4, 9)
-        #segments = deque([(5,3), (4,3), (3,3), (3,4), (3,5)])
-        self.drawPellet(2, 5)
-        segments = deque([(2,4), (2,3), (2,2)])
+        self.drawPellet(6, 9)
+        segments = deque([(5,3), (4,3), (3,3), (3,4), (3,5)])
+        #self.drawPellet(2, 5)
+        #segments = deque([(2,4), (2,3), (2,2)])
         
         self.__buildSnake(segments)
         
         print(f"snake: {segments}")
         self.printGrid()
         
-        pathInfo = self.findSwirlSafePelletPathInfo()
-        print("path info: ")
-        print(pathInfo)
+        path = self.findSwirlSafePelletPath()
+        print("pellet path: ")
+        print(path)
         
     #has the ai choose which direction the snake will move next
     def aiSteer(self):
@@ -806,7 +806,7 @@ class SnakeGame:
             
     #has the ai choose next space snake will visit based on what's sensible
     #chooses random space if all available moves will result in a loss
-    def smartAISteer(self):
+    def basicAISteer(self):
         space = ()
         
         #path to pellet not yet charted out
@@ -1027,43 +1027,42 @@ class SnakeGame:
             else:
                 xVelocity = 1
         return (xVelocity, yVelocity)
-                
-    #steers snake in optimal direction to move next
-    def bestAISteer(self):
-        print("best ai steer")
-        #path to pellet already found
-        if len(self.pelletPath) > 0:
-            print("moving down pellet path")
-            #print(self.pelletPath)
-            space = self.pelletPath[0]
-            xVelocity = space[0] - self.getHeadCol()
-            yVelocity = space[1] - self.getHeadRow()
-            self.steerSnake(xVelocity, yVelocity)
-            self.pelletPath.popleft()
-            return
-        
-        #searching for pellet path
-        if self.snakeLength() <= 2*(self.cols + self.rows - 2):
-            self.pelletPath = self.findPelletPath()    
-        else:
-            self.pelletPath = self.findSwirlPelletPath()
-        
-        #found path
-        if len(self.pelletPath) > 0:
-            self.pelletPath.popleft()
-            print("pellet path found")
-            print(self.pelletPath)
-            self.bestAISteer()
-        else:
-            print("random swirl movement")
-            self.randomSwirlAISteer()
-            
-    #yet another stab at possibly better ai steer
-    #steers snake to an adjacent space for that turn
-    def experimentalAISteer(self):
+    
+    #steers the snake to gun for pellets if it's absolutely safe to do so
+    #steers snake to an adjacent space for that turn.
+    def safeWinAISteer(self):
         #searching for pellet path
         if len(self.pelletPath) == 0:
-            pathInfo = self.findSwirlSafePelletPathInfo()
+            self.pelletPath = self.findSafeWinPelletPath()
+            
+            #found a pellet path!
+            if len(self.pelletPath) > 0:
+                self.pelletPath.popleft()
+                print("pellet path: ")
+                print(self.pelletPath)
+                
+        #moving snake depending on if pellet path found
+        if len(self.pelletPath) > 0:
+            print("going down pellet path")
+            self.moveDownPath(self.pelletPath)
+        else:
+            safeMoves = self.safeMoves()
+            swirlMove = self.nextSwirlSpace(self.getHeadCol(), self.getHeadRow())
+            
+            #having snake go down swirl if safe, other choosing randomly
+            if swirlMove in safeMoves:
+                print("going down swirl path")
+                self.loopAiSteer()
+            else:
+                print("safe move")
+                self.surviveAISteer()
+            
+    #steers snake in direction that will allow snake to win quickly
+    #steers snake to an adjacent space for that turn
+    def fastWinAISteer(self):
+        #searching for pellet path
+        if len(self.pelletPath) == 0:
+            pathInfo = self.fastWinPelletPathInfo()
             possiblePelletPath = pathInfo["pelletPath"]
             escapeRoute = pathInfo["escapePath"]
             
@@ -1103,19 +1102,19 @@ class SnakeGame:
             
     #looks for a pellet path that the snake can then escape to readopt swirl formation
     #returns dict of form {pelletPath": deque(), "futureSnake":deque(), "escapePath": deque()}
-    def findSwirlSafePelletPathInfo(self):
+    def fastWinPelletPathInfo(self):
         pathInfo = self.findPelletPathInfo()
         futureSnake = pathInfo["futureSnake"]
         possiblePelletPath = pathInfo["pelletPath"]
-        #print(f"possible path: {possiblePelletPath}")
-        #print(f"future snake: {futureSnake}")
+        print(f"possible path: {possiblePelletPath}")
+        print(f"future snake: {futureSnake}")
         
         #no path found
         if len(possiblePelletPath) == 0:
             pathInfo["escapePath"] = deque()
             return pathInfo
         
-        swirlTailSpaces = self.tailAccessibleSwirlSpaceIDs(futureSnake)
+        swirlTailSpaces = self.tailAccessibleSwirlIDs(futureSnake)
         #print(f"tail swirl spaces: {swirlTailSpaces}")
         
         headSpace = futureSnake[0]
@@ -1131,23 +1130,32 @@ class SnakeGame:
             return pathInfo
        
         headID = self.spaceID(headCol, headRow)
-        #print(f"head id: {headID}")
+        tailSpace = futureSnake[-1]
+        tailID = self.spaceID(tailSpace[0], tailSpace[1])
         grid = self.createGrid(futureSnake)
-        escapePath = self.findSubgraphPath(headID, swirlTailSpaces, {}, set(), grid)
+        #print(f"head id: {headID}"
+        
+        #searching for path to swirl tail spaces
+        while len(swirlTailSpaces) > 0:
+            spaceID = swirlTailSpaces[-1]
+            swirlTailSpaces.pop()
+            remainingSpaces = set(swirlTailSpaces)
+            grid = self.createGrid(futureSnake)
+            escapePath = self.findPath(headID, spaceID, self.swirlNeighbors, remainingSpaces, grid)
             
-        #found escape route!
-        if len(escapePath) > 0:
-            pathInfo["escapePath"] = escapePath
-            return pathInfo
+            #found escape route!
+            if len(escapePath) > 0:
+                pathInfo["escapePath"] = escapePath
+                return pathInfo
         
         return {"pelletPath": deque(), "futureSnake": deque(), "escapePath": deque()}
     
     #finds all spaces that can reach snake's tail thru swirl path
     #@param snakeSeg - deque of snake space coords
-    #returns set of space ids that can follow swirl path to reach tail
-    def tailAccessibleSwirlSpaceIDs(self, snakeSeg):
+    #returns deque of space ids that can follow swirl path to reach tail
+    def tailAccessibleSwirlIDs(self, snakeSeg):
         #spaceList = []
-        spaces = set()
+        spaces = deque()
         snakeSegSet = set(snakeSeg)
         tailSpace = snakeSeg[-1]
         space = self.prevSwirlSpace(tailSpace[0], tailSpace[1])
@@ -1155,13 +1163,44 @@ class SnakeGame:
         #finding all spaces that lead to tail under swirl formation
         while space not in snakeSegSet:
             (col, row) = space
-            spaces.add(self.spaceID(col, row))
+            spaces.append(self.spaceID(col, row))
             #spaceList.append(space)
             space = self.prevSwirlSpace(space[0], space[1])
             
         #print("spaces that can reach tail thru swirl: ")
         #print(spaceList)
         return spaces
+    
+    #finds pellet path that allows snake to then resume swirl formation without issues
+    #returns deque of space coords for path if it exists.
+    def findSafeWinPelletPath(self):
+        pathInfo = self.findPelletPathInfo()
+        futureSnake = pathInfo["futureSnake"]
+        possiblePelletPath = pathInfo["pelletPath"]
+        print(f"possible path: {possiblePelletPath}")
+        print(f"future snake: {futureSnake}")
+        
+        #no path found
+        if len(possiblePelletPath) == 0:
+            return deque()
+        
+        headSpace = futureSnake[0]
+        space = self.nextSwirlSpace(headSpace[0], headSpace[1])
+        firstSpace = space
+        snakeSeg = set(futureSnake)
+        
+        #seeing if following swirl path leads back to tail
+        while space not in futureSnake:
+            (col, row) = space
+            space = self.nextSwirlSpace(col, row)
+          
+        tailSpace = futureSnake[-1]    
+          
+        #found swirl path to tail!
+        if space == tailSpace and firstSpace != tailSpace:
+            return possiblePelletPath
+            
+        return deque()
     
     #checks if spaces at edge of grid are vacant
     #@param returns true if no snake parts at edge of game area right next to game over zone
@@ -1380,27 +1419,6 @@ class SnakeGame:
             return []
         
         return [(col + v[0], row + v[1]) for v in velocities]
-    
-    #has snake randomly move around the board based on a loose swirl pattern
-    #snake will avoid moves that lead to inevitable game over
-    def randomSwirlAISteer(self):
-        velocities = self.strictSwirlDirections(self.getHeadCol(), self.getHeadRow())
-        swirlSpaces = {(self.getHeadCol() + v[0], self.getHeadRow() + v[1]) for v in velocities}
-        #print(f"swirl moves: {swirlSpaces}")
-        possibleMoves = set(self.safeMoves(self.swirlNeighbors))
-        #print(f"possible moves: {possibleMoves}")
-        
-        movePool = swirlSpaces.intersection(possibleMoves)
-        
-        #found no safe swril moves!
-        if len(movePool) == 0:
-            print("No safe swirl moves found!")
-            self.surviveAISteer()
-            return
-            
-        print("swirl steer")
-        space = randomElement(list(movePool)) 
-        self.steerSnake(space[0] - self.getHeadCol(), space[1] - self.getHeadRow())
     
     #obtains id number assigned to a specific space on the grid
     #@param col - column number
@@ -1804,11 +1822,10 @@ class SnakeGame:
         if self.aiMode:
             #self.randomAISteer()
             #self.surviveAISteer()
-            #self.smartAISteer()
+            #self.basicAISteer()
             #self.loopAiSteer()
-            #self.randomSwirlAISteer()
-            #self.bestAISteer()
-            self.experimentalAISteer()
+            #self.safeWinAISteer()
+            self.fastWinAISteer()
         
         self.moveSnake()
         self.steering = True
