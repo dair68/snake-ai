@@ -234,7 +234,7 @@ class SnakeGame:
         self.squareLength = 30
         self.grid = self.blankGrid()
         
-        self.drawPellet(6, 9)
+        self.drawPellet(5, 5)
         segments = deque([(5,3), (4,3), (3,3), (3,4), (3,5)])
         #self.drawPellet(2, 5)
         #segments = deque([(2,4), (2,3), (2,2)])
@@ -244,8 +244,10 @@ class SnakeGame:
         print(f"snake: {segments}")
         self.printGrid()
         
-        path = self.findSwirlSafePelletPath()
-        print("pellet path: ")
+        self.__createSwirlNeighborsMap("loose")
+        spaces = {10, 20, 30, 40, 50}
+        path = self.findPath(1, 100, neighbors=self.swirlNeighbors)
+        #pathInfo = self.fastWinPelletPathInfo()
         print(path)
         
     #has the ai choose which direction the snake will move next
@@ -312,9 +314,9 @@ class SnakeGame:
     #finds spaces adjacent to a certain space
     #@param col - column number of space in question
     #@param row - row number of space in question
-    #returns spaces left, right, above, and below inputted space that would not cause
-    #out of bounds game over
-    def adjacentSpaces(self, col, row):
+    #returns coords of spaces left, right, above, and below inputted space, 
+    #including ones that cause out of bounds game over
+    def adjacentSpaceCoords(self, col, row):
         #checking for valid column
         if not self.validColumn(col):
             print("Invalid column number")
@@ -338,6 +340,16 @@ class SnakeGame:
         
         return neighbors
     
+    #finds spaces adjacent to a certain space
+    #@param spaceID - spaceID of space for which adjacent neighbors are to be found
+    #returns ids of spaces left, right, above, and below inputted space, 
+    #including ones that cause out of bounds game over
+    def adjacentSpaceIDs(self, spaceID):
+        coords = self.spaceCoords(spaceID)
+        (col, row) = coords
+        spaces = self.adjacentSpaceCoords(col, row)
+        return [self.spaceID(x, y) for (x, y) in spaces]
+    
     #obtains all spaces next to given space that do not create over of bounds game over
     #@param col - column number
     #@param row - row number
@@ -346,7 +358,7 @@ class SnakeGame:
         spaces = []
         
         #evaluating nearby spaces
-        for s in self.adjacentSpaces(col, row):
+        for s in self.adjacentSpaceCoords(col, row):
             (x, y) = s
             
             #found a space within bounds
@@ -358,7 +370,7 @@ class SnakeGame:
     #finds spaces up, down, left, and right of head space that are within grid
     #returns list of space coordinates
     def headAdjacentSpaces(self):
-        return self.adjacentSpaces(self.getHeadCol(), self.getHeadRow())
+        return self.adjacentSpaceCoords(self.getHeadCol(), self.getHeadRow())
     
     #checks if a space's column number is valid
     #@param col - column number
@@ -428,44 +440,41 @@ class SnakeGame:
     #finds the shortest uninterrupted path between 2 spaces, if it exists
     #@param firstSpaceID - id number of first space
     #@param secondSpaceID - id number of second space
-    #@param neighbors - dictionary mapping space ids to neighboring space ids that can be accessed. for directed graphs
-    #@param excludedSpaces - set of space coordinates that are not allowed in middle of path
+    #@params options - keyword arguments for optional parameters
+    #   options[neighbors] - dictionary mapping space ids to neighboring space ids for directed graphs
+    #   options[excludedSpaces] - set of space coordinates that are not allowed in middle of path
+    #   options[grid] - 2 by 2 nested lists representing game grid
     #returns list of coordinates for shortest path connecting spaces. if no path exists, returns empty list.
     #endpoints of path can contain any symbols, but middle portions can't contain snake or wall
-    def findPath(self, firstSpaceID, secondSpaceID, neighbors={}, excludedSpaces=set(), grid=[]):
-        return self.findSubgraphPath(firstSpaceID, {secondSpaceID}, neighbors, excludedSpaces, grid)
+    def findPath(self, firstSpaceID, secondSpaceID, **options):
+        return self.findSubgraphPath(firstSpaceID, {secondSpaceID}, **options)
     
     #finds shortest path from a certain space to a collection of spaces
     #@param spaceID - id number of start space
-    #@param subgraph - set of space ids
-    #@param neighbors - dictionary mapping space ids to neighboring space ids that can be accessed. for directed graphs
-    #@param excludedSpaces - set of space coordinates that are not allowed make up middle of path 
-    #@param grid - 2 by 2 nexted lists of grid with 1st index being column and 2nd index being row
+    #@param subgraphIDs - set of space ids
+    #@param options - keyword arguments for the following optional parameters:
+    #   options[neighbors] - dictionary mapping space ids to neighboring space ids for directed graphs
+    #   options[excludedSpaces] - set of space coordinates that are not allowed make up middle of path 
+    #   options[grid] - 2 by 2 nexted lists of grid used with 1st index being column and 2nd index being row
     #returns shortest uninteruppted path from inputted space to any of the spaces in subgraph
-    #if nonempty deque returned, it is a path with no snake, wall, or pellet spaces 
+    #if nonempty deque returned, it is a path with no snake, game over edges, or pellet spaces 
     #aside from those at endpoints and subgraph spaces
-    def findSubgraphPath(self, spaceID, subgraph, neighbors={}, excludedSpaces=set(), grid=[]):
-        #replacing grid with ingame grid if needed
-        if len(grid) == 0:
-            grid = self.grid
-        
+    def findSubgraphPath(self, spaceID, subgraphIDs, **options):
         space = self.spaceCoords(spaceID)
-        col = space[0]
-        row = space[1]
+        (col, row) = space
         
         #ensuring valid column number
         if not self.validColumn(col):
             print("invalid column input")
-            return []
+            return deque()
         #ensuring valid row number
         if not self.validRow(row):
             print("invalid row input")
-            return []
+            return deque()
         
         #print(neighbors)
         
         startSpaceID = self.spaceID(col, row)
-        targetSpaceIDs = {nodeID for nodeID in subgraph}
         
         #maps a space's id to the id of its parent space in bfs
         spaceParents = {startSpaceID: 0}
@@ -480,35 +489,32 @@ class SnakeGame:
             #print(f"visiting space {nodeCoords}")
             
             #found member of subgraph!
-            if nodeID in targetSpaceIDs:
+            if nodeID in subgraphIDs:
                 finalSpaceID = nodeID
                 break    
             
-            nodeCol = nodeCoords[0]
-            nodeRow = nodeCoords[1]
+            (nodeCol, nodeRow) = nodeCoords
+            grid = options.get("grid", self.grid)
             symbol = grid[nodeCol][nodeRow]
+            excludedSpaces = options.get("excludedSpaces", set())
+            #print(f"excludedSpaces: {excludedSpaces}")
             
             #checking if space has neighbors worth exploring
-            if nodeID == startSpaceID or (symbol == "o" and nodeID not in excludedSpaces):    
+            if nodeID == startSpaceID or (symbol == "o" and nodeID not in excludedSpaces):        
                 nearbySpaces = []
                 
-                #obtaining nearby spaces
-                if len(neighbors) > 0:    
-                    #print(f"node id: {nodeID}")
-                    neighborsIDs = neighbors[nodeID]
-                    nearbySpaces = [self.spaceCoords(spaceID) for spaceID in neighborsIDs]
+                #determining nearby spaces based on if neighbors were inputted
+                if "neighbors" in options:
+                    neighborsMap = options["neighbors"]
+                    nearbySpaces = neighborsMap[nodeID]
                 else:
-                    nearbySpaces = self.adjacentSpaces(nodeCol, nodeRow)
-
+                    nearbySpaces = self.adjacentSpaceIDs(nodeID)
+                
                 #print(f"neighbors: {nearbySpaces}")
                 #print(f"visiting {nodeCoords}")
             
                 #recording adjacent spaces for later visit
-                for spaceCoords in nearbySpaces:
-                    spaceCol = spaceCoords[0]
-                    spaceRow = spaceCoords[1]
-                    spaceID = self.spaceID(spaceCol, spaceRow)
-                
+                for spaceID in nearbySpaces:
                     #space not yet visited. adding to queue.
                     if spaceID not in spaceParents:
                         spaceParents[spaceID] = nodeID
@@ -525,16 +531,6 @@ class SnakeGame:
         
         return path
     
-    #checks if there exists a path between a space and subgraph
-    #@param col - column number of space in question
-    #@param row - row number of space in question
-    #@param subgraph - set of space coordinates forming subgraph
-    #returns true if there exists at least one uninterrupted path between space and
-    # any space in the subgraph. path is uninterruped if it has no pellet, snake, or wall
-    # in it except for endpoints
-    def pathExists(self, col, row, subgraph):
-        return len(self.findSubgraphPath(col, row, subgraph)) > 0
-    
     #finds all vacant spaces reachable from a certain space
     #@param col - column number of space in question
     #@param row - row number of space in question
@@ -542,7 +538,7 @@ class SnakeGame:
     #returns set of all spaces reachable from inputted space using paths containing
     # no pellets, snake, or wall. set excludes inputted space
     def connectedVacantSpaces(self, col, row, discovered=set()):
-        neighbors = self.adjacentSpaces(col, row)
+        neighbors = self.adjacentSpaceCoords(col, row)
         
         #exploring neighboring spaces
         for space in neighbors:
@@ -562,7 +558,7 @@ class SnakeGame:
         if self.grid[self.getHeadCol()][self.getHeadRow()] == "X":
             return []
         
-        neighbors = self.adjacentSpaces(self.getHeadCol(), self.getHeadRow())
+        neighbors = self.adjacentSpaceCoords(self.getHeadCol(), self.getHeadRow())
         destinations = []
         
         #finding spaces head can move to
@@ -592,11 +588,17 @@ class SnakeGame:
     #determines which nearby spaces are safe for head to travel to next
     #@param neighbors - dictionary mapping space ids to lists of space ids for neighboring nodes. for directed graphs
     #returns list of adjacent spaces snake can travel to without inevitable game over
-    def safeMoves(self, neighbors={}):
+    def safeMoves(self, neighbors=None):
         adjacent = self.freeMoves()
         safeMoves = []
         tailAccessibleSpaces = {self.getTailID()}
-        pelletTailPath = self.findPath(self.getPelletID(), self.getTailID(), neighbors)
+        pelletTailPath = deque()
+        
+        #finding path depending on if neighbors are needed
+        if neighbors == None:
+            pelletTailPath = self.findPath(self.getPelletID(), self.getTailID())
+        else:
+            pelletTailPath = self.findPath(self.getPelletID(), self.getTailID(), neighbors=neighbors)
         
         #adding path from pellet to tail as subgraph if it exists
         if len(pelletTailPath) > 0:
@@ -619,7 +621,14 @@ class SnakeGame:
                 continue
             
             spaceID = self.spaceID(col, row)
-            tailPath = self.findSubgraphPath(spaceID, tailAccessibleSpaces, neighbors)
+            tailPath = deque()
+            
+            #finding path depending on if neighbors are needed
+            if neighbors == None:
+                tailPath = self.findSubgraphPath(spaceID, tailAccessibleSpaces)
+            else:
+                tailPath = self.findSubgraphPath(spaceID, tailAccessibleSpaces, neighbors=neighbors)
+            
             
             #space is safe!
             if len(tailPath) > 0:
@@ -639,10 +648,13 @@ class SnakeGame:
         
     #finds a path from the head to the pellet
     #@param pelletPathNeighbors - dictionary mapping neighbors for path to adhere to
-    #@param tailPathNeighbors - dictionary mapping neighbors for head to tail to adhere to
-    #returns deque of space coords of path found. first element is head space. path may endanger snake in future
-    def findPelletPath(self, pelletPathNeighbors={}, tailPathNeighbors={}):
-        return self.findPath(self.getHeadID(), self.getPelletID(), pelletPathNeighbors)
+    #returns deque of space coords of path found. path may endanger snake in future
+    def findPelletPath(self, pelletPathNeighbors=None):
+        #running path finding function based on if neighbors were inputted
+        if pelletPathNeighbors == None:
+            return self.findPath(self.getHeadID(), self.getPelletID())
+        else:
+            return self.findPath(self.getHeadID(), self.getPelletID(), neighbors=pelletPathNeighbors)
     
     #finds info about a possible pellet path under certain neighbor parameters
     #@param pelletPathNeighbors - dictionary mapping neighbors for path to adhere to
@@ -1086,7 +1098,8 @@ class SnakeGame:
             print("going down pellet path")
             self.moveDownPath(self.pelletPath)
         elif len(self.postPelletPath) > 0:
-            print("going down escape route")
+            print("going down escape route:")
+            print(self.postPelletPath)
             self.moveDownPath(self.postPelletPath)
         else:
             safeMoves = self.safeMoves()
@@ -1141,7 +1154,11 @@ class SnakeGame:
             swirlTailSpaces.pop()
             remainingSpaces = set(swirlTailSpaces)
             grid = self.createGrid(futureSnake)
-            escapePath = self.findPath(headID, spaceID, self.swirlNeighbors, remainingSpaces, grid)
+            escapePath = self.findPath(headID, 
+                                       spaceID, 
+                                       neighbors=self.swirlNeighbors, 
+                                       excludedSpaces=remainingSpaces, 
+                                       grid=grid)
             
             #found escape route!
             if len(escapePath) > 0:
@@ -1942,9 +1959,9 @@ class SnakeGame:
         
     #prints a game grid to the console
     #@param grid - 2 by 2 list representing game grid. self.grid by default
-    def printGrid(self, grid=[]):
+    def printGrid(self, grid=None):
         #using self.grid if grid not provided
-        if len(grid) == 0:
+        if grid == None:
             grid = self.grid
         
         printMatrix(grid)
@@ -1954,9 +1971,9 @@ class SnakeGame:
     def getGridCopy(self):
         return [[self.grid[x][y] for y in range(self.rows+2)] for x in range(self.cols+2)]
     
-    #creates dictionary representing neighbors for each space under swirl paths
+    #creates dictionary mapping space ids to ids of neighboring spaces under swirl paths
     #@param swirlType - "loose" or "strict". determines map form
-    #neighbors found regardless of snake's position of velocity
+    #neighbors found regardless of snake's position or velocity
     def __createSwirlNeighborsMap(self, swirlType="strict"):
         self.swirlNeighbors = {}
         
