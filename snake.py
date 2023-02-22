@@ -236,16 +236,16 @@ class SnakeGame:
         
         #self.drawPellet(5, 5)
         #segments = deque([(5,3), (4,3), (3,3), (3,4), (3,5)])
-        self.drawPellet(2, 4)
-        segments = deque([(2,1),(3,1), (3,2), (3,3), (2,3), (1,3)])
-        
+        self.drawPellet(5, 3)
+        segments = deque([(5,10), (5,9)])
         self.__buildSnake(segments)
         
         print(f"snake: {segments}")
         self.printGrid()
         self.__createSwirlNeighborsMap("loose")
-        pathInfo = self.fastWinPelletPathInfo()
-        print(f"path info: {pathInfo}")
+        
+        path = self.findPelletPath()
+        print(f"pellet path: {path}")
         
     #has the ai choose which direction the snake will move next
     def aiSteer(self):
@@ -441,8 +441,10 @@ class SnakeGame:
     #   options[neighbors] - dictionary mapping space ids to neighboring space ids for directed graphs
     #   options[excludedSpaces] - set of space coordinates that are not allowed in middle of path
     #   options[snakeSeg] - deque of space coordinates making up snake
+    #   options[pelletID] - id of pellet space
     #   options[snakeMove] - bool indicating whether path should account for snake movement, 
-    #                           moving snake 1 space per path tile
+    #                           moving snake 1 space per path tile and possibly lengthened snake
+    #                       after eating pellet
     #returns list of coordinates for shortest path connecting spaces. if no path exists, returns empty list.
     #endpoints of path can contain any symbols, but middle portions can't contain snake or wall
     def findPath(self, firstSpaceID, secondSpaceID, **options):
@@ -455,10 +457,12 @@ class SnakeGame:
     #   options[neighbors] - dictionary mapping space ids to neighboring space ids for directed graphs
     #   options[excludedSpaces] - set of space coordinates that are not allowed make up middle of path 
     #   options[snakeSeg] - deque of space coordinates making up snake
+    #   options[pelletID] - id of pellet space
     #   options[snakeMove] - bool indicating whether path should account for snake movement, 
-    #                           moving snake 1 space per path tile
+    #                       moving snake 1 space per path tile and possibly lengthened snake
+    #                       after eating pellet
     #returns shortest uninteruppted path from inputted space to any of the spaces in subgraph
-    #if nonempty deque returned, it is a path with no snake, game over edges, or pellet spaces 
+    #if nonempty deque returned, it is a path with no snake spaces or game over edges
     #aside from those at endpoints and subgraph spaces
     def findSubgraphPath(self, spaceID, subgraphIDs, **options):
         space = self.spaceCoords(spaceID)
@@ -477,6 +481,9 @@ class SnakeGame:
         snakeSeg = deque(options.get("snakeSeg", self.snakeCoords))
         #print(f"snakeSeg: {snakeSeg}")
         grid = self.createGrid(snakeSeg)
+        pelletID = options.get("pelletID", self.getPelletID())
+        (pelletCol, pelletRow) = self.spaceCoords(pelletID)
+        grid[pelletCol][pelletRow] = "P"
         startSpaceID = self.spaceID(col, row)
         
         #maps a space's id to the id of its parent space in bfs
@@ -505,7 +512,7 @@ class SnakeGame:
                     #print("shifting snake 1 space")
                     tailCoords = snakeSeg[-1]
                     (tailCol, tailRow) = tailCoords
-                    grid[tailCol][tailRow] = "o"
+                    grid[tailCol][tailRow] = "X" if len(snakeSeg) == 2 else "o"
                     snakeSeg.pop()
                     #print(f"snakeSeg: {snakeSeg}")
             
@@ -518,9 +525,12 @@ class SnakeGame:
             symbol = grid[nodeCol][nodeRow]
             excludedSpaces = options.get("excludedSpaces", set())
             #print(f"excludedSpaces: {excludedSpaces}")
+            #print(f"visiting {nodeCoords}")
+            #print(f"symbol: {symbol}")
+            goodSpaces = {"o", "P"}
             
             #checking if space has neighbors worth exploring
-            if nodeID == startSpaceID or (symbol == "o" and nodeID not in excludedSpaces):        
+            if nodeID == startSpaceID or (symbol in goodSpaces and nodeID not in excludedSpaces):        
                 nearbySpaces = []
                 
                 #determining nearby spaces based on if neighbors were inputted
@@ -665,12 +675,41 @@ class SnakeGame:
                 safeMoves.append(pelletCoords)
              
         return safeMoves
+    
+    #looks for a path from snake head to tail
+    #@param snakeSeg - deque of space coordinates representing snake. self.snakeCoords by default
+    #returns deque of space coordinates representing path, if it exists
+    #   path may go through pellets. does not return paths that require snake to
+    #   move out of the way first
+    def findTailPath(self, snakeSeg=None):
+        #using self.snakeCoords if needed
+        if snakeSeg == None:
+            snakeSeg = self.snakeCoords
+            
+        #searching for path to tail
+        path = self.findPath(self.getHeadID(snakeSeg), 
+                             self.getTailID(snakeSeg),
+                             snakeSeg=snakeSeg
+                             )
+        
+        return path
+    
+    #checks if a path to tail exists from snake head
+    #@param snakeSeg - deque of space coords representing snake. self.snakeCoords by default
+    #returns True if there's a path that doesn't touch snake or go out of bounds
+    def tailPathExists(self, snakeSeg=None):
+        #using self.snakeCoords if needed
+        if snakeSeg == None:
+            snakeSeg = self.snakeCoords
+            
+        return len(self.findTailPath(snakeSeg)) > 0
         
     #finds a path from the head to the pellet
     #@param pelletPathNeighbors - dictionary mapping neighbors for path to adhere to
     #returns deque of space coords of path found. path may endanger snake in the future
     def findPelletPath(self, pelletPathNeighbors=None):
         n = {} if pelletPathNeighbors == None else pelletPathNeighbors
+        
         return self.findPath(self.getHeadID(), 
                              self.getPelletID(), 
                              neighbors=n,
@@ -756,6 +795,8 @@ class SnakeGame:
                 "tailPath": tailPath,
                 "untanglePath": deque(),
                 "futureSnake": pathInfo["futureSnake"]}
+    
+    #checks if a path exists from a snake's head to tail.
                 
     #sees if snake can immediately "untangle" itself into a swirl formation
     #@param snakeSeg - deque of snake coordinates of form (col, row)
@@ -1115,13 +1156,16 @@ class SnakeGame:
             print(self.postPelletPath)
             self.moveDownPath(self.postPelletPath)
         else:
-            safeMoves = self.safeMoves()
-            swirlMove = self.nextSwirlSpace(self.getHeadCol(), self.getHeadRow())
+            possiblePath = self.longestSafeSwirlPath()
             
-            #having snake go down swirl if safe, other choosing randomly
-            if swirlMove in safeMoves:
-                print("going down swirl path")
-                self.loopAiSteer()
+            #found path
+            if len(possiblePath) > 0:
+                self.postPelletPath = possiblePath
+                self.postPelletPath.popleft()
+                print(f"swirl safe path found: {possiblePath}")
+                print("going down escape route:")
+                self.moveDownPath(self.postPelletPath)
+                return
             else:
                 print("safe move")
                 self.surviveAISteer()
@@ -1198,6 +1242,57 @@ class SnakeGame:
         #print("spaces that can reach tail thru swirl: ")
         #print(spaceList)
         return spaces
+    
+    #finds a swirl path from a snake's given position that won't create game over
+    #@param snake - deque of space coords for snake's starting position. self.snakeCoords by default
+    #@param pelletCoords - location of pellet of form (col, row). 
+    #   (self.pelletCol, self.pellletRow by default
+    #returns deque of space coords for path, if it exists. 
+    #   path will be not longer than number of tiles in grid
+    def longestSafeSwirlPath(self, snakeSegs=None, pelletCoords=None):
+        #using self.snakeCoords if needed
+        if snakeSegs == None:
+            snakeSegs = self.snakeCoords
+        
+        #using (self.pelletCol, self.pelletRow) for pellet coords if needed
+        if pelletCoords == None:
+            pelletCoords = self.getPelletCoords()
+            
+        print(f"pelletCoords: {pelletCoords}")
+            
+        #checking if pelletCoords are valid coordinates
+        if not self.validCoords(pelletCoords[0], pelletCoords[1]):
+            print("Error. pelletCoords has invalid coordinates.")
+            print(f"pelletCoords: {pelletCoords}")
+            return deque()
+        
+        snakeCoords = deque(snakeSegs)
+        coordSet = set(snakeCoords)
+        snakeLength = len(snakeCoords)
+        path = deque([snakeCoords[0]])
+        
+        #seeing how far the snake can go
+        for k in range(self.cols*self.rows):
+            head = snakeCoords[0]
+            (col, row) = head
+            space = self.nextSwirlSpace(col, row)
+            tail = snakeCoords[-1]
+            
+            #next space will make snake chomp itself
+            if space != tail and space in coordSet:
+                return path if len(path) > 1 and self.tailPathExists(snakeCoords) else deque()
+            
+            #next space will have snake eat pellet
+            if (col, row) == pelletCoords:
+                return path if len(path) > 1 and self.tailPathExists(snakeCoords) else deque()
+            
+            snakeCoords = self.futureSnakeCoords(snakeCoords, deque([space]), pelletCoords)
+           
+            coordSet.remove(tail)
+            coordSet.add(space)
+            path.append(space)
+        
+        return path if self.tailPathExists(snakeCoords) else deque()
     
     #finds pellet path that allows snake to then resume swirl formation without issues
     #returns deque of space coords for path if it exists.
@@ -2135,8 +2230,8 @@ class SnakeGame:
            
             #snake has reached game over
             if len(currentSegs) < len(futureSnake) or self.gameOverEdgeSpace(coords):
-                print("future snake is a game over!")
-                break
+                #print("future snake is a game over!")
+                return futureSnake
             
         return futureSnake
                 
