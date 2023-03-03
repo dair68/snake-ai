@@ -13,6 +13,7 @@ from queue import Queue
 from queue import LifoQueue
 import math
 from collections import deque
+import hamiltonianCycles as h
 
 #prints a 2d array to the console
 #@param matrix - a 2d array
@@ -142,6 +143,7 @@ class SnakeGame:
         self.loopMoves = 0
         self.swirlNeighbors = {}
         self.borderIDs = set()
+        self.gridAdjacencyList = {}
         
         self.__debugMode()
         
@@ -186,6 +188,7 @@ class SnakeGame:
         self.loopMoves = 0
         self.__createSwirlNeighborsMap("loose")
         self.borderIDs = self.getBorderIDs()
+        self.gridAdjacencyList = self.__createAdjacencyList()
          
     #starts player controlled game with snake in middle of screen
     def startCentered(self):
@@ -229,7 +232,7 @@ class SnakeGame:
         self.playAgainBtn["state"] = "disable"
         self.aiBtn["state"] = "disable"
         
-        self.cols = 7
+        self.cols = 8
         self.rows = 8
         self.squareLength = 30
         self.grid = self.blankGrid()
@@ -237,18 +240,13 @@ class SnakeGame:
         #segments = deque([(2,1), (2,2), (2,3)])
         segments = deque([(2,1)])
         self.__buildSnake(segments)
+        grid = self.createGrid(segments)
+        self.printGrid(grid)
         
-        print(f"snake: {segments}")
-        self.printGrid()
-        self.__createSwirlNeighborsMap("loose")
-        
-        pathPart = deque(segments)
-        pathPart.reverse()
-        print(f"pathPart: {pathPart}")
-        path = self.findHamiltonianCycle(pathPart)
-        #path = self.__loopGridHelper(segs)
-        #path = self.findLoopSpanningGrid()
-        print(f"path: {path}")
+        self.gridAdjacencyList = self.__createAdjacencyList()
+        cycle = h.findHamiltonianCycle(self.gridAdjacencyList)
+        cycleCoords = deque([self.spaceCoords(v) for v in cycle])
+        print(cycleCoords)
         
     #has the ai choose which direction the snake will move next
     def aiSteer(self):
@@ -353,9 +351,9 @@ class SnakeGame:
     #obtains all spaces next to given space that do not create over of bounds game over
     #@param col - column number
     #@param row - row number
-    #returns list of all spaces next to inputted space that don't create out of bounds game over
+    #returns set of all spaces next to inputted space that don't create out of bounds game over
     def adjacentInboundSpaces(self, col, row):
-        spaces = []
+        spaces = set()
         
         #evaluating nearby spaces
         for s in self.adjacentSpaceCoords(col, row):
@@ -363,9 +361,15 @@ class SnakeGame:
             
             #found a space within bounds
             if self.spaceInBounds(x, y):
-                spaces.append(s)
+                spaces.add(s)
             
         return spaces
+    
+    #obtains all spaces next to given space that do not create over of bounds game over
+    #@param spaceID - id number of space in question
+    #returns set of all spaces next to inputted space that don't create out of bounds game over
+    def adjacentInboundSpaceIDs(self, spaceID):
+        return {v for v in self.adjacentSpaceIDs(spaceID) if self.spaceIDInBounds(v)}
     
     #figures out how two adjacent spaces are positioned relative to each other
     #@param space1Coords - space coords for first space
@@ -510,6 +514,14 @@ class SnakeGame:
     def spaceInBounds(self, col, row):
         return 1 <= col and col <= self.cols and 1 <= row and row <= self.rows 
     
+    #checks if space is in bounds of snake crawlspace
+    #@param spaceID - id number of space
+    #returns true if space within area that would not cause out of bounds game over
+    def spaceIDInBounds(self, spaceID):
+        coords = self.spaceCoords(spaceID)
+        (col, row) = coords
+        return self.spaceInBounds(col, row)
+    
     #finds the shortest uninterrupted path between 2 spaces, if it exists
     #@param firstSpaceID - id number of first space
     #@param secondSpaceID - id number of second space
@@ -636,215 +648,6 @@ class SnakeGame:
         #print(f"distances: {nodeDist}")
         #print(f"parents: {spaceParents}")
         return path
-    
-    #searches for a loop that covers every non-gameover grid space
-    #@param pathSegs - deque of spaces coords. searches for path that starts
-    #                  at element 0 goes thru pathSegs to element -1, then rest of board
-    #                   optional
-    #returns deque of space coords for grid spanning loop, if it exists
-    def findHamiltonianCycle(self, pathSegs=None):
-        #using (1,1) as pathSeg if none provided
-        if pathSegs == None:
-            return self.__hamiltonianHelper(deque([(1,1)]))
-        else:
-            return self.__hamiltonianHelper(deque(pathSegs))
-    
-    #helper function for self.findHamiltonianCycle(pathSegs)
-    #@param pathSegs - deque of space coords making up path. will be changed in function
-    #@param grid - grid representing current state of pathSegs. optional
-    #returns path that covers every non-game over grid space within loop if possible
-    def __hamiltonianHelper(self, pathSegs, grid=None):
-        #converting pathSegs to set if needed
-        if grid == None:
-            grid = self.__createHamiltonianGrid(pathSegs)
-            
-        #analyzing paths that are as long as number of grid spaces
-        if len(pathSegs) == self.cols*self.rows:
-            #checking hamiltonian found
-            if self.isHamiltonianCycle(pathSegs):
-                direction = self.adjacentSpaceDirection(pathSegs[-1], pathSegs[0])
-                symbol = self.directionSymbol(direction)
-                (col, row) = pathSegs[-1]
-                grid[col][row] = symbol
-                self.printGrid(grid)
-                return pathSegs
-            else:
-                return deque()
-
-        nextSpaces = self.__possibleHamiltonianMoves(pathSegs, grid)
-        
-        #searching for rest of path spanning grid
-        for coords in nextSpaces:   
-            self.__addHamiltonianPathSeg(coords, pathSegs, grid)
-            possiblePath = self.__hamiltonianHelper(pathSegs, grid)
-            
-            #found path!
-            if len(possiblePath) > 0:
-                return possiblePath
-            
-            self.__removeHamiltonianPathSeg(pathSegs, grid)
-        
-        return deque()
-    
-    #creates a grid representing existing hamiltonian path
-    #@param pathSegs - deque of space coordinates for current path part
-    #returns grid with "^", "<", ">", "v" representing directions to travel
-    def __createHamiltonianGrid(self, pathSegs):
-        grid = self.blankGrid()
-        
-        #filling grid with * representing a path segment
-        for i in range(len(pathSegs)):
-            space = pathSegs[i]
-            (col, row) = space
-            grid[col][row] = "*"
-            
-            #previous space exists
-            if i > 0:
-                prevSpace = pathSegs[i-1]
-                direction = self.adjacentSpaceDirection(prevSpace, space)
-                symbol = self.directionSymbol(direction)
-                (prevCol, prevRow) = prevSpace
-                grid[prevCol][prevRow] = symbol
-                
-        return grid
-        
-    #updates pathSegs and grid from self.__hamiltonianHelper() with a new path part
-    #@param spaceCoords - spaceCoords of newest path segment to be added
-    #@param pathSegs - deque of space coordinates of current path segments
-    #@param grid - grid of current hamiltonian path in the making
-    def __addHamiltonianPathSeg(self, spaceCoords, pathSegs, grid):
-        pathSegs.append(spaceCoords)
-        grid[spaceCoords[0]][spaceCoords[1]] = "*"
-        #print(f"path: {pathSegs}")
-        
-        #checking if there's a penultimate space to update
-        if len(pathSegs) >= 2:
-            prevSpace = pathSegs[-2]
-            direction = self.adjacentSpaceDirection(prevSpace, spaceCoords)
-            grid[prevSpace[0]][prevSpace[1]] = self.directionSymbol(direction)
-            
-    #removes most recent space in pathSegs for self.__hamiltonianHelper() and updates grid
-    #@param pathSegs - deque of space coordinates representing current hamiltonian path
-    #@param grid - grid representing current path progress. updated in function
-    def __removeHamiltonianPathSeg(self, pathSegs, grid):
-        newestSeg = pathSegs[-1]
-        (col, row) = newestSeg
-        grid[col][row] = "o"
-        pathSegs.pop()
-        
-        secondNewestSeg = pathSegs[-1]
-        (col2, row2) = secondNewestSeg
-        grid[col2][row2] = "*"
-        
-    #checks if a space in grid is surrounded by nonempty spaces
-    #@param spaceCoords - space coordinates of space in question
-    #@param grid - grid representing current state of game
-    #returns True is space surrounded by symbols other than "o"
-    def spaceSurrounded(self, spaceCoords, grid):
-        (col, row) = spaceCoords
-        neighbors = self.adjacentSpaceCoords(col, row)
-        
-        #examining neighboring spaces
-        for neighbor in neighbors:
-            (neighborCol, neighborRow) = neighbor
-            
-            #space is free
-            if grid[neighborCol][neighborRow] == "o":
-                return False
-            
-        return True
-    
-    #checks if next space would be a 90 degree bend if added to partial hamiltonian cycle
-    #@param spaceCoords - space coordinates of possible space to be append to path 
-    #@param pathSegs - deque of space coordinates for current path
-    #@param grid - grid showcasing current path
-    #returns True if space must be a 90 degree bend, False otherwise
-    def __hamiltonianCornerSpace(self, spaceCoords, pathSegs, grid):
-        neighbors = self.adjacentSpaceCoords(spaceCoords[0], spaceCoords[1])
-        neighbors.remove(pathSegs[-1])
-        
-        inaccessibleSpaces = [s for s in neighbors if grid[s[0]][s[1]] != "o"]
-        
-        #must be 2 blocked spaces for corner to be possibe
-        if len(inaccessibleSpaces) != 2:
-            return False
-        
-        (blockedSpace1, blockedSpace2) = inaccessibleSpaces
-        (col1, row1) = blockedSpace1
-        (col2, row2) = blockedSpace2
-        pathStartSpace = pathSegs[0]
-        
-        #checking if the blocked spaces form corner
-        if col1 != col2 and row1 != row2 and pathStartSpace not in inaccessibleSpaces:
-            return True
-        
-        return False
-    
-    #figures out which spaces could possibly lead to next path segment in hamiltonian cycle
-    #@param pathSegs - deque of space coords making up current partial hamiltonian path
-    #@param grid - grid representing current state of path
-    #returns list of spaces coordinates for where path should check next
-    def __possibleHamiltonianMoves(self, pathSegs, grid):
-        recentSpace = pathSegs[-1]
-        (col, row) = recentSpace
-        neighbors = [s for s in self.adjacentInboundSpaces(col, row) if grid[s[0]][s[1]] == "o"]
-        
-        #searching for corner space
-        for space in neighbors:
-            #found corner space!
-            if self.__hamiltonianCornerSpace(space, pathSegs, grid):
-                return [space]
-        
-        filteredSpaces = list(neighbors)
-        
-        #seeing if any moves would leave the path end trapped
-        for space in neighbors:
-            (spaceCol, spaceRow) = space
-            grid[spaceCol][spaceRow] = "*"
-            threshold = self.cols*self.rows - 1
-        
-            #checking if new space would leave tail trapped
-            if len(pathSegs) < threshold and self.spaceSurrounded(pathSegs[0], grid):
-                #print("tail trapped!")
-                filteredSpaces.remove(space)
-                
-            grid[spaceCol][spaceRow] = "o"
-            
-        return filteredSpaces
-        
-    #checks if a path covers every non-gameover grid space within a loop
-    #@param pathSegs - deque of space coords
-    #returns True if pathSegs covers every non-gameover grid space and is a loop
-    def isHamiltonianCycle(self, pathSegs):
-        #checking if number of segments matches number of grid spaces
-        if len(pathSegs) != self.cols*self.rows:
-            return False
-        
-        visitedSpaces = set()
-        prevSpace = pathSegs[-1]
-        
-        #checking each space one by one
-        for i in range(len(pathSegs)):
-            coords = pathSegs[i]
-            (col, row) = coords
-            
-            #checking if valid coordinates
-            if not self.validCoords(col, row) or not self.spaceInBounds(col, row):
-                print("Invalid coordinates found within pathSegs")
-                return False
-            
-            #checking if space already visited
-            if coords in visitedSpaces:
-                return False
-            
-            #checking if space adjacent to previous space
-            if not self.spacesAreAdjacent(prevSpace, coords):
-                return False
-            
-            visitedSpaces.add(coords)
-            prevSpace = coords
-                
-        return True
     
     #finds all vacant spaces reachable from a certain space
     #@param col - column number of space in question
@@ -2387,6 +2190,11 @@ class SnakeGame:
                 neighborSpaces = self.swirlSpaces(x, y, swirlType)
                 neighborIDs = [self.spaceID(s[0], s[1]) for s in neighborSpaces]
                 self.swirlNeighbors[spaceID] = neighborIDs
+                
+    #creates adjacency list for game grid
+    #returns dict mapping space ids to set of space ids for neighboring spaces
+    def __createAdjacencyList(self):
+        return {v: self.adjacentInboundSpaceIDs(v) for v in range(1, self.cols*self.rows+1)}
                 
     #replaces and creates a snake within memory composed in inputted segments
     #@param segments - list of snake coordinates. 0th element is snake head
