@@ -232,8 +232,8 @@ class SnakeGame:
         self.playAgainBtn["state"] = "disable"
         self.aiBtn["state"] = "disable"
         
-        self.cols = 8
-        self.rows = 8
+        self.cols = 4
+        self.rows = 4
         self.squareLength = 30
         self.grid = self.blankGrid()
         
