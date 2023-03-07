@@ -228,11 +228,26 @@ class SnakeGame:
         grid = self.createGrid(segments)
         self.printGrid(grid)
         
-    #has the ai choose which direction the snake will move next
+    #has the ai input the direction it wants snake to move next
     def aiSteer(self):
         self.steering = True
+        space = self.ai.nextMove()
+        (col, row) = space
+        print(f"ai move: {space}")
+        xShift = col - self.headCol()
+        yShift = row - self.headRow()
         
-        #deciding whether or not snake should turn
+        #determining which direction to move snake in
+        if xShift == 1 and yShift == 0:
+            self.right()
+        elif xShift == -1 and yShift == 0:
+            self.left()
+        elif xShift == 0 and yShift == 1:
+            self.down()
+        elif xShift == 0 and yShift == -1:
+            self.up()
+        else:
+            print("Error. Invalid ai coordinates.")
     
     #finds the shortest uninterrupted path between 2 spaces, if it exists
     #@param firstSpaceID - id number of first space
@@ -1709,9 +1724,7 @@ class SnakeGame:
         
         #having ai choose direction in ai mode
         if self.aiMode:
-            (col, row) = self.ai.nextMove()
-            self.headXVel = col - self.headCol()
-            self.headYVel = row - self.headRow()
+            self.aiSteer()
         
         self.moveSnake()
         self.steering = True
@@ -1747,7 +1760,7 @@ class SnakeGame:
         milliseconds = 100
         self.canvas.after(milliseconds, self.runTurn)
         
-    #shift the snake one spot
+    #shift the snake one spot based on x and y velocities recorded by game
     def moveSnake(self):
         #snakeLength = len(self.snakeSquares)
         snakeLength = self.snakeLength()
