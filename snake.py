@@ -13,7 +13,7 @@ from queue import Queue
 from queue import LifoQueue
 import math
 from collections import deque
-import hamiltonianCycles as h
+from ai.dumbAI import DumbAI
 
 #prints a 2d array to the console
 #@param matrix - a 2d array
@@ -66,7 +66,12 @@ def rotateVector90Deg(x, y):
 class SnakeGame:
     #constructor
     #@param root - parent tk widget
-    def __init__(self, root):
+    #@dimensions - tuple of form (columns, rows) indicating size of game grid. (10, 10) by default
+    def __init__(self, root, dimensions=None):
+        #setting initial dimentions if needed
+        if dimensions == None:
+            dimensions = (10, 10)
+        
         #root.title("Snake")
         #root.rowconfigure(0, weight=1)
         #root.rowconfigure(1, weight=5)
@@ -94,8 +99,7 @@ class SnakeGame:
         self.gameMsgLabel.grid(column=0, row=2)
         self.mainFrame.grid_rowconfigure(2, minsize=48, weight=1)
         
-        self.cols = 10
-        self.rows = 10
+        (self.cols, self.rows) = dimensions
         #self.cols = 9
         #self.rows = 10
         #self.cols = 9
@@ -124,8 +128,8 @@ class SnakeGame:
         self.canvas.pack()
         
         self.snakeMoving = False
-        self.headXVelocity = 0
-        self.headYVelocity = 0
+        self.headXVel = 0
+        self.headYVel = 0
         self.pellet = None
         self.pelletCol = -1
         self.pelletRow = -1
@@ -136,16 +140,14 @@ class SnakeGame:
         
         self.gameStarted = False
         self.aiMode = False
+        self.ai = None
         self.steering = False
         
         self.pelletPath = deque()
         self.postPelletPath = deque()
         self.loopMoves = 0
-        self.swirlNeighbors = {}
-        self.borderIDs = set()
-        self.gridAdjacencyList = {}
         
-        self.__debugMode()
+        #self.__debugMode()
         
     #begins new game of player controlled snake with start snake segment at a certain position
     #@param col - column number of start snake segment. number from 1-20.
@@ -156,8 +158,8 @@ class SnakeGame:
         print(col)
         print(row)
         self.snakeMoving = False
-        self.headXVelocity = 0
-        self.headYVelocity = 0
+        self.headXVel = 0
+        self.headYVel = 0
         self.pellet = None
         self.pelletCol = -1
         self.pelletRow = -1
@@ -183,12 +185,10 @@ class SnakeGame:
         self.gameStarted = True
         self.bindArrowKeys()
         self.aiMode = False
+        self.ai = None
         self.pelletPath = deque()
         self.postPelletPath = deque()
         self.loopMoves = 0
-        self.__createSwirlNeighborsMap("loose")
-        self.borderIDs = self.getBorderIDs()
-        self.gridAdjacencyList = self.__createAdjacencyList()
          
     #starts player controlled game with snake in middle of screen
     def startCentered(self):
@@ -201,6 +201,7 @@ class SnakeGame:
         print("starting ai")
         self.start(col, row)
         self.aiMode = True
+        self.ai = DumbAI(self)
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
         self.steering = True
@@ -210,30 +211,14 @@ class SnakeGame:
     def startAICentered(self):
         self.startAI(self.cols//2, self.rows//2)
         
-    #creates set of ints representing ids of all border spaces that don't result in game over
-    #returns set of border ids
-    def getBorderIDs(self):
-        ids = set()
-        
-        #creating set of edge ids
-        for col in range(1, self.cols+1):
-            for row in range(1, self.rows+1):
-                space = (col, row)
-                
-                #found edge space
-                if col == 1 or col == self.cols or row == 1 or row == self.rows:
-                    ids.add(self.spaceID(col, row))
-                    
-        return ids
-        
     #runs app in debug mode
     def __debugMode(self):
         print("Entering debug mode!")
         self.playAgainBtn["state"] = "disable"
         self.aiBtn["state"] = "disable"
         
-        self.cols = 4
-        self.rows = 4
+        #self.cols = 4
+        #self.rows = 4
         self.squareLength = 30
         self.grid = self.blankGrid()
         
@@ -243,284 +228,11 @@ class SnakeGame:
         grid = self.createGrid(segments)
         self.printGrid(grid)
         
-        self.gridAdjacencyList = self.__createAdjacencyList()
-        cycle = h.findHamiltonianCycle(self.gridAdjacencyList)
-        cycleCoords = deque([self.spaceCoords(v) for v in cycle])
-        print(cycleCoords)
-        
     #has the ai choose which direction the snake will move next
     def aiSteer(self):
         self.steering = True
         
         #deciding whether or not snake should turn
-        
-    #reports current movement of snake
-    #returns "up", "down", "left", "right", or "none"
-    def headDirection(self):
-        #reporting direction of snake head
-        if self.headXVelocity == 0 and self.headYVelocity == 0:
-            return "none"
-        elif self.headXVelocity == 0 and self.headYVelocity == 1:
-            return "down"
-        elif self.headXVelocity == 0 and self.headYVelocity == -1:
-            return "up"
-        elif self.headXVelocity == 1 and self.headYVelocity == 0:
-            return "right"
-        elif self.headXVelocity == -1 and self.headYVelocity == 0:
-            return "left"
-        else:
-            print("Error. Invalid snake movement")
-            return ""
-        
-    #obtains coordinates for a space adjacent to certain space
-    #@param col - column number of space in question
-    #@param row - row number of space in question
-    #@param direction - string that says "up", "down", "left", or "right"
-    #returns (col, row) of space above, below, left, or right of inputted space. 
-    #() for bad input or no valid space in that direction
-    def adjacentSpace(self, col, row, direction):
-        #checking for valid col
-        if not self.validColumn(col):
-            print("Invalid column number")
-            return ()
-        
-        #checking for valid row
-        if not self.validRow(row):
-            print("Invalid row number")
-            return ()
-        
-        xChange = 0
-        yChange = 0
-        
-        #finding the target space based on direction
-        if direction == "up":
-            yChange = -1
-        elif direction == "down":
-            yChange = 1
-        elif direction == "left":
-            xChange = -1
-        elif direction == "right":
-            xChange = 1
-        else:
-            print("Error. Invalid direction parameter.")
-            return ()
-        
-        spaceCol = col + xChange
-        spaceRow = row + yChange
-        return (spaceCol, spaceRow) if self.validCoords(spaceCol, spaceRow) else ()
-    
-    #finds spaces adjacent to a certain space
-    #@param col - column number of space in question
-    #@param row - row number of space in question
-    #returns coords of spaces left, right, above, and below inputted space, 
-    #including ones that cause out of bounds game over
-    def adjacentSpaceCoords(self, col, row):
-        #checking for valid column
-        if not self.validColumn(col):
-            print("Invalid column number")
-            return []
-        
-        #checking for valid row
-        if not self.validRow(row):
-            print("Invalid row number")
-            return []
-        
-        directions = ["up", "right", "left", "down"]
-        neighbors = []
-        
-        #recording neighbors that are valid spaces
-        for direction in directions:
-            coords = self.adjacentSpace(col, row, direction)
-            
-            #found valid space
-            if self.validSpace(coords):
-                neighbors.append(coords)
-        
-        return neighbors
-    
-    #finds spaces adjacent to a certain space
-    #@param spaceID - spaceID of space for which adjacent neighbors are to be found
-    #returns ids of spaces left, right, above, and below inputted space, 
-    #including ones that cause out of bounds game over
-    def adjacentSpaceIDs(self, spaceID):
-        coords = self.spaceCoords(spaceID)
-        (col, row) = coords
-        spaces = self.adjacentSpaceCoords(col, row)
-        return [self.spaceID(x, y) for (x, y) in spaces]
-    
-    #obtains all spaces next to given space that do not create over of bounds game over
-    #@param col - column number
-    #@param row - row number
-    #returns set of all spaces next to inputted space that don't create out of bounds game over
-    def adjacentInboundSpaces(self, col, row):
-        spaces = set()
-        
-        #evaluating nearby spaces
-        for s in self.adjacentSpaceCoords(col, row):
-            (x, y) = s
-            
-            #found a space within bounds
-            if self.spaceInBounds(x, y):
-                spaces.add(s)
-            
-        return spaces
-    
-    #obtains all spaces next to given space that do not create over of bounds game over
-    #@param spaceID - id number of space in question
-    #returns set of all spaces next to inputted space that don't create out of bounds game over
-    def adjacentInboundSpaceIDs(self, spaceID):
-        return {v for v in self.adjacentSpaceIDs(spaceID) if self.spaceIDInBounds(v)}
-    
-    #figures out how two adjacent spaces are positioned relative to each other
-    #@param space1Coords - space coords for first space
-    #@param space2Coords - space coords for second space
-    #returns "up", "down", "left", "right" or "none" to describe how to go from space1 to space2
-    def adjacentSpaceDirection(self, space1Coords, space2Coords):
-        (col1, row1) = space1Coords
-        (col2, row2) = space2Coords
-        
-        #checking if space1 has valid coordinates
-        if not self.validCoords(col1, row1):
-            print("Error. Invalid value for space1Coords.")
-            print(f"space1Coords {space1Coords}")
-            
-        #checking if space2 has valid coordinates
-        if not self.validCoords(col2, row2):
-            print("Error. Invalid value for space2Coords.")
-            print(f"space2Coords {space2Coords}")
-            
-        xChange = col2 - col1
-        yChange = row2 - row1
-            
-        #determining direction of space2 relative to space1
-        if xChange == 1 and yChange == 0:
-            return "right"
-        elif xChange == -1 and yChange == 0:
-            return "left"
-        elif xChange == 0 and yChange == 1:
-            return "down"
-        elif xChange == 0 and yChange == -1:
-            return "up"
-        else :
-            return "none"
-        
-    #converts a cardinal direction into a character symbol
-    #@param direction - string of form "up", "down", "left", and "right"
-    #returns "^" for "up", "v" for "down", "<" for "left", and ">" for "right", "" otherwise
-    def directionSymbol(self, direction):
-        #determining symbol based on direction string
-        if direction == "up":
-            return "^"
-        elif direction == "down":
-            return "v"
-        elif direction == "left":
-            return "<"
-        elif direction == "right":
-            return ">"
-        else:
-            return ""
-    
-    #finds spaces up, down, left, and right of head space that are within grid
-    #returns list of space coordinates. may include game over edge spaces
-    def headAdjacentSpaces(self):
-        return self.adjacentSpaceCoords(self.getHeadCol(), self.getHeadRow())
-    
-    #checks if a space's column number is valid
-    #@param col - column number
-    #returns true if possible for space to exist at that column
-    def validColumn(self, col):
-        return 0 <= col and col <= self.cols + 1
-    
-    #checks if a space's row number is valid
-    #@param row - row number
-    #returns true if possible for space to exist at that row
-    def validRow(self, row):
-        return 0 <= row and row <= self.rows + 1
-    
-    #checks if a pair of coordinates describes a valid space
-    #@param col - column number
-    #@param row - row number
-    #returns true if there exists space in game area
-    def validCoords(self, col, row):
-        return self.validColumn(col) and self.validRow(row)
-    
-    #checks if a space is valid
-    #@param coords - tuple of the space's (col, row)
-    #returns true if coords describes space in grid, including game over edge spaces
-    def validSpace(self, coords):
-        return len(coords) == 2 and self.validCoords(coords[0], coords[1])
-    
-    #checks if a col is at the very edge of the grid
-    #@param col - column number
-    #returns true if col is at grid edge that would result in game over
-    def edgeCol(self, col):
-        #checking that column number is valid
-        if not self.validColumn(col):
-            print("invalid column input")
-            return False
-        
-        return col == 0 or col == self.cols + 1
-    
-    #checks if a row is at the very edge of the grid that results in game over
-    #@param row - row number
-    #returns true if row is at grid edge that would result in game over
-    def edgeRow(self, row):
-        #checking that row number is valid
-        if not self.validRow(row):
-            print("invalid row input")
-            return False
-        
-        return row == 0 or row == self.rows + 1
-    
-    #checks if space is at very edge of grid
-    #@param space - pair of space coordinates
-    #returns true if space is at edge of grid where game over would occur
-    def gameOverEdgeSpace(self, space):
-        #checking for valid space
-        if not self.validSpace(space):
-            print("Invalid space input")
-            return False
-        
-        return self.edgeCol(space[0]) or self.edgeRow(space[1])
-    
-    #checks if a space is at the corner of grid
-    #@param spaceCoords - pair of space coordinates
-    #returns true if space is at corner of grid within area that wouldn't trigger
-    #   out of bounds game over
-    def isCornerSpace(self, spaceCoords):
-        (col, row) = spaceCoords
-        
-        #checking if valid coordinates
-        if not self.validCoords(col, row):
-            print("Invalid space coordinates inputted.")
-            return False
-        
-        #checking if space is at corner of grid
-        if spaceCoords == (1,1):
-            return True  
-        elif spaceCoords == (1, self.rows):
-            return True 
-        elif spaceCoords == (self.cols, 1):
-            return True 
-        elif spaceCoords == (self.cols, self.rows):
-            return True 
-        else:
-            return False
-    
-    #checks if space is in bounds of snake crawlspace
-    #@param col - column number
-    #@param row - row number
-    #returns true if space within area that would not cause out of bounds game over
-    def spaceInBounds(self, col, row):
-        return 1 <= col and col <= self.cols and 1 <= row and row <= self.rows 
-    
-    #checks if space is in bounds of snake crawlspace
-    #@param spaceID - id number of space
-    #returns true if space within area that would not cause out of bounds game over
-    def spaceIDInBounds(self, spaceID):
-        coords = self.spaceCoords(spaceID)
-        (col, row) = coords
-        return self.spaceInBounds(col, row)
     
     #finds the shortest uninterrupted path between 2 spaces, if it exists
     #@param firstSpaceID - id number of first space
@@ -673,23 +385,23 @@ class SnakeGame:
     #returns list of adjacent spaces head can move to, regardless of if they result in game over
     def possibleMoves(self):
         #head can't move if game over
-        if self.grid[self.getHeadCol()][self.getHeadRow()] == "X":
+        if self.grid[self.headCol()][self.headRow()] == "X":
             return []
         
-        neighbors = self.adjacentSpaceCoords(self.getHeadCol(), self.getHeadRow())
+        neighbors = self.adjacentSpaceCoords(self.headCol(), self.headRow())
         destinations = []
         
         #finding spaces head can move to
         for space in neighbors:
             col = space[0]
             row = space[1]
-            xChange = col - self.getHeadCol()
-            yChange = row - self.getHeadRow()
+            xChange = col - self.headCol()
+            yChange = row - self.headRow()
             
             #snake can' make 180 degree turn
-            if self.headXVelocity != 0 and xChange == -self.headXVelocity:
+            if self.headXVel != 0 and xChange == -self.headXVel:
                 continue
-            if self.headYVelocity != 0 and yChange == - self.headYVelocity:
+            if self.headYVel != 0 and yChange == - self.headYVel:
                 continue
                 
             destinations.append(space)
@@ -757,7 +469,7 @@ class SnakeGame:
             pelletCoords = (self.pelletCol, self.pelletRow)
             
             #checking if pellet space near head
-            if abs(self.pelletCol - self.getHeadCol()) == 1 and pelletCoords not in safeMoves:
+            if abs(self.pelletCol - self.headCol()) == 1 and pelletCoords not in safeMoves:
                 safeMoves.append(pelletCoords)
             elif abs(self.pelletRow - self.getHeadRow()) == 1 and pelletCoords not in safeMoves:
                 safeMoves.append(pelletCoords)
@@ -952,7 +664,7 @@ class SnakeGame:
         print("Survive steer!")
         
         space = randomElement(goodSpaces)
-        xVelocity = space[0] - self.getHeadCol()
+        xVelocity = space[0] - self.headCol()
         yVelocity = space[1] - self.getHeadRow()
         
         #selecting arrow key direction that leads to chosen space
@@ -976,7 +688,7 @@ class SnakeGame:
         space = self.pelletPath[0]
         self.pelletPath.popleft()
             
-        xVelocity = space[0] - self.getHeadCol()
+        xVelocity = space[0] - self.headCol()
         yVelocity = space[1] - self.getHeadRow()
         self.steerSnake(xVelocity, yVelocity)
     
@@ -988,7 +700,7 @@ class SnakeGame:
         
         #using head values
         if spaceCoords == None:
-            spaceCoords = self.getHeadCoords()
+            spaceCoords = self.headCoords()
             
         (col, row) = spaceCoords
     
@@ -1040,14 +752,14 @@ class SnakeGame:
         
         #checking if even number of columns
         if self.cols % 2 == 0:
-            col = self.getHeadCol()
+            col = self.headCol()
             row = self.getHeadRow()
             cols = self.cols
             rows = self.rows
             return self.__combLoopHelper(col, row, cols, rows)
         else:
             col = self.getHeadRow()
-            row = self.cols - self.getHeadCol() + 1
+            row = self.cols - self.headCol() + 1
             cols = self.rows
             rows = self.cols
             
@@ -1143,7 +855,7 @@ class SnakeGame:
     def tongLoopDirection(self, spaceCoords=None):
         #using head space
         if spaceCoords == None:
-            spaceCoords = self.getHeadCoords()
+            spaceCoords = self.headCoords()
         
         (col, row) = spaceCoords
         xVelocity = 0
@@ -1201,7 +913,7 @@ class SnakeGame:
             self.moveDownPath(self.pelletPath)
         else:
             safeMoves = self.safeMoves()
-            swirlMove = self.nextSwirlSpace(self.getHeadCol(), self.getHeadRow())
+            swirlMove = self.nextSwirlSpace(self.headCol(), self.getHeadRow())
             
             #having snake go down swirl if safe, other choosing randomly
             if swirlMove in safeMoves:
@@ -1455,7 +1167,7 @@ class SnakeGame:
             return
     
         space = path[0]
-        xVelocity = space[0] - self.getHeadCol()
+        xVelocity = space[0] - self.headCol()
         yVelocity = space[1] - self.getHeadRow()
         self.steerSnake(xVelocity, yVelocity)
         path.popleft()
@@ -1473,57 +1185,11 @@ class SnakeGame:
                 print("updating pellet path")
                 print(f"pellet path: {self.pelletPath}")
         
-    #checks if there is enough room for snake to travel rectangle path
-    #returns true if there is enough room for snake to go down rectangle route with entirety of body
-    def __rectTraversable(self):
-        return len(self.__rectUnwindPath()) > 0
-        
-    #finds path that lets snake unwind in a rectangle formation
-    #returns deque of space coords for path found. empty deque if no path found
-    def __rectUnwindPath(self):
-        #print(self.getHeadID())
-        #print(self.borderIDs)
-        borderPath = self.findSubgraphPath(self.getHeadID(), self.borderIDs)
-        #print(f"border path: {borderPath}")
-        
-        #no edge path found
-        if len(borderPath) == 0:
-            return deque()
-        
-        borderPath.popleft()
-        futureSnake1 = self.futureSnakeCoords(self.snakeCoords, borderPath)
-        #print(f"futureSnake1: {futureSnake1}")
-        
-        #border path exceeds snake length. snake is safe
-        if len(borderPath) >= self.snakeLength():
-            return borderPath
-        
-        rectPath = deque()
-        pathSeg = futureSnake1[0]
-        
-        #forming rectangle path
-        for k in range(self.snakeLength() - len(borderPath)):
-            (col, row) = pathSeg
-            nextSeg = self.nextRectSpace(col, row)
-            rectPath.append(nextSeg)
-            pathSeg = nextSeg
-            
-        #print(f"rectPath: {rectPath}")
-        futureSnake2 = self.futureSnakeCoords(futureSnake1, rectPath)
-        #print(f"futureSnake2: {futureSnake2}")
-        
-        #snake is able to go down path without chomping itself
-        if futureSnake2[0] == rectPath[-1]:
-            borderPath.extend(rectPath)
-            return borderPath
-        
-        return deque()
-        
     #finds path that allows snake to unwind in swirl formation if possible
     #returns deque of space coords for path found. empty deque if no path found
     def __swirlUnwindPath(self):
         swirlPath = deque()
-        pathSeg = self.getHeadCoords()
+        pathSeg = self.headCoords()
         
         #forming rectangle path
         for k in range(self.snakeLength()):
@@ -1789,7 +1455,7 @@ class SnakeGame:
     #gets coordinates of head square
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns coordinates in form (col, row). if head doesn't exist returns empty tuple.
-    def getHeadCoords(self, snakeSeg = None):
+    def headCoords(self, snakeSeg = None):
         #using self.snakeCoords if needed
         if snakeSeg is None:
             #print("using self.snakeCoords")
@@ -1801,17 +1467,17 @@ class SnakeGame:
     #gets column snake head is in
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns grid column number of head. if no head returns -1
-    def getHeadCol(self, snakeSeg = None):
-        return self.getHeadCoords(snakeSeg)[0]
+    def headCol(self, snakeSeg = None):
+        return self.headCoords(snakeSeg)[0]
     
     #gets row snake head is in
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #return grid row number of head
-    def getHeadRow(self, snakeSeg = None):
-        return self.getHeadCoords(snakeSeg)[1]
+    def headRow(self, snakeSeg = None):
+        return self.headCoords(snakeSeg)[1]
     
     #obtains head square
-    #returns reference to head unit square. if none returns None
+    #returns reference to head unit square in canvas. if none returns None
     def getHead(self):
         return self.snakeSquares[0] if self.snakeLength() > 0 else None
     
@@ -1819,7 +1485,7 @@ class SnakeGame:
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns integer representing space id of head space
     def getHeadID(self, snakeSeg = None):
-        return self.spaceID(self.getHeadCol(snakeSeg), self.getHeadRow(snakeSeg))
+        return self.spaceID(self.headCol(snakeSeg), self.headRow(snakeSeg))
     
     #obtains id of space pellet is occupying
     #returns integer representing space id of pellet space
@@ -1950,10 +1616,10 @@ class SnakeGame:
     def up(self, event=None):
         print("up arrow key pressed")
         #moving snake up if it's not moving down
-        if not self.headYVelocity == 1 and self.steering == True:
+        if not self.headYVel == 1 and self.steering == True:
             self.unbindArrowKeys()
-            self.headYVelocity = -1
-            self.headXVelocity = 0
+            self.headYVel = -1
+            self.headXVel = 0
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -1964,10 +1630,10 @@ class SnakeGame:
     def down(self, event=None):
         print("down arrow key pressed")
         #moving snake down if it's not moving up
-        if not self.headYVelocity == -1 and self.steering == True:
+        if not self.headYVel == -1 and self.steering == True:
             self.unbindArrowKeys()
-            self.headYVelocity = 1
-            self.headXVelocity = 0
+            self.headYVel = 1
+            self.headXVel = 0
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -1978,10 +1644,10 @@ class SnakeGame:
     def right(self, event=None):
         print("right arrow key pressed")
         #moving snake right if it's not going left
-        if not self.headXVelocity == -1 and self.steering == True: 
+        if not self.headXVel == -1 and self.steering == True: 
             self.unbindArrowKeys()
-            self.headYVelocity = 0
-            self.headXVelocity = 1
+            self.headYVel = 0
+            self.headXVel = 1
         
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -1992,10 +1658,10 @@ class SnakeGame:
     def left(self, event=None):
         print("left arrow key pressed")
         #moving snake left if it's not going right
-        if not self.headXVelocity == 1 and self.steering == True:
+        if not self.headXVel == 1 and self.steering == True:
             self.unbindArrowKeys()
-            self.headYVelocity = 0
-            self.headXVelocity = -1
+            self.headYVel = 0
+            self.headXVel = -1
          
         #starting game if hasn't started yet
         if self.gameStarted and not self.snakeMoving:
@@ -2019,12 +1685,12 @@ class SnakeGame:
             print("Error. Invalid x and/or y velocities inputed.")
             print(f"x velocity: {xVelocity}")
             print(f"y velocity: {yVelocity}")
-            print(f"snake head velocity: ({self.headXVelocity}, {self.headYVelocity})")
+            print(f"snake head velocity: ({self.headXVel}, {self.headYVel})")
             
     #checks if snake has bumped into the edge
     def snakeTouchingEdge(self):
-        col = self.getHeadCol()
-        row = self.getHeadRow()
+        col = self.headCol()
+        row = self.headRow()
         
         return col == 0 or col == self.cols + 1 or row == 0 or row == self.rows + 1   
     
@@ -2038,17 +1704,14 @@ class SnakeGame:
             
     #shifts the snake one spot and makes new pellet if none on screen
     def runTurn(self):
-        prevHeadCol = self.getHeadCol()
-        prevHeadRow = self.getHeadRow()
+        prevHeadCol = self.headCol()
+        prevHeadRow = self.headRow()
         
         #having ai choose direction in ai mode
         if self.aiMode:
-            #self.randomAISteer()
-            #self.surviveAISteer()
-            #self.basicAISteer()
-            #self.loopAiSteer()
-            #self.safeWinAISteer()
-            self.fastWinAISteer()
+            (col, row) = self.ai.nextMove()
+            self.headXVel = col - self.headCol()
+            self.headYVel = row - self.headRow()
         
         self.moveSnake()
         self.steering = True
@@ -2058,7 +1721,7 @@ class SnakeGame:
             self.bindArrowKeys()
           
         #game over if snake touches edge or itself
-        if self.grid[self.getHeadCol()][self.getHeadRow()] == "X":
+        if self.grid[self.headCol()][self.headRow()] == "X":
             self.gameOver()
             self.printGrid()
             print("\n")
@@ -2076,7 +1739,7 @@ class SnakeGame:
             self.drawPelletRandom()
            
         #printing grid if there was a change in snake's position
-        if prevHeadCol != self.getHeadCol() or prevHeadRow != self.getHeadRow():
+        if prevHeadCol != self.headCol() or prevHeadRow != self.headRow():
             self.printGrid()
             print("\n")
         
@@ -2091,8 +1754,8 @@ class SnakeGame:
         #print(f"snakelength: {snakeLength}")
         
         #turning previous head square to normal body square
-        prevHeadCol = self.getHeadCol()
-        prevHeadRow = self.getHeadRow()
+        prevHeadCol = self.headCol()
+        prevHeadRow = self.headRow()
         self.grid[prevHeadCol][prevHeadRow] = "S"
         
         #removing snake's old tail square
@@ -2110,8 +1773,8 @@ class SnakeGame:
             self.grid[self.getTailCol()][self.getTailRow()] = "T"
         
         #inserting block at snake's new head destination
-        headCol = prevHeadCol + self.headXVelocity
-        headRow = prevHeadRow + self.headYVelocity
+        headCol = prevHeadCol + self.headXVel
+        headRow = prevHeadRow + self.headYVel
         headCoords = (headCol, headRow)
         
         #replacing old head with rectangle block for snakes of multiple segments
@@ -2176,25 +1839,6 @@ class SnakeGame:
     #returns 2d array of game grid. Edges of grid represent out of bounds game over zones
     def getGridCopy(self):
         return [[self.grid[x][y] for y in range(self.rows+2)] for x in range(self.cols+2)]
-    
-    #creates dictionary mapping space ids to ids of neighboring spaces under swirl paths
-    #@param swirlType - "loose" or "strict". determines map form
-    #neighbors found regardless of snake's position or velocity
-    def __createSwirlNeighborsMap(self, swirlType="strict"):
-        self.swirlNeighbors = {}
-        
-        #reporting neighbors for each space in grid
-        for x in range(1, self.cols + 1):
-            for y in range(1, self.rows + 1):
-                spaceID = self.spaceID(x, y)
-                neighborSpaces = self.swirlSpaces(x, y, swirlType)
-                neighborIDs = [self.spaceID(s[0], s[1]) for s in neighborSpaces]
-                self.swirlNeighbors[spaceID] = neighborIDs
-                
-    #creates adjacency list for game grid
-    #returns dict mapping space ids to set of space ids for neighboring spaces
-    def __createAdjacencyList(self):
-        return {v: self.adjacentInboundSpaceIDs(v) for v in range(1, self.cols*self.rows+1)}
                 
     #replaces and creates a snake within memory composed in inputted segments
     #@param segments - list of snake coordinates. 0th element is snake head

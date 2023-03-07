@@ -7,6 +7,8 @@ Created on Mon May 23 22:29:28 2022
 
 from snake import SnakeGame
 from tkinter import *
+import ai.snakeAnalysis as a
+import ai.dumbAI as ai
 
 root = Tk()
 root.title("Snake")
