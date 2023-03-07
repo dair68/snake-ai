@@ -1,6 +1,6 @@
 #module hosting DumbAI class
 from ai.snakeAnalysis import SnakeGameAnalyzer
-from ai.snakeAnalysis import randElement
+from randomElement import randElement
 
 #class that recommends suboptimal moves for a given snake game
 class DumbAI(SnakeGameAnalyzer):
