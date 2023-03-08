@@ -13,6 +13,7 @@ from queue import Queue
 from queue import LifoQueue
 import math
 from collections import deque
+from ai.snakeAI import SnakeAI
 from ai.dumbAI import DumbAI
 
 #prints a 2d array to the console
@@ -150,8 +151,8 @@ class SnakeGame:
         #self.__debugMode()
         
     #begins new game of player controlled snake with start snake segment at a certain position
-    #@param col - column number of start snake segment. number from 1-20.
-    #@param row - row number of start snake segment. number from 1-20
+    #@param col - column number of start snake segment.
+    #@param row - row number of start snake segment.
     def start(self, col=1, row=1):
         self.score = 0
         self.updateScoreDisplay()
@@ -201,7 +202,9 @@ class SnakeGame:
         print("starting ai")
         self.start(col, row)
         self.aiMode = True
-        self.ai = DumbAI(self)
+        self.ai = SnakeAI(self)
+        #self.ai = DumbAI(self)
+        
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
         self.steering = True

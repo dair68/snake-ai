@@ -1,6 +1,6 @@
 #module hosting DumbAI class
 from ai.snakeAI import SnakeAI
-from randomElement import randElement
+import random
 
 #class that recommends suboptimal moves for a given snake game
 class DumbAI(SnakeAI):
@@ -9,8 +9,10 @@ class DumbAI(SnakeAI):
     def __init__(self, game):
         SnakeAI.__init__(self, game)
         
-    #reports random move for the snake to make next
+    #reports random space for the snake to make next
     #returns tuple of from (colNum, rowNum) for space that snake is to visit next
     def nextMove(self):
+        print("dumb ai move")
         moves = self.possibleMoves()
-        return randElement(moves)
+        #print(f"moves: {moves}")
+        return random.sample(moves, 1)[0]
