@@ -12,4 +12,4 @@ class SurviveAI(SnakeAI):
     #returns tuple of from (colNum, rowNum) for space that snake is to visit next
     #   chooses space that will prevent game over both short and long term
     def nextMove(self):
-        pass
+        tailID = self.

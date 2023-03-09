@@ -202,8 +202,8 @@ class SnakeGame:
         print("starting ai")
         self.start(col, row)
         self.aiMode = True
-        self.ai = SnakeAI(self)
-        #self.ai = DumbAI(self)
+        #self.ai = SnakeAI(self)
+        self.ai = DumbAI(self)
         
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
@@ -1523,7 +1523,7 @@ class SnakeGame:
     #obtains tail coordinates
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns tail grid coordinates as (col, row). if no tail returns empty tuple
-    def getTailCoords(self, snakeSeg = None):
+    def tailCoords(self, snakeSeg = None):
         #using self.snakeCoords if needed
         if snakeSeg is None:
             snakeSeg = self.snakeCoords
@@ -1534,13 +1534,13 @@ class SnakeGame:
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns tail grid column number. if no tail returns -1
     def getTailCol(self, snakeSeg = None):
-        return self.getTailCoords(snakeSeg)[0]
+        return self.tailCoords(snakeSeg)[0]
     
     #obatins tail row
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns tail grid row number. if no tail returns -1
     def getTailRow(self, snakeSeg = None):
-        return self.getTailCoords(snakeSeg)[1]
+        return self.tailCoords(snakeSeg)[1]
     
     #obtains id of space tail is occupying
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
