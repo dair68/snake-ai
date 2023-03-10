@@ -15,6 +15,7 @@ import math
 from collections import deque
 from ai.snakeAI import SnakeAI
 from ai.dumbAI import DumbAI
+from ai.surviveAI import SurviveAI
 
 #prints a 2d array to the console
 #@param matrix - a 2d array
@@ -165,7 +166,7 @@ class SnakeGame:
         self.pelletCol = -1
         self.pelletRow = -1
         
-        self.grid = self.blankGrid()
+        self.grid = self.blankGrid(self.cols, self.rows)
         self.grid[col][row] = "H"
         self.snakeCoords = deque([(col, row)])
         #print(self.snakeCoords)
@@ -203,7 +204,8 @@ class SnakeGame:
         self.start(col, row)
         self.aiMode = True
         #self.ai = SnakeAI(self)
-        self.ai = DumbAI(self)
+        #self.ai = DumbAI(self)
+        self.ai = SurviveAI(self)
         
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
@@ -1887,9 +1889,11 @@ class SnakeGame:
         return [self.spaceID(coord[0], coord[1]) for coord in path]
     
     #produces 2 by 2 nested lists that represent a blank game grid
+    #@param cols - number of column in grid
+    #@param rows - number of rows in grid
     #returns 2 by 2 lists that allow for blank grid to be modified
-    def blankGrid(self):
-        grid = [["o" for y in range(self.rows + 2)] for x in range(self.cols + 2)]
+    def blankGrid(self, cols, rows):
+        grid = [["o" for y in range(rows + 2)] for x in range(cols + 2)]
         borderChar = "#"
         
         #labeling top and bottom borders of grid
@@ -1919,11 +1923,12 @@ class SnakeGame:
             
             #chooseing grid symbol based on snake segment
             if i == 0:
+                grid[col][row] = "H"
                 #snake has chomped itself
-                if self.gameOverEdgeSpace(seg) or seg in labeledSeg:
-                    grid[col][row] = "X"
-                else:
-                    grid[col][row] = "H"
+                #if self.gameOverEdgeSpace(seg) or seg in labeledSeg:
+                #   grid[col][row] = "X"
+                #else:
+                #    grid[col][row] = "H"
             elif i == len(snakeSeg) - 1:
                 grid[col][row] = "T"
             else:
@@ -1932,10 +1937,12 @@ class SnakeGame:
             labeledSeg.add(seg)
             
     #creates new grid object with inputted snake coordinates
+    #@param cols - number of column in grid
+    #@param rows - number of rows in grid
     #@param snakeSeg - deque of space coordinates making up snake. 0th element is head
     #returns 2 by 2 nested lists grid with snake coordinates. "H" for head, "T" for tail, "S" otherwise
-    def createGrid(self, snakeSeg = deque()):
-        grid = self.blankGrid()
+    def createGrid(self, cols, rows, snakeSeg = deque()):
+        grid = self.blankGrid(cols, rows)
         self.fillGridWithSnake(grid, snakeSeg)
         return grid         
     

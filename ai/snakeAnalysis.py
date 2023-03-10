@@ -1,4 +1,6 @@
 #module that hosts SnakeGameAnalyzer class
+import graphtheory.pathFinder as search
+from collections import deque
 
 #class with a bunch of functions that obtain data from a particular snake game
 class SnakeGameAnalyzer:
@@ -82,6 +84,12 @@ class SnakeGameAnalyzer:
         coords = self.spaceCoords(spaceID)
         return {self.spaceID(s) for s in self.adjacentInboundSpaceCoords(coords)}
     
+    #finds all space adjacent to head that is in area that 
+    #   won't result in out of bounds game over
+    #returns set of space ids for head adjacent spaces not within game over zone
+    def headAdjacentInboundIDs(self):
+        return self.adjacentInboundSpaceIDs(self.headID())
+    
     #checks if tuple is a valid pair of coordinates for a space within game grid,
     #   including out of bounds game over spaces
     #@param spaceCoords - tuple of form (colNum, rowNum) for space in question
@@ -117,7 +125,7 @@ class SnakeGameAnalyzer:
     #creates adjacency list for current state of game grid
     #returns dict mapping space ids to set of space ids for visitable adjacent spaces
     #   does not include spaces within game over zone or occupied by snake
-    def inboundGridAdjacencyList(self):
+    def inboundAdjacencyList(self):
         vertexMap = {}
         
         #adding nodes to adjacency list
@@ -292,10 +300,40 @@ class SnakeGameAnalyzer:
         
     #obtains spaceID for snake's head space
     #returns integer id number of space occupied by snake head
-    def headSpaceID(self):
+    def headID(self):
         return self.spaceID(self.game.headCoords())
     
     #obtains spaceID for snake's tail space
     #returns integer id number of space occupied by snake tail
-    def tailSpaceID(self):
+    def tailID(self):
         return self.spaceID(self.game.tailCoords())
+    
+    #finds paths from head adjacent spaces to snake's tail, if they exist
+    #returns list of paths with paths represented by deques of space coords
+    def tailPaths(self):
+        graph = self.inboundAdjacencyList()
+        tailID = self.tailID()
+        self.addVertex(graph, tailID)
+        neighbors = self.possibleMoves()
+        startIDs = set()
+        
+        #filtering out desirable start positions
+        for coords in neighbors:
+            spaceID = self.spaceID(coords)
+            
+            #checking if path should start from that space
+            if self.spaceCoordsInBounds(coords) and not self.snakeSpace(coords):
+                startIDs.add(spaceID)
+            elif coords == self.game.tailCoords() and self.game.snakeLength() > 2:
+                startIDs.add(spaceID)
+      
+        pathData = search.singleDestinationShortestPaths(graph, tailID, startIDs)
+        idPaths = [path for path in pathData.values() if len(path) > 0]
+        coordPaths = []
+        
+        #converting space ids into space coordinates for each path
+        for path in idPaths:
+            newPath = deque([self.spaceCoords(spaceID) for spaceID in path])
+            coordPaths.append(newPath)
+            
+        return coordPaths

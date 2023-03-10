@@ -8,8 +8,9 @@ Created on Mon May 23 22:29:28 2022
 from snake import SnakeGame
 from tkinter import *
 import ai.snakeAnalysis as a
-import ai.dumbAI as ai
-import graphtheory.graphTraversal as g
+import ai.surviveAI as ai
+import graphtheory.pathFinder as path
+import graphtheory.sampleGraphs as sg
 
 root = Tk()
 root.title("Snake")
@@ -19,8 +20,12 @@ game = SnakeGame(root)
 root.mainloop()
 
 '''
-print(game)
-artificialIntelligence = ai.SnakeAI(game)
-print(artificialIntelligence.getGame())
+artificialIntelligence = ai.SurviveAI(game)
+game.snakeCoords = [(2,2), (2,3),(3,3)]
+(game.cols, game.rows) = (6, 6)
+game.grid = game.createGrid(6, 6, game.snakeCoords)
+game.printGrid()
+move = artificialIntelligence.nextMove()
+print(move)
 root.mainloop()
 '''

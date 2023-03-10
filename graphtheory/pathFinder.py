@@ -15,9 +15,9 @@ def shortestPath(graphAdjList, startVertex, targetVertex):
 #finds paths between one vertex and other vertices that contains fewest number of edges
 #@param graphAdjList - dict mapping node integer ids to set of node integer ids of neighboring vertices
 #@param startVertex - integer id number of start vertex
-#@param targetVertices - set of vertex ids for which paths are to be found.
+#@param targetVertices - set of vertex ids for which paths are to end.
 #   chooses set of all vertices in graph by default
-#returns dict mapping vertex ids to deques of ids making up shortes path to them
+#returns dict mapping vertex ids to deques of ids making up shortest path to them
 def singleSourceShortestPaths(graphAdjList, startVertex, targetVertices=None):
     #initializing targetVertices if needed
     if targetVertices == None:
@@ -58,3 +58,18 @@ def singleSourceShortestPaths(graphAdjList, startVertex, targetVertices=None):
             node = parentIDs[node]
         
     return paths
+
+#finds paths leading to one vertex that contains fewest number of edges
+#@param graphAdjList - dict mapping node integer ids to set of node integer ids of neighboring vertices
+#@param targetVertex - vertex id for which all paths end
+#@param startVertices - integer id numbers of vertices for which paths begin
+#   chooses set of all vertices in graph by default
+#returns dict mapping vertex ids to deques of ids making up shortest path from them
+def singleDestinationShortestPaths(graphAdjList, targetVertex, startVertices=None):
+    pathData = singleSourceShortestPaths(graphAdjList, targetVertex, startVertices)
+    
+    #reversing the paths in path dictionary
+    for path in pathData.values():
+        path.reverse()
+    
+    return pathData
