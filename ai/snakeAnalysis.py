@@ -1,5 +1,6 @@
 #module that hosts SnakeGameAnalyzer class
 import graphtheory.pathFinder as search
+import graphtheory.graph as g
 from collections import deque
 
 #class with a bunch of functions that obtain data from a particular snake game
@@ -21,7 +22,7 @@ class SnakeGameAnalyzer:
     
     #reports all possible moves the snake can make it's current state
     #returns set of space coords of form (colNum, rowNum). includes game over moves
-    def possibleMoves(self):
+    def possibleMoveCoords(self):
         moves = self.adjacentSpaceCoords(self.game.headCoords())
         
         #all adjacent moves are valid if snake is stationary
@@ -42,6 +43,21 @@ class SnakeGameAnalyzer:
                 filteredMoves.add((col, row))  
             
         return filteredMoves
+    
+    #reports all possible moves the snake can make it's current state
+    #returns set of space ids. includes game over moves
+    def possibleMoveIDs(self):
+        return {self.spaceID(coords) for coords in self.possibleMoveCoords()}
+    
+    #reports all possible moves not in out of bounds game over zone snake can make
+    #returns set of space coords of form (colNum, rowNum)
+    def possibleInboundMoveCoords(self):
+        return {s for s in self.possibleMoveCoords() if self.coordsInBounds(s)}
+    
+    #reports all possible moves not in out of bounds game over zone snake can make
+    #returns set of space ids
+    def possibleInboundMoveIDs(self):
+        return {s for s in self.possibleMoveIDs() if self.idInBounds(s)}
     
     #finds all spaces adjacent to a given space
     #@param spaceCoords - tuple of form (colNum, rowNum) for space in question
@@ -72,7 +88,7 @@ class SnakeGameAnalyzer:
         self.assertValidSpaceCoords(spaceCoords)
         
         neighbors = self.adjacentSpaceCoords(spaceCoords)
-        return {space for space in neighbors if self.spaceCoordsInBounds(space)}
+        return {space for space in neighbors if self.coordsInBounds(space)}
     
     #finds all space adjacent to given space that is in area that 
     #   won't result in out of bounds game over
@@ -89,6 +105,25 @@ class SnakeGameAnalyzer:
     #returns set of space ids for head adjacent spaces not within game over zone
     def headAdjacentInboundIDs(self):
         return self.adjacentInboundSpaceIDs(self.headID())
+    
+    #checks if 2 spaces are adjacent to each each other
+    #@param spaceCoords1 - space coordinates of first space. (colNum, rowNum)
+    #@param spaceCoords2 - space coordinates of second space. (colNum, rowNum)
+    #returns True if spaces are adjacent, False otherwise
+    def spacesAreAdjacent(self, spaceCoords1, spaceCoords2):
+        self.assertValidSpaceCoords(spaceCoords1)
+        self.assertValidSpaceCoords(spaceCoords2)
+        
+        (x1, y1) = spaceCoords1
+        (x2, y2) = spaceCoords2
+        
+        #checking if spaces are adjacent
+        if x1 == x2 and abs(y1 - y2) == 1:
+            return True
+        elif y1 == y2 and abs(x1 - x2) == 1:
+            return True
+        else:
+            return False
     
     #checks if tuple is a valid pair of coordinates for a space within game grid,
     #   including out of bounds game over spaces
@@ -123,57 +158,49 @@ class SnakeGameAnalyzer:
         return 0 <= rowNum and rowNum <= self.game.rows + 1
      
     #creates adjacency list for current state of game grid
+    #@param snakeSegs - set of space coordinates making up snake.
+    #   uses snake stored in game attached to analyzer by default
     #returns dict mapping space ids to set of space ids for visitable adjacent spaces
     #   does not include spaces within game over zone or occupied by snake
-    def inboundAdjacencyList(self):
+    def inboundAdjacencyList(self, snakeSegs=None):
+        #populating snakeCoords if needed
+        if snakeSegs == None:
+            snakeSegs = set(self.game.snakeCoords)
+        
         vertexMap = {}
         
         #adding nodes to adjacency list
         for spaceID in range(self.game.cols*self.game.rows):
-            coords = self.spaceCoords(spaceID)
-         
             #checking if space is occupied
-            if not self.snakeSpace(coords):
+            if not self.spaceCoords(spaceID) in snakeSegs:
                 vertexMap[spaceID] = set()
-                neighbors = self.adjacentInboundSpaceCoords(coords)
+                neighbors = self.adjacentInboundSpaceIDs(spaceID)
             
                 #figuring out which neighboring spaces are accessible
-                for (x, y) in neighbors:
+                for vertex in neighbors:
                     #checking if space empty
-                    if not self.snakeSpace((x, y)):
-                        vertexMap[spaceID].add(self.spaceID((x, y)))
+                    if not self.spaceCoords(vertex) in snakeSegs:
+                        vertexMap[spaceID].add(vertex)
                 
         return vertexMap
-    
-    #adds a game space to an existing adjacency list representing snake game.
-    #   will map space to adjacent inbound neighbors, including ones occupied by snake
-    #   neighbors will be mapped to space and added to list if needed
-    #   does nothing if space already exists in adjacency list
-    #@param gameAdjList - adjacency list representing current state of game
-    #@param spaceID - integer id number of space to be added
-    def addVertex(self, gameAdjList, spaceID):
-        #checking if spaceID already in adjacency list
-        if spaceID not in gameAdjList:
-            gameAdjList[spaceID] = self.adjacentInboundSpaceIDs(spaceID)
-            
-            #ensuring neighbors are mapped to new space
-            for vertex in gameAdjList[spaceID]:
-                #checking if neighboring vertex already in adjacency list
-                if vertex not in gameAdjList:
-                    gameAdjList[vertex] = set()
-                    
-                gameAdjList[vertex].add(spaceID)
                 
     #checking if certain space in game grid contains snake segment
     #@param spaceCoords - tuple of form (colNum, rowNum) describing space coordinates
     #returns True is snake is currently occupying inputted space within grid
-    def snakeSpace(self, spaceCoords):
+    def isSnakeSpaceCoords(self, spaceCoords):
         self.assertValidSpaceCoords(spaceCoords)
         
         snakeSymbols = {"H", "S", "T"}
         (col, row) = spaceCoords
         
         return self.game.grid[col][row] in snakeSymbols
+    
+    #checking if certain space in game grid contains snake segment
+    #@param spaceID - integer space id number
+    #returns True is snake is currently occupying inputted space within grid
+    def isSnakeSpaceID(self, spaceID):
+        self.assertValidSpaceID(spaceID)
+        return self.isSnakeSpaceCoords(self.spaceCoords(spaceID))
     
     #obtains space id for a pair of space coordinates
     #@param spaceCoords - tuple of form (colNum, rowNum) for space in grid
@@ -184,7 +211,7 @@ class SnakeGameAnalyzer:
         (col, row) = spaceCoords
         
         #finding id number depending on if space causes out of bounds game over
-        if self.spaceCoordsInBounds(spaceCoords):
+        if self.coordsInBounds(spaceCoords):
             return (col - 1) % self.game.cols + self.game.cols*(row - 1)
         else:
             return self.__gameOverSpaceID(spaceCoords)
@@ -196,7 +223,7 @@ class SnakeGameAnalyzer:
     #returns integer id corresponding to the space's id number
     def __gameOverSpaceID(self, spaceCoords):
         self.assertValidSpaceCoords(spaceCoords)
-        assert not self.spaceCoordsInBounds(spaceCoords)
+        assert not self.coordsInBounds(spaceCoords)
             
         (col, row) = spaceCoords
             
@@ -233,7 +260,7 @@ class SnakeGameAnalyzer:
     #returns coords in form (colNum, rowNum) for inputted id
     def __gameOverSpaceCoords(self, spaceID):
         self.assertValidSpaceID(spaceID)
-        assert not self.spaceIDInBounds(spaceID)
+        assert not self.idInBounds(spaceID)
         
         cols = self.game.cols
         rows = self.game.rows
@@ -262,7 +289,7 @@ class SnakeGameAnalyzer:
     #checks if a space is in zone that won't result in out of bounds game over
     #@param spaceCoords - tuple of form (colNum, rowNum) for space in grid
     #returns True is space is in bounds, false otherwise
-    def spaceCoordsInBounds(self, spaceCoords):
+    def coordsInBounds(self, spaceCoords):
         self.assertValidSpaceCoords(spaceCoords)
         (col, row) = spaceCoords
         return self.columnInBounds(col) and self.rowInBounds(row)
@@ -270,7 +297,7 @@ class SnakeGameAnalyzer:
     #checks if a space is in zone that won't result in out of bounds game over
     #@param spaceID - integer id number of space in grid
     #returns True is space is in bounds, false otherwise
-    def spaceIDInBounds(self, spaceID):
+    def idInBounds(self, spaceID):
         self.assertValidSpaceID(spaceID)
         return spaceID < self.game.cols*self.game.rows
         
@@ -308,32 +335,138 @@ class SnakeGameAnalyzer:
     def tailID(self):
         return self.spaceID(self.game.tailCoords())
     
-    #finds paths from head adjacent spaces to snake's tail, if they exist
-    #returns list of paths with paths represented by deques of space coords
-    def tailPaths(self):
-        graph = self.inboundAdjacencyList()
-        tailID = self.tailID()
-        self.addVertex(graph, tailID)
-        neighbors = self.possibleMoves()
-        startIDs = set()
+    #obtains spaceID for pellet space
+    #returns integer id number of space occupied by pellet
+    def pelletID(self):
+        return self.spaceID(self.game.pelletCoords())
+    
+    #finds spaces snake can safely move to next turn
+    #returns set of space coords that snake can move next without game over
+    def safeMoves(self):
+        startSpaces = set()
         
         #filtering out desirable start positions
-        for coords in neighbors:
-            spaceID = self.spaceID(coords)
-            
+        for coords in self.possibleInboundMoveCoords():
             #checking if path should start from that space
-            if self.spaceCoordsInBounds(coords) and not self.snakeSpace(coords):
-                startIDs.add(spaceID)
+            if not self.isSnakeSpaceCoords(coords):
+                startSpaces.add(coords)
             elif coords == self.game.tailCoords() and self.game.snakeLength() > 2:
-                startIDs.add(spaceID)
-      
-        pathData = search.singleDestinationShortestPaths(graph, tailID, startIDs)
-        idPaths = [path for path in pathData.values() if len(path) > 0]
-        coordPaths = []
+                startSpaces.add(coords)
+                
+        moves = set()        
         
-        #converting space ids into space coordinates for each path
-        for path in idPaths:
-            newPath = deque([self.spaceCoords(spaceID) for spaceID in path])
-            coordPaths.append(newPath)
+        #checking if pellet is within adjacent head spaces
+        if self.game.pelletCoords() in startSpaces:
+            path = self.pelletTailPath()
             
-        return coordPaths
+            #checking if path found
+            if len(path) > 0:
+                moves.add(path[0])
+                
+            startSpaces.remove(self.game.pelletCoords())
+            
+        #searching for tail paths from rest of spaces
+        for coords in startSpaces:
+            headCoords = self.game.headCoords
+            futureSnake = self.futureSnakeCoords(deque([headCoords, coords]))
+            path = self.headTailPath(futureSnake)
+            
+            #checking if path found
+            if len(path) > 0:
+                moves.add(path[0])
+        
+        return moves
+    
+    #finds new snake coordinates after it has moved down a certain path
+    #@param path - deque of space coords representing path snake will take. 
+    #   0th element is snake head.
+    #returns deque coordinates snake will be at after moving down inputted path.
+    #   assumes no pellet along the way
+    def futureSnakeCoords(self, path):    
+        futureSnake = deque(self.game.snakeCoords)
+        
+        #checking if path empty
+        if len(path) == 0:
+            return futureSnake
+        
+        currentSegs = set(futureSnake)
+        trimmedPath = deque(path)
+        trimmedPath.popleft()
+        
+        #going down path
+        for coords in trimmedPath:
+            assert self.spacesAreAdjacent(coords, futureSnake[0])
+            
+            currentSegs.remove(futureSnake[-1])
+            futureSnake.pop()
+            currentSegs.add(coords)
+            futureSnake.appendleft(coords)
+           
+            #snake has reached game over
+            if len(currentSegs) < len(futureSnake):
+                return futureSnake
+            if not self.coordsInBounds(futureSnake[0]):
+                return futureSnake
+            
+        return futureSnake
+    
+    #finds shortest path from pellet's current location to tail's current location
+    #returns deque of space coords if path found
+    def pelletTailPath(self):
+        graph = self.inboundAdjacencyList()
+        g.addVertex(graph, self.tailID())
+        self.addAdjInboundFreeEdges(graph, self.tailID())
+   
+        path = search.shortestPath(graph, self.pelletID(), self.tailID())
+        return deque([self.spaceCoords(spaceID) for spaceID in path])
+    
+    #finds shortest path from head's current location to tail's current location
+    #@param snakeCoords - deque of space coordinates making up snake.
+    #   uses snake stored in game attached to analyzer by default
+    def headTailPath(self, snakeCoords=None):
+        #populating snakeCoords if needed
+        if snakeCoords == None:
+            snakeCoords = deque(self.game.snakeCoords)
+            
+        #checking for nonempty snake
+        if len(snakeCoords) == 0:
+            return deque()
+            
+        snakeSegs = set(snakeCoords)
+        graph = self.inboundAdjacencyList(snakeSegs)
+        headID = self.spaceID(snakeCoords[0])
+        tailID = self.spaceID(snakeCoords[-1])
+        
+        g.addVertex(graph, headID)
+        g.addVertex(graph, tailID)
+        
+        self.addAdjInboundFreeEdges(graph, headID, snakeSegs)
+        self.addAdjInboundFreeEdges(graph, tailID, snakeSegs)
+        
+        headCoords = self.spaceCoords(headID)
+        tailCoords = self.spaceCoords(tailID)
+        
+        #checking if head next to tail for snakes longer than 2
+        if self.spacesAreAdjacent(headCoords, tailCoords) and len(snakeCoords) > 2:
+            g.addEdge(graph, headID, tailID)
+            
+        path = search.shortestPath(graph, headID, tailID)
+        return deque([self.spaceCoords(spaceID) for spaceID in path])
+    
+    #adds edges connecting space to adjacent inbound spaces not occupied by snake to a graph
+    #@param graphAdjList - dict mapping space ids to sets of adjacent space ids.
+    #   represents state of game
+    #@param spaceID - integer space id of space in question
+    #@param snakeSegs - set of space coords making up current snake
+    #   uses coordinates stored in current game by default
+    #if adjacent inbound snake free space not already in graph, it is added
+    def addAdjInboundFreeEdges(self, graph, spaceID, snakeSegs=None):
+        #initializing snakeSegs if needed
+        if snakeSegs == None:
+            snakeSegs = set(self.game.snakeCoords)
+            
+        #adding edges
+        for vertex in self.adjacentInboundSpaceIDs(spaceID):
+            #checking if edges should be added
+            if self.spaceCoords(vertex) not in snakeSegs:
+                g.addEdge(graph, vertex, spaceID)

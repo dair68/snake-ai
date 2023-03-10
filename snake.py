@@ -551,7 +551,7 @@ class SnakeGame:
         futureSnake = deque(self.snakeCoords)
         a = path[0]
         path.popleft()
-        futureSnake = self.futureSnakeCoords(futureSnake, path, self.getPelletCoords())
+        futureSnake = self.futureSnakeCoords(futureSnake, path, self.pelletCoords())
         #print(f"future snake3: {futureSnake}")
 
         path.appendleft(a)
@@ -1083,7 +1083,7 @@ class SnakeGame:
         
         #using (self.pelletCol, self.pelletRow) for pellet coords if needed
         if pelletCoords == None:
-            pelletCoords = self.getPelletCoords()
+            pelletCoords = self.pelletCoords()
             
         print(f"pelletCoords: {pelletCoords}")
             
@@ -1514,7 +1514,7 @@ class SnakeGame:
     
     #obtains space coords of the space pellet is occupying
     #returns tuple of form (pelletCol, pelletRow)
-    def getPelletCoords(self):
+    def pelletCoords(self):
         return (self.pelletCol, self.pelletRow)
     
     #obtains tail square
