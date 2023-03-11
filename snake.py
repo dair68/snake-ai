@@ -17,6 +17,7 @@ from ai.snakeAI import SnakeAI
 from ai.dumbAI import DumbAI
 from ai.surviveAI import SurviveAI
 from ai.greedyAI import GreedyAI
+from ai.basicAI import BasicAI
 
 #prints a 2d array to the console
 #@param matrix - a 2d array
@@ -207,7 +208,8 @@ class SnakeGame:
         #self.ai = SnakeAI(self)
         #self.ai = DumbAI(self)
         #self.ai = SurviveAI(self)
-        self.ai = GreedyAI(self)
+        #self.ai = GreedyAI(self)
+        self.ai = BasicAI(self)
         
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
