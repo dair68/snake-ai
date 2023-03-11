@@ -162,7 +162,7 @@ class SnakeGameAnalyzer:
     #   uses snake stored in game attached to analyzer by default
     #returns dict mapping space ids to set of space ids for visitable adjacent spaces
     #   does not include spaces within game over zone or occupied by snake
-    def inboundAdjacencyList(self, snakeSegs=None):
+    def freeInboundSpaceGraph(self, snakeSegs=None):
         #populating snakeCoords if needed
         if snakeSegs == None:
             snakeSegs = set(self.game.snakeCoords)
@@ -181,6 +181,18 @@ class SnakeGameAnalyzer:
                     #checking if space empty
                     if not self.spaceCoords(vertex) in snakeSegs:
                         vertexMap[spaceID].add(vertex)
+                
+        return vertexMap
+    
+    #creates adjacency list for every inbound space in game grid
+    #returns dict mapping space ids to set of space ids for visitable adjacent spaces
+    #   does not include spaces within game over zone. includes spaces with snake.
+    def inboundSpaceGraph(self):
+        vertexMap = {}
+        
+        #adding nodes to adjacency list
+        for spaceID in range(self.game.cols*self.game.rows):
+            vertexMap[spaceID] = self.adjacentInboundSpaceIDs(spaceID)
                 
         return vertexMap
                 
@@ -413,7 +425,7 @@ class SnakeGameAnalyzer:
     #finds shortest path from pellet's current location to tail's current location
     #returns deque of space coords if path found
     def pelletTailPath(self):
-        graph = self.inboundAdjacencyList()
+        graph = self.freeInboundSpaceGraph()
         g.addVertex(graph, self.tailID())
         self.addAdjInboundFreeEdges(graph, self.tailID())
    
@@ -433,7 +445,7 @@ class SnakeGameAnalyzer:
             return deque()
             
         snakeSegs = set(snakeCoords)
-        graph = self.inboundAdjacencyList(snakeSegs)
+        graph = self.freeInboundSpaceGraph(snakeSegs)
         headID = self.spaceID(snakeCoords[0])
         tailID = self.spaceID(snakeCoords[-1])
         
@@ -470,3 +482,38 @@ class SnakeGameAnalyzer:
             #checking if edges should be added
             if self.spaceCoords(vertex) not in snakeSegs:
                 g.addEdge(graph, vertex, spaceID)
+                
+    #finds shortest path from head's current location to pellet's current location
+    #path does not account for snake moving body parts out of the way
+    #returns path represented as deque of space coords. empty deque if no path found 
+    def pelletPath(self):
+       graph = self.freeInboundSpaceGraph()
+       g.addVertex(graph, self.headID())
+       self.addAdjInboundFreeEdges(graph, self.headID())
+       path = search.shortestPath(graph, self.headID(), self.pelletID())
+       return deque([self.spaceCoords(spaceID) for spaceID in path])
+   
+    #finds absolutely shortest path from head's current location to pellet's current location
+    #path found with knowledge that snake can move body parts out of the way
+    #returns path represented as deque of space coords. empty deque if no path found 
+    def fastPelletPath(self):
+        graph = self.inboundSpaceGraph()
+        nodeValues = {vertex:0 for vertex in graph}
+        
+        #populating nodeValues with snake data
+        for i in range(1, self.game.snakeLength()):
+            coords = self.game.snakeCoords[i]
+            segID = self.spaceID(coords)
+            nodeValues[segID] = self.game.snakeLength() - i
+            
+        #adjusting number for special case of length 2 snakes
+        if self.game.snakeLength() == 2:
+            coords = self.game.snakeCoords[-1]
+            segID = self.spaceID(coords)
+            nodeValues[segID] = 3
+            
+        headID = self.headID()
+        pelletID = self.pelletID()
+        path = search.distanceGatedShortestPath(graph, nodeValues, headID, pelletID)
+        
+        return deque([self.spaceCoords(vertex) for vertex in path])

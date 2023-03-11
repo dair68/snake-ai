@@ -14,7 +14,7 @@ class SnakeAI():
         self.analyzer = SnakeGameAnalyzer(game)
         
     #obtains game being analyzed
-    #returns reference to game attached ai
+    #returns reference to game attached to ai
     def getGame(self):
         return self.analyzer.getGame()
     
@@ -27,6 +27,11 @@ class SnakeAI():
     #returns set of space coords of from (col, row) as possible spaces snake can travel to
     def possibleMoves(self):
         return self.analyzer.possibleMoves()
+    
+    #has ai search the grid once more to recalibrate movement recommendations
+    #run this if the game hasn't been following all the previous recommended moves
+    def refreshAI(self):
+        print("updating ai movement reccommendations")
     
     #finds a space for snake to move to next
     #returns tuple of from (colNum, rowNum) for space that snake is to visit next

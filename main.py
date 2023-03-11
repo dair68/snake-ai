@@ -8,9 +8,10 @@ Created on Mon May 23 22:29:28 2022
 from snake import SnakeGame
 from tkinter import *
 import ai.snakeAnalysis as a
-import ai.surviveAI as ai
+import ai.greedyAI as ai
 import graphtheory.pathFinder as path
 import graphtheory.sampleGraphs as sg
+
 
 root = Tk()
 root.title("Snake")
@@ -20,16 +21,18 @@ game = SnakeGame(root)
 root.mainloop()
 
 '''
-artificialIntelligence = ai.SurviveAI(game)
+artificialIntelligence = ai.GreedyAI(game)
 analyzer = a.SnakeGameAnalyzer(game)
-game.snakeCoords = [(2,2),(1,2),(1,3),(2,3),(3,3),(4,3),(4,2),(4,1),(3,1),(2,1)]
-game.pelletCol = 3
-game.pelletRow = 2
+game.snakeCoords = [(5,1),(4,1),(3,1),(3,2),(4,2),(5,2),(6,2)]
+game.snakeCoords = [(5,1),(4,1)]
+game.pelletCol = 1
+game.pelletRow = 1
 (game.cols, game.rows) = (6, 6)
 game.grid = game.createGrid(6, 6, game.snakeCoords)
 game.drawPellet(game.pelletCol, game.pelletRow)
 game.printGrid()
-moves = artificialIntelligence.safeMoves()
-print(moves)
+path = analyzer.fastPelletPath()
+print(path)
 root.mainloop()
 '''
+

@@ -73,3 +73,52 @@ def singleDestinationShortestPaths(graphAdjList, targetVertex, startVertices=Non
         path.reverse()
     
     return pathData
+
+#finds the path between two vertices that traverses the fewest number of edges
+#for a graphs where nodes have values indicating min number of edges from start 
+#node they must be to be accessed
+#@param graphAdjList - dict mapping node integer ids to set of node integer ids of neighboring vertices
+#@param edgeThresholds -dict mapping vertex ids to integer values indicating how 
+#   many edges must be touches before node becomes accessible
+#@param startVertex - integer id number of start vertex
+#@param targetVertex - integer id number of targaet vertex
+#returns deque of vertex ids representing shortest path from startVertex to targetVertex, if it exists
+def distanceGatedShortestPath(graphAdjList, edgeThresholds, startNode, targetNode): 
+    visitStatus = {v:False for v in graphAdjList}
+    nextNodes = Queue(maxsize=len(graphAdjList))
+    nodeDist = {}
+    parentIDs = {}
+    
+    #checking if start node can be visited
+    if edgeThresholds[startNode] == 0:
+        visitStatus[startNode] = True
+        parentIDs = {startNode: -1}
+        nextNodes.put_nowait(startNode)
+        nodeDist[startNode] = 0
+    
+    #exploring nodes
+    while not nextNodes.empty():
+        node = nextNodes.get_nowait()
+        
+        #checking if target has been found
+        if node == targetNode:
+            break
+        
+        #adding unexplored neighbors to queue
+        for v in graphAdjList[node]:
+            #checking if unexplored accessible vertex
+            if visitStatus[v] == False and nodeDist[node]+1 >= edgeThresholds[v]:
+                visitStatus[v] = True
+                parentIDs[v] = node
+                nodeDist[v] = nodeDist[node] + 1
+                nextNodes.put_nowait(v)
+                
+    path = deque()
+    vertex = targetNode
+    
+    #assembling path
+    while vertex in parentIDs:
+        path.appendleft(vertex)
+        vertex = parentIDs[vertex]
+        
+    return path
