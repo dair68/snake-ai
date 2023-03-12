@@ -5,7 +5,7 @@ from collections import deque
 #searching for a hamiltonian cycle within a graph
 #@param graphAdjList - dict mapping node integer ids to set of node integer ids of neighboring vertices
 #returns deque of vertex numbers representing path, if it exists. 1st and last ids will be same.
-def findHamiltonianCycle(graphAdjList):
+def hamiltonianCycle(graphAdjList):
     return hamiltonianHelper(graphAdjList)
     
 #helper function for findHamiltonianCycle()
@@ -81,3 +81,9 @@ def isHamiltonianCycle(path, graphAdjList):
             return False
         
     return True
+
+#searching for a hamiltonian cycle within a rectangular grid graph
+#@param graphAdjList - dict mapping node integer ids to set of node integer ids of neighboring vertices
+#returns deque of vertex numbers representing path, if it exists. 1st and last ids will be same.
+def rectGridHamiltonianCycle(graphAdjList):
+    return hamiltonianHelper(graphAdjList)
