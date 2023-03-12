@@ -30,8 +30,7 @@ game.pelletRow = 1
 game.grid = game.createGrid(6, 6, game.snakeCoords)
 game.drawPellet(game.pelletCol, game.pelletRow)
 game.printGrid()
-artificialIntelligence.refreshAI()
-path = artificialIntelligence.getPelletPath()
-print(f"path: {path}")
+foundPath = analyzer.fastPelletPath()
+print(foundPath)
 root.mainloop()
 '''

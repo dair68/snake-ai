@@ -157,44 +157,54 @@ class SnakeGameAnalyzer:
     def validRow(self, rowNum):
         return 0 <= rowNum and rowNum <= self.game.rows + 1
      
-    #creates adjacency list for current state of game grid
+    #creates graph representing current state of game grid
     #@param snakeSegs - set of space coordinates making up snake.
     #   uses snake stored in game attached to analyzer by default
-    #returns dict mapping space ids to set of space ids for visitable adjacent spaces
+    #returns SimpleUndirectedGraph object with space ids corresponding to vertex numbers
     #   does not include spaces within game over zone or occupied by snake
     def freeInboundSpaceGraph(self, snakeSegs=None):
         #populating snakeCoords if needed
         if snakeSegs == None:
             snakeSegs = set(self.game.snakeCoords)
         
-        vertexMap = {}
+        vertices = set()
+        edges = set()
         
         #adding nodes to adjacency list
         for spaceID in range(self.game.cols*self.game.rows):
             #checking if space is occupied
             if not self.spaceCoords(spaceID) in snakeSegs:
-                vertexMap[spaceID] = set()
+                vertices.add(spaceID)
                 neighbors = self.adjacentInboundSpaceIDs(spaceID)
             
                 #figuring out which neighboring spaces are accessible
-                for vertex in neighbors:
+                for vertexID in neighbors:
                     #checking if space empty
-                    if not self.spaceCoords(vertex) in snakeSegs:
-                        vertexMap[spaceID].add(vertex)
+                    if not self.spaceCoords(vertexID) in snakeSegs:
+                        #figuring out which id number if smaller
+                        if spaceID < vertexID:
+                            edges.add((spaceID, vertexID))
+                        else:
+                            edges.add((vertexID, spaceID))
                 
-        return vertexMap
+        return g.SimpleUndirectedGraph(vertices, edges)
     
     #creates adjacency list for every inbound space in game grid
-    #returns dict mapping space ids to set of space ids for visitable adjacent spaces
+    #returns SimpleUndirectedGraph object containing visitable adjacent spaces
     #   does not include spaces within game over zone. includes spaces with snake.
     def inboundSpaceGraph(self):
-        vertexMap = {}
+        vertices = set()
+        edges = set()
         
         #adding nodes to adjacency list
         for spaceID in range(self.game.cols*self.game.rows):
-            vertexMap[spaceID] = self.adjacentInboundSpaceIDs(spaceID)
+            vertices.add(spaceID)
+            
+            for vertexID in self.adjacentInboundSpaceIDs(spaceID):
+                edge = (spaceID, vertexID) if spaceID < vertexID else (vertexID, spaceID)
+                edges.add(edge)
                 
-        return vertexMap
+        return g.SimpleUndirectedGraph(vertices, edges)
                 
     #checking if certain space in game grid contains snake segment
     #@param spaceCoords - tuple of form (colNum, rowNum) describing space coordinates
@@ -426,7 +436,7 @@ class SnakeGameAnalyzer:
     #returns deque of space coords if path found
     def pelletTailPath(self):
         graph = self.freeInboundSpaceGraph()
-        g.addVertex(graph, self.tailID())
+        graph.addVertex(self.tailID())
         self.addAdjInboundFreeEdges(graph, self.tailID())
    
         path = search.shortestPath(graph, self.pelletID(), self.tailID())
@@ -449,8 +459,8 @@ class SnakeGameAnalyzer:
         headID = self.spaceID(snakeCoords[0])
         tailID = self.spaceID(snakeCoords[-1])
         
-        g.addVertex(graph, headID)
-        g.addVertex(graph, tailID)
+        graph.addVertex(headID)
+        graph.addVertex(tailID)
         
         self.addAdjInboundFreeEdges(graph, headID, snakeSegs)
         self.addAdjInboundFreeEdges(graph, tailID, snakeSegs)
@@ -460,14 +470,13 @@ class SnakeGameAnalyzer:
         
         #checking if head next to tail for snakes longer than 2
         if self.spacesAreAdjacent(headCoords, tailCoords) and len(snakeCoords) > 2:
-            g.addEdge(graph, headID, tailID)
+            graph.addEdge(headID, tailID)
             
         path = search.shortestPath(graph, headID, tailID)
         return deque([self.spaceCoords(spaceID) for spaceID in path])
     
     #adds edges connecting space to adjacent inbound spaces not occupied by snake to a graph
-    #@param graphAdjList - dict mapping space ids to sets of adjacent space ids.
-    #   represents state of game
+    #@param graph - SimpleUndirectedGraph object representing state of game
     #@param spaceID - integer space id of space in question
     #@param snakeSegs - set of space coords making up current snake
     #   uses coordinates stored in current game by default
@@ -481,14 +490,14 @@ class SnakeGameAnalyzer:
         for vertex in self.adjacentInboundSpaceIDs(spaceID):
             #checking if edges should be added
             if self.spaceCoords(vertex) not in snakeSegs:
-                g.addEdge(graph, vertex, spaceID)
+                graph.addEdge(vertex, spaceID)
                 
     #finds shortest path from head's current location to pellet's current location
     #path does not account for snake moving body parts out of the way
     #returns path represented as deque of space coords. empty deque if no path found 
     def pelletPath(self):
        graph = self.freeInboundSpaceGraph()
-       g.addVertex(graph, self.headID())
+       graph.addVertex(self.headID())
        self.addAdjInboundFreeEdges(graph, self.headID())
        path = search.shortestPath(graph, self.headID(), self.pelletID())
        return deque([self.spaceCoords(spaceID) for spaceID in path])
@@ -498,22 +507,25 @@ class SnakeGameAnalyzer:
     #returns path represented as deque of space coords. empty deque if no path found 
     def fastPelletPath(self):
         graph = self.inboundSpaceGraph()
-        nodeValues = {vertex:0 for vertex in graph}
+        
+        #assigning value of 0 to each node in graph
+        for vertex in graph.getVertices():
+            graph.setVertexValue(vertex, 0)
         
         #populating nodeValues with snake data
         for i in range(1, self.game.snakeLength()):
             coords = self.game.snakeCoords[i]
             segID = self.spaceID(coords)
-            nodeValues[segID] = self.game.snakeLength() - i
+            graph.setVertexValue(segID, self.game.snakeLength() - i)
             
         #adjusting number for special case of length 2 snakes
         if self.game.snakeLength() == 2:
             coords = self.game.snakeCoords[-1]
             segID = self.spaceID(coords)
-            nodeValues[segID] = 3
+            graph.setVertexValue(segID, 3)
             
         headID = self.headID()
         pelletID = self.pelletID()
-        path = search.distanceGatedShortestPath(graph, nodeValues, headID, pelletID)
+        path = search.distanceGatedShortestPath(graph, headID, pelletID)
         
         return deque([self.spaceCoords(vertex) for vertex in path])

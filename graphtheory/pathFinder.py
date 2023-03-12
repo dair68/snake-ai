@@ -1,34 +1,34 @@
 #module which a variety of graph traversal functions
-
+from graphtheory.graph import SimpleUndirectedGraph
 from collections import deque
 from queue import Queue
 
 #finds the path between two vertices that traverses the fewest number of edges
-#@param graphAdjList - dict mapping node integer ids to set of node integer ids of neighboring vertices
+#@param graph - SimpleUndirectedGraph object
 #@param startVertex - integer id number of start vertex
 #@param targetVertex - integer id number of targaet vertex
 #returns deque of vertex ids representing shortest path from startVertex to targetVertex, if it exists
-def shortestPath(graphAdjList, startVertex, targetVertex):
-    pathData = singleSourceShortestPaths(graphAdjList, startVertex, {targetVertex})
+def shortestPath(graph, startVertex, targetVertex):
+    pathData = singleSourceShortestPaths(graph, startVertex, {targetVertex})
     return pathData[targetVertex]
 
 #finds paths between one vertex and other vertices that contains fewest number of edges
-#@param graphAdjList - dict mapping node integer ids to set of node integer ids of neighboring vertices
+#@param graph - SimpleUndirectedGraph object
 #@param startVertex - integer id number of start vertex
 #@param targetVertices - set of vertex ids for which paths are to end.
 #   chooses set of all vertices in graph by default
 #returns dict mapping vertex ids to deques of ids making up shortest path to them
-def singleSourceShortestPaths(graphAdjList, startVertex, targetVertices=None):
+def singleSourceShortestPaths(graph, startVertex, targetVertices=None):
     #initializing targetVertices if needed
     if targetVertices == None:
-        targetVertices = {vertex for vertex in graphAdjList}
+        targetVertices = graph.getVertices()
     
-    visitStatus = {v:False for v in graphAdjList}
+    visitStatus = {v:False for v in graph.getVertices()}
     visitStatus[startVertex] = True
     remainingTargets = set(targetVertices)
     remainingTargets.discard(startVertex)
     parentIDs = {startVertex: -1}
-    nextNodes = Queue(maxsize=len(graphAdjList))
+    nextNodes = Queue(maxsize=len(graph.getVertices()))
     nextNodes.put_nowait(startVertex)
     
     #exploring nodes
@@ -40,7 +40,7 @@ def singleSourceShortestPaths(graphAdjList, startVertex, targetVertices=None):
         node = nextNodes.get_nowait()
         
         #adding unexplored neighbors to queue
-        for vertex in graphAdjList[node]:
+        for vertex in graph.neighbors(node):
             #vertex unexplored
             if visitStatus[vertex] == False:
                 visitStatus[vertex] = True
@@ -60,13 +60,13 @@ def singleSourceShortestPaths(graphAdjList, startVertex, targetVertices=None):
     return paths
 
 #finds paths leading to one vertex that contains fewest number of edges
-#@param graphAdjList - dict mapping node integer ids to set of node integer ids of neighboring vertices
+#@param graph - SimpleUndirectedGraph object
 #@param targetVertex - vertex id for which all paths end
 #@param startVertices - integer id numbers of vertices for which paths begin
 #   chooses set of all vertices in graph by default
 #returns dict mapping vertex ids to deques of ids making up shortest path from them
-def singleDestinationShortestPaths(graphAdjList, targetVertex, startVertices=None):
-    pathData = singleSourceShortestPaths(graphAdjList, targetVertex, startVertices)
+def singleDestinationShortestPaths(graph, targetVertex, startVertices=None):
+    pathData = singleSourceShortestPaths(graph, targetVertex, startVertices)
     
     #reversing the paths in path dictionary
     for path in pathData.values():
@@ -77,20 +77,21 @@ def singleDestinationShortestPaths(graphAdjList, targetVertex, startVertices=Non
 #finds the path between two vertices that traverses the fewest number of edges
 #for a graphs where nodes have values indicating min number of edges from start 
 #node they must be to be accessed
-#@param graphAdjList - dict mapping node integer ids to set of node integer ids of neighboring vertices
-#@param edgeThresholds -dict mapping vertex ids to integer values indicating how 
+#@param graph - SimpleUndirectedGraph object.
+#   each node within graph has integer value indicating number of edges that must
+#   be traversed before it can be reached
 #   many edges must be touches before node becomes accessible
 #@param startVertex - integer id number of start vertex
 #@param targetVertex - integer id number of targaet vertex
 #returns deque of vertex ids representing shortest path from startVertex to targetVertex, if it exists
-def distanceGatedShortestPath(graphAdjList, edgeThresholds, startNode, targetNode): 
-    visitStatus = {v:False for v in graphAdjList}
-    nextNodes = Queue(maxsize=len(graphAdjList))
+def distanceGatedShortestPath(graph, startNode, targetNode): 
+    visitStatus = {v:False for v in graph.getVertices()}
+    nextNodes = Queue(maxsize=len(graph.getVertices()))
     nodeDist = {}
     parentIDs = {}
     
     #checking if start node can be visited
-    if edgeThresholds[startNode] == 0:
+    if graph.getVertexValue(startNode) == 0:
         visitStatus[startNode] = True
         parentIDs = {startNode: -1}
         nextNodes.put_nowait(startNode)
@@ -105,9 +106,9 @@ def distanceGatedShortestPath(graphAdjList, edgeThresholds, startNode, targetNod
             break
         
         #adding unexplored neighbors to queue
-        for v in graphAdjList[node]:
+        for v in graph.neighbors(node):
             #checking if unexplored accessible vertex
-            if visitStatus[v] == False and nodeDist[node]+1 >= edgeThresholds[v]:
+            if visitStatus[v] == False and nodeDist[node]+1 >= graph.getVertexValue(v):
                 visitStatus[v] = True
                 parentIDs[v] = node
                 nodeDist[v] = nodeDist[node] + 1
