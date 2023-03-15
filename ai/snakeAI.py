@@ -29,11 +29,12 @@ class SnakeAI():
         return self.analyzer.possibleMoves()
     
     #has ai search the grid once more to recalibrate movement recommendations
-    #run this if the game hasn't been following all the previous recommended moves
+    #run this if the game hasn't been following all the previously recommended 
+    #   moves since the last refresh
     def refreshAI(self):
         print("updating ai movement reccommendations")
     
-    #finds a space for snake to move to next
+    #finds and removes next recommended move from queue
     #returns tuple of from (colNum, rowNum) for space that snake is to visit next
     #   chooses first accessible space it finds
     def nextMove(self):

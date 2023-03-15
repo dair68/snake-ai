@@ -99,7 +99,7 @@ def gridHamiltonianCycle(graph):
     
     squares = gridGraphSquares(graph)
     colorHamiltonianSquares(squares)
-    print(squares)
+    #print(squares)
     graphCopy = SimpleUndirectedGraph(graph.getVertices(), graph.getEdges())
     
     #removing unnecessary edges from graphCopy based on squares
