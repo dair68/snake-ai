@@ -13,23 +13,14 @@ import graphtheory.pathFinder as path
 import graphtheory.sampleGraphs as sg
 import graphtheory.hamiltonianCycle as h
 
-graphs = sg.graphs
-graph1 = graphs[0]
-graph2 = graphs[1]
-graph = graph2
-print(graph.getVertices())
-print(graph.getEdges())
-path = h.hamiltonianCycle(graph)
-print(path)
 
-'''
 root = Tk()
 root.title("Snake")
 root.resizable(False, False)
 game = SnakeGame(root)
 #game = SnakeGame(root, (3,3))
-#root.mainloop()
-'''
+root.mainloop()
+
 '''
 artificialIntelligence = ai.BasicAI(game)
 analyzer = a.SnakeGameAnalyzer(game)

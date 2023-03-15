@@ -33,6 +33,14 @@ class GridGraph:
                 self.vertexIDMatrix[i][j] = v
                 vertices.add(v)
         
+        self.vertexCoordMap = {}
+        
+        #populating self.vertexCoordMap
+        for i in range(m):
+            for j in range(n):
+                v = self.vertexIDMatrix[i][j]
+                self.vertexCoordMap[v] = (i, j)
+        
         edges = set()
         
         #looping over grid to find edges
@@ -145,16 +153,7 @@ class GridGraph:
     #if vertex that of id exists, returns indices in form of (i, j)
     #   where 0 <= i < m, 0 <= j < n
     def vertexIndices(self, vertex):
-        (m, n) = self.dimensions()
-        
-        #searching grid for vertex
-        for i in range(m):
-            for j in range(n):
-                #found vertex!
-                if self.vertexAt(i, j) == vertex:
-                    return (i, j)
-                
-        return ()
+        return self.vertexCoordMap[vertex]
     
     #obtains dimensions of grid
     #returns tuple of form (m, n) where m is int upper bound for first index,
