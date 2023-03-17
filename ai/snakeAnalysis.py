@@ -529,3 +529,29 @@ class SnakeGameAnalyzer:
         path = search.distanceGatedShortestPath(graph, headID, pelletID)
         
         return deque([self.spaceCoords(vertex) for vertex in path])
+    
+    #finds smallest rectangle that bounds snake coordinates
+    #@param snakeCoords - deque of space coordinates making up snake
+    #return tuple of form ((i, j), (u, v)) 
+    #   where (i,j) are coordinates of upper left corner and 
+    #   (u, v) are coordinates of bottom right corner
+    def smallestBoundingRect(self, snakeCoords):
+        initialSpace = snakeCoords[0]
+        (minX, minY) = initialSpace
+        (maxX, maxY) = initialSpace
+        
+        #searching for rectangle boundaries
+        for coords in snakeCoords:
+            (x, y) = coords
+            
+            #found new dimension
+            if x < minX:
+                minX = x
+            if x > maxX:
+                maxX = x
+            if y < minY:
+                minY = y
+            if y > maxY:
+                maxY = y
+                
+        return ((minX, minY), (maxX, maxY))

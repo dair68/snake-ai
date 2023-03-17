@@ -23,17 +23,15 @@ root.mainloop()
 '''
 artificialIntelligence = ai.LoopAI(game)
 analyzer = a.SnakeGameAnalyzer(game)
-#game.snakeCoords = [(5,1),(4,1),(3,1),(3,2),(4,2),(5,2),(6,2)]
-game.snakeCoords = [(2,1)]
+game.snakeCoords = [(5,1),(4,1),(3,1),(3,2),(4,2),(5,2),(6,2),(6,3)]
+#game.snakeCoords = [(2,1), (2,2)]
 game.pelletCol = 1
 game.pelletRow = 1
-(game.cols, game.rows) = (4, 3)
-game.grid = game.createGrid(4, 3, game.snakeCoords)
+(game.cols, game.rows) = (6, 6)
+game.grid = game.createGrid(game.cols, game.rows, game.snakeCoords)
 game.drawPellet(game.pelletCol, game.pelletRow)
 game.printGrid()
-artificialIntelligence.refreshAI()
-print(artificialIntelligence.nextMove())
-print(artificialIntelligence.nextMove())
-print(artificialIntelligence.nextMove())
+rect = analyzer.smallestBoundingRect(game.snakeCoords)
+print(rect)
 root.mainloop()
 '''
