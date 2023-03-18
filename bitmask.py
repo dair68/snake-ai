@@ -10,7 +10,7 @@ def bit(i, mask):
     assert i >= 0
     assert mask >= 0
     binNum = bin(mask)
-    return int(binNum[-i-1])
+    return int(binNum[-i-1]) if len(binNum)-2 > i else 0 
 
 #finds number nonzero bits within a bit string
 #@param mask - nonnegative integer representing subset
