@@ -16,16 +16,18 @@ import graphtheory.hamiltonianPath as p
 
 #vertices = {n for n in range(5)}
 #edges = {(0,1),(0,2),(0,3),(1,2),(1,4),(2,3),(2,4)}
-#vertices = {0, 6, 3, 7, 9}
+vertices = {0, 6, 3, 7, 9}
 #edges = {(0,6),(7,9),(0,3)}
-#edges = {(0,6),(6,3),(3,7),(7,9)}
-vertices = {n for n in range(4)}
-edges = {(0,1),(1,2),(1,3)}
+edges = {(0,6),(6,3),(3,7),(7,9)}
+#vertices = {n for n in range(4)}
+#edges = {(0,1),(1,2),(1,3)}
 graph = sg.SimpleUndirectedGraph(vertices, edges)
 print(graph.getVertices())
 print(graph.getEdges())
-print("Does graph have hamiltonian path?")
-print(p.hasHamiltonianPath(graph))
+path1 = p.hamiltonianPath(graph)
+path2 = p.connectingHamiltonianPath(graph, 9, 0)
+print("Hamiltonian path:")
+print(path2)
 
 '''
 root = Tk()
