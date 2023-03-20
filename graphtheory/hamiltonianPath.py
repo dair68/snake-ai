@@ -16,20 +16,24 @@ def hamiltonianPath(graph):
     path = deque()
     mask = len(pathData) - 1
     lastVertex = -1
+    vertexIndices = {vertexIDs[i]:i for i in range(len(vertexIDs))}
     
     #forming path from table data
     while mask > 0:
-        #examining vertices within mask
-        for j in range(len(pathData[0])):
-            #no hamiltonian path ending in vertex j
-            if pathData[mask][j] == False:
-                continue
-            
-            lastVertexID = vertexIDs[lastVertex]
-            vertexjID = vertexIDs[j]
-            
-            #adding vertex to path
-            if lastVertex == -1 or graph.adjacent(lastVertexID, vertexjID):
+        vertexMarks = {}
+        
+        #determining which vertices to examine for path end
+        if lastVertex == -1:
+            vertexMarks = range(len(vertexIDs))
+        else:
+            vertexID = vertexIDs[lastVertex]
+            neighbors = graph.neighbors(vertexID)
+            vertexMarks = {vertexIndices[v] for v in neighbors}
+        
+        #examining neighbors of last vertex in path
+        for j in vertexMarks:
+            #found hamiltonian path ending in vertex j
+            if pathData[mask][j] == True:
                 path.appendleft(j)
                 lastVertex = j
                 mask -= 2**j
@@ -53,8 +57,9 @@ def connectingHamiltonianPath(graph, startVertex, finishVertex):
     #pathData[i][j] is bool for whether mask i is h path containing vertex j at end
     pathData = hamiltonianPathMatrix(graph, vertexIDs)
     
-    v1 = vertexIDs.index(startVertex)
-    v2 = vertexIDs.index(finishVertex)
+    vertexIndices = {vertexIDs[i]:i for i in range(len(vertexIDs))}
+    v1 = vertexIndices[startVertex]
+    v2 = vertexIndices[finishVertex]
     
     #checking if there exists hamiltonian path with v2 as final vertex
     if pathData[-1][v2] == False:
@@ -75,22 +80,14 @@ def connectingHamiltonianPath(graph, startVertex, finishVertex):
                 return deque()
         
         lastMask = mask
+        neighbors = graph.neighbors(vertexIDs[lastVertex])
+        neighborMasks = {vertexIndices[v] for v in neighbors}
+        neighborMasks.discard(v1)
         
         #examining vertices within mask
-        for j in range(len(pathData[0])):
-            #checking if j is equal to v1
-            if j == v1:
-                continue
-            
-            #no hamiltonian path ending in vertex j
-            if pathData[mask][j] == False:
-                continue
-            
-            lastVertexID = vertexIDs[lastVertex]
-            vertexjID = vertexIDs[j]
-            
-            #adding vertex to path
-            if lastVertex == -1 or graph.adjacent(lastVertexID, vertexjID):
+        for j in neighborMasks:
+            #found hamiltonian path ending in vertex j
+            if pathData[mask][j] == True:
                 path.appendleft(j)
                 lastVertex = j
                 mask -= 2**j
@@ -113,6 +110,7 @@ def hamiltonianPathMatrix(graph, vertexList):
     #pathData[i][j] is bool for whether mask i is h path containing vertex j at end
     pathData = [[None for j in range(numVertices)] for i in range(2**numVertices)]
     #print(pathData)
+    vertexIndices = {vertexList[i]:i for i in range(len(vertexList))}
 
     #filling in path table
     for i in range(len(pathData)):
@@ -125,17 +123,14 @@ def hamiltonianPathMatrix(graph, vertexList):
                 jMask = 1 << j
                 jCMask = i - jMask
                 jCData = pathData[jCMask]
+                neighbors = graph.neighbors(vertexList[j])
+                neighborMarks = {vertexIndices[v] for v in neighbors}
                 
                 #analyzing path data for subset without node j
-                for k in range(len(jCData)):
+                for k in neighborMarks:
                     #checking there exists hamiltonian path with k as end node
-                    if jCData[k] == False:
-                        continue
-                        
-                    #checking if vertex k and j are adjacent
-                    if graph.adjacent(vertexList[k], vertexList[j]):
+                    if jCData[k] == True:
                         pathData[i][j] = True
-                        break
                     
             #checking if path data still not assigned
             if pathData[i][j] == None:
