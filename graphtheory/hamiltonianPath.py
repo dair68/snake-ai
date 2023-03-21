@@ -62,7 +62,7 @@ def connectingHamiltonianPath(graph, startVertex, finishVertex):
 #returns deque of vertex numbers representing path, if it exists
 def hamiltonianHelper(graph, startVertex, finishVertex, path=None, visitStatus=None):
     #addressing special cases for extreme path lengths
-    if path == None:
+    if path == None or len(path) == 0:
         path = deque([startVertex])
     elif len(path) > len(graph.getVertices()):
         return deque()
@@ -83,15 +83,19 @@ def hamiltonianHelper(graph, startVertex, finishVertex, path=None, visitStatus=N
         for vertex in path:
             visitStatus[vertex] = True
         
-    currentVertex = path[-1] if len(path) > 0 else 0
+    currentVertex = path[-1]
     neighbors = graph.neighbors(currentVertex)
-    
+
+    #removing finish vertex from neighbors if helpful
+    if len(path) < len(graph.getVertices()) - 1:
+        #print(f"discarding {finishVertex}")
+        neighbors.discard(finishVertex)
+ 
     #exploring graph until path found
     for vertex in neighbors:
         #vertex hasn't been visited
         if visitStatus[vertex] == False:
             path.append(vertex)
-            #print(path)
             visitStatus[vertex] = True
             possiblePath = hamiltonianHelper(graph, startVertex, finishVertex,
                                              path, visitStatus)

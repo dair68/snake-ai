@@ -17,7 +17,7 @@ def hamiltonianCycle(graph):
 #returns deque of vertex numbers representing path, if it exists. 1st and last ids will be same.
 def hamiltonianHelper(graph, path=None, visitStatus=None):
     #addressing special cases for extreme path lengths
-    if path == None:
+    if path == None or len(path) == 0:
         startVertex = next(iter(graph.getVertices()))
         path = deque([startVertex])
     elif len(path) == len(graph.getVertices()):
@@ -43,7 +43,7 @@ def hamiltonianHelper(graph, path=None, visitStatus=None):
         for vertex in path:
             visitStatus[vertex] = True
         
-    currentVertex = path[-1] if len(path) > 0 else 0
+    currentVertex = path[-1]
     neighbors = graph.neighbors(currentVertex)
     
     #exploring graph until cycle found

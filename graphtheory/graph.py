@@ -86,7 +86,7 @@ class SimpleUndirectedGraph:
     #returns set of vertex ids for all vertices with an edge between
     def neighbors(self, vertex):
         assert self.vertexIncluded(vertex)
-        return self.adjacencyList[vertex]
+        return set(self.adjacencyList[vertex])
     
     #adds a vertex to the graph
     #@param vertex - integer vertex id. vertex not added if one with that id already exists

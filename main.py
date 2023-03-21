@@ -16,12 +16,10 @@ import graphtheory.hamiltonianPath as p
 import graphtheory.graph as g
 import graphtheory.gridGraph as grid
 
-vertices = {0, 1, 2, 3, 4}
-edges = {(0,1),(0,2),(0,3),(1,2),(1,4),(2,3), (2,4)}
-graph = g.SimpleUndirectedGraph(vertices, edges)
+graph = grid.GridGraph(10, 10)
 print(graph.getVertices())
 print(graph.getEdges())
-path = h.finishHamiltonianCycle(graph, [4, 1, 0])
+path = h.finishHamiltonianCycle(graph, [0, 1])
 print(path)
 #print(p.isHamiltonianPath(graph, path))
 
