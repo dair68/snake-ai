@@ -51,53 +51,92 @@ def hamiltonianPath(graph):
 #@param finishVertex - integer vertex id of last vertex i path
 #returns deque of vertex ids forming path. return empty deque if no path.
 def connectingHamiltonianPath(graph, startVertex, finishVertex):
-    numVertices = len(graph.getVertices())
-    vertexIDs = list(graph.getVertices())
-    #print(vertexIDs)
-    #pathData[i][j] is bool for whether mask i is h path containing vertex j at end
-    pathData = hamiltonianPathMatrix(graph, vertexIDs)
-    
-    vertexIndices = {vertexIDs[i]:i for i in range(len(vertexIDs))}
-    v1 = vertexIndices[startVertex]
-    v2 = vertexIndices[finishVertex]
-    
-    #checking if there exists hamiltonian path with v2 as final vertex
-    if pathData[-1][v2] == False:
+    return hamiltonianHelper(graph, startVertex, finishVertex)
+
+#helper function for connectingHamiltonianPath()
+#@param graph - SimpleUndirectedGraph object
+#@param startVertex - integer vertex id of 1st vertex in path
+#@param finishVertex - integer vertex id of last vertex i path
+#@param path - deque of current path formed. deque([0]) by default
+#@param visitStatus - dict mapping node ids booleans indicating if they've been visited yet
+#returns deque of vertex numbers representing path, if it exists
+def hamiltonianHelper(graph, startVertex, finishVertex, path=None, visitStatus=None):
+    #addressing special cases for extreme path lengths
+    if path == None:
+        path = deque([startVertex])
+    elif len(path) > len(graph.getVertices()):
         return deque()
-    
-    path = deque([v2])
-    mask = len(pathData) - 1 - 2**v2
-    lastVertex = v2
-    
-    #forming path from table data
-    while mask > 0:
-        #checking for penultimate iteration
-        if len(path) == numVertices - 1:
-            if mask == 2**v1:
-                path.appendleft(v1)
-                break
-            else:
-                return deque()
+    elif len(path) == len(graph.getVertices()):
+        #print("checking path")
         
-        lastMask = mask
-        neighbors = graph.neighbors(vertexIDs[lastVertex])
-        neighborMasks = {vertexIndices[v] for v in neighbors}
-        neighborMasks.discard(v1)
-        
-        #examining vertices within mask
-        for j in neighborMasks:
-            #found hamiltonian path ending in vertex j
-            if pathData[mask][j] == True:
-                path.appendleft(j)
-                lastVertex = j
-                mask -= 2**j
-                break
-            
-        #checking if mask has decreased
-        if mask == lastMask:
+        #checking if path has correct endpoints
+        if path[0] != startVertex or path[-1] != finishVertex:
             return deque()
+            
+        return path if isHamiltonianPath(graph, path) else deque()
         
-    return deque([vertexIDs[mask] for mask in path])
+    #setting visited to empty set if needed
+    if visitStatus == None:
+        visitStatus = {v: False for v in graph.getVertices()}
+        
+        #marking nodes already in path as visited
+        for vertex in path:
+            visitStatus[vertex] = True
+        
+    currentVertex = path[-1] if len(path) > 0 else 0
+    neighbors = graph.neighbors(currentVertex)
+    
+    #exploring graph until path found
+    for vertex in neighbors:
+        #vertex hasn't been visited
+        if visitStatus[vertex] == False:
+            path.append(vertex)
+            #print(path)
+            visitStatus[vertex] = True
+            possiblePath = hamiltonianHelper(graph, startVertex, finishVertex,
+                                             path, visitStatus)
+            
+            #found hamiltonian path!
+            if len(possiblePath) > 0:
+                return possiblePath
+            else:
+                #print("popping")
+                path.pop()
+                visitStatus[vertex] = False
+                
+    return deque()
+    
+#checks if a sequece of vertices forms a hamiltonian path for a given graph
+#@param graph - UndirectedSimpleGraph object
+#@param path - deque of vertex ids
+#returns True is path is hamiltonian, False otherwise
+def isHamiltonianPath(graph, path):
+   #checking if path is correct length to possibly touch every node
+   if len(path) != len(graph.getVertices()):
+       return False
+   
+   pathList = list(path)
+   visitStatus = {v: False for v in graph.getVertices()}
+   
+   #checking if all the vertices are adjacent and avoid revisiting
+   for i in range(len(graph.getVertices())):
+       vertex1 = pathList[i]
+       
+       #checking that vertex is unvisited
+       if visitStatus[vertex1] == True:
+           return False
+       
+       visitStatus[vertex1] = True
+       
+       #checking if past first vertex
+       if i > 0:
+           vertex2 = pathList[i-1]
+       
+           #vertices not adjacent
+           if not graph.adjacent(vertex1, vertex2):
+               return False
+       
+   return True
     
 #creates matrix with info on hamiltonian paths within a graph
 #@param graph - UndirectedSimpleGraph object

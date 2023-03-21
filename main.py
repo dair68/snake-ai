@@ -13,23 +13,17 @@ import graphtheory.pathFinder as path
 import graphtheory.sampleGraphs as sg
 import graphtheory.hamiltonianCycle as h
 import graphtheory.hamiltonianPath as p
+import graphtheory.graph as g
+import graphtheory.gridGraph as grid
 
-vertices = {n for n in range(5)}
-edges = {(0,1),(0,2),(0,3),(1,2),(1,4),(2,3),(2,4)}
-#vertices = {0, 6, 3, 7, 9}
-#edges = {(0,6),(7,9),(0,3)}
-#edges = {(0,6),(6,3),(3,7),(7,9)}
-#vertices = {n for n in range(4)}
-#edges = {(0,1),(1,2),(1,3)}
-#vertices = {0}
-#edges = set()
-graph = sg.SimpleUndirectedGraph(vertices, edges)
+vertices = {0, 1, 2, 3, 4}
+edges = {(0,1),(0,2),(0,3),(1,2),(1,4),(2,3), (2,4)}
+graph = g.SimpleUndirectedGraph(vertices, edges)
 print(graph.getVertices())
 print(graph.getEdges())
-path1 = p.hamiltonianPath(graph)
-path2 = p.connectingHamiltonianPath(graph, 1, 2)
-print("Hamiltonian path:")
-print(path2)
+path = h.finishHamiltonianCycle(graph, [4, 1, 0])
+print(path)
+#print(p.isHamiltonianPath(graph, path))
 
 '''
 root = Tk()

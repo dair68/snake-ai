@@ -2,6 +2,7 @@
 from collections import deque
 from graphtheory.gridGraph import GridGraph
 from graphtheory.graph import SimpleUndirectedGraph
+import graphtheory.hamiltonianPath as p 
 
 #searching for a hamiltonian cycle within a graph
 #@param graph - SimpleUndirectedGraph or GridGraph object
@@ -19,10 +20,20 @@ def hamiltonianHelper(graph, path=None, visitStatus=None):
     if path == None:
         startVertex = next(iter(graph.getVertices()))
         path = deque([startVertex])
-    elif len(path) > len(graph.getVertices()) + 1:
-        return False
+    elif len(path) == len(graph.getVertices()):
+        path.append(path[0])
+        #print("checking if following path is cycle")
+        #print(path)
+        
+        #checking for hamiltonian cycle
+        if isHamiltonianCycle(graph, path):
+            return path
+        else:
+            #print("not h cycle :(")
+            path.pop()
+            return deque()
     elif len(path) == len(graph.getVertices()) + 1:
-        return isHamiltonianCycle(path, graph)
+        return path if isHamiltonianCycle(graph, path) else deque()
         
     #setting visited to empty set if needed
     if visitStatus == None:
@@ -40,6 +51,7 @@ def hamiltonianHelper(graph, path=None, visitStatus=None):
         #vertex hasn't been visited
         if visitStatus[vertex] == False:
             path.append(vertex)
+            #print(path)
             visitStatus[vertex] = True
             possiblePath = hamiltonianHelper(graph, path, visitStatus)
             
@@ -47,21 +59,17 @@ def hamiltonianHelper(graph, path=None, visitStatus=None):
             if len(possiblePath) > 0:
                 return possiblePath
             else:
+                #print("popping")
                 path.pop()
                 visitStatus[vertex] = False
                 
-    #checking if final vertex leads back to the first
-    if len(path) == len(graph.getVertices()) and path[0] in neighbors:
-        path.append(path[0])
-        return path
-    else:
-        return deque()
+    return deque()
     
 #checks if a path is a hamiltonian cycle for a given graph
-#@param path - deque of vertex ids forming path. first and last ids in path expected to be same for a cycle
 #@param graph - SimpleUndirectedGraph object
+#@param path - deque of vertex ids forming path. first and last ids in path expected to be same for a cycle
 #returns True if the path is a hamiltonian cycle, false otherwise
-def isHamiltonianCycle(path, graph):
+def isHamiltonianCycle(graph, path):
     #checking if path is correct length to possibly touch every node
     if len(path) != len(graph.getVertices()) + 1:
         return False
@@ -71,14 +79,22 @@ def isHamiltonianCycle(path, graph):
         return False
     
     pathList = list(path)
+    visitStatus = {v: False for v in graph.getVertices()}
     
     #checking if all the vertices are adjacent and avoid revisiting except at ends
     for i in range(len(graph.getVertices())):
         vertex1 = pathList[i]
+        #print(vertex1)
+        
+        #checking if vertex already visited
+        if visitStatus[vertex1] == True:
+            return False
+        
+        visitStatus[vertex1] = True
         vertex2 = pathList[i+1]
         
         #vertices not adjacent
-        if vertex2 not in graph.neighbors(vertex1):
+        if not graph.adjacent(vertex1, vertex2):
             return False
         
     return True
@@ -169,3 +185,42 @@ def colorHamiltonianSquares(squares):
         for i in range(m):
             for j in range(n):
                 squares[i][j] = 0 if j % 2 == 1 and i > 0 else 1
+                
+#tries to add vertices to existing path to form hamiltonian cycle for graph
+#@param graph - SimpleUndirectedGraph object
+#@param path - deque of vertex ids making up existing path
+#returns deque of vertex ids as hamiltonian cycle if found
+def finishHamiltonianCycle(graph, path):
+    #checking length of path
+    if len(path) < 2:
+        return hamiltonianCycle(graph)
+    
+    graphCopy = SimpleUndirectedGraph(graph.getVertices(), graph.getEdges())
+    
+    #removing nodes that are irrelevant to hamiltonian cycle
+    for vertex in path:
+        #checking if vertex is in middle of path
+        if vertex != path[0] and vertex != path[-1]:
+            graphCopy.removeVertex(vertex)
+            
+    print(graphCopy.getVertices())
+    print(graphCopy.getEdges())
+    path2 = p.connectingHamiltonianPath(graphCopy, path[-1], path[0])
+    
+    #checking if path found
+    if len(path2) == 0:
+        #print("no hamiltonian cycle found :(")
+        return deque()
+    
+    path2.pop()
+    
+    #checking if path has nonzero length
+    if len(path2) > 0:
+        path2.popleft()
+        
+    #print(path2)
+    
+    pathCopy = deque(path)
+    pathCopy.extend(path2)
+    pathCopy.append(path[0])
+    return pathCopy
