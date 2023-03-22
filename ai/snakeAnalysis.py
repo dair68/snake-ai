@@ -3,6 +3,28 @@ import graphtheory.pathFinder as search
 import graphtheory.graph as g
 from collections import deque
 
+#adds padding to outside of rectangle within matrix
+#@param rectCoords - tuple of form ((x1,y1), (y1,y2)) 
+#   where (x1,y1) are col/row numbers for upper left corner 
+#   and (x2,y2) are col/row numbers for lower right corner
+#@param left - number of columns to be added to left side of rectangle
+#@param right - number of columnts to be added to right side of rectangle
+#@param up - number of rows to be added to upper side of rectangle
+#@param down - number of rows to be added to lower side of rectangle
+#returns new rectangle coordinates of form ((u1,v1), (u2,v2))
+#   where (u1, v2) is upper left coordinates and (u2, v2) is lower right
+def padRectangle(rectCoords, left, right, up, down):
+    (upperLeft, lowerRight) = rectCoords
+    (x1, y1) = upperLeft
+    (x2, y2) = lowerRight
+    
+    x1 -= left
+    x2 += right
+    y1 -= up
+    y2 += down
+     
+    return ((x1,y1),(x2,y2))
+
 #class with a bunch of functions that obtain data from a particular snake game
 class SnakeGameAnalyzer:
     #constructor
