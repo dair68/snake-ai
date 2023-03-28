@@ -19,12 +19,11 @@ class GridGraph:
         if vertexIDMatrix != None:
             assert len(vertexIDMatrix) == m
             assert len(vertexIDMatrix[0]) == n
-            self.vertexIDMatrix = vertexIDMatrix
-            
+            self.vertexIDMatrix = vertexIDMatrix    
             vertices = {self.vertexIDMatrix[i][j] for i in range(m) for j in range(n)}
             assert len(vertices) == m*n
         else:
-            self.vertexIDMatrix = [[j for j in range(n)] for i in range(m)]
+            self.vertexIDMatrix = [[-1 for j in range(n)] for i in range(m)]
         
             #populating self.vertexIDs
             for v in range(m*n):
@@ -180,3 +179,38 @@ class GridGraph:
     #@param value - data to be stored in edge connecting graph[i1][j1] and graph[i2][j2]
     def setEdgeValueAt(self, i1, j1, i2, j2, value):
         self.setEdgeValue(self.vertexAt(i1, j1), self.vertexAt(i2, j2), value)
+        
+    #finds subgraph of this graph
+    #@param vertices - set of integer vertex ids
+    #@param edges - set of edges, each edge being tuple of form (v1, v2)
+    #returns SimpleUndirectedGraph object with inputted vertices and edges
+    #   vertex values and edge values from original graph are copied over
+    def subgraph(self, vertices, edges):
+        return self.graph.subgraph(vertices, edges)
+    
+    #finds subgraph for which all edges are preserved if their end nodes are preserved
+    #@param vertices - set of integer vertex ids
+    #returns SimpleUndirectedGraph object with inputted vertices
+    #   vertex value and edge values from original graph copied over
+    #   if any edge whose vertices are within subgraph will be carried over to subgraph
+    def edgePreservedSubgraph(self, vertices):
+        return self.graph.edgePreservedSubgraph(vertices)
+    
+    #finds subgraph that is also a grid graph
+    #@param i1 - 1st index of vertex making up corner of subgraph 0 <= i1 < m
+    #@param j1 - 2nd index of vertex making up corner of subgraph. 0 <= j1 < n
+    #@param i2 - 1st index of vertex making up opposite corner of subgraph. 0 <= i2 < m
+    #@param j2 - 2nd index of vertex making up opposite corner of subgraph 0 <= j2 < n
+    #returns GridGraph with nodes and edges specified by parameters
+    def gridSubgraph(self, i1, j1, i2, j2):
+        #reversing parameters if needed
+        if i2 < i1:
+            return self.gridSubgraph(i2, j2, i1, j1)
+        if j2 < j1:
+            return self.gridSubgraph(i2, j2, i1, j1)
+        
+        m = i2 - i1 + 1
+        n = j2 - j1 + 1
+        vertexIDs = [[self.vertexAt(i+i1, j+j1) for j in range(n)] for i in range(m)]
+        
+        return GridGraph(m, n, vertexIDs)    

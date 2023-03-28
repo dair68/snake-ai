@@ -24,17 +24,14 @@ class BasicAI(SnakeAI):
         
         #checking if path found
         if len(possiblePath) > 0:
-            finalPathSpace = possiblePath[-1]
-            possiblePath.pop()
-            futureSnake = analyzer.futureSnakeCoords(possiblePath)
-            futureSnake.appendleft(finalPathSpace)
+            futureSnake = analyzer.futureSnakeCoords(possiblePath, possiblePath[-1])
             #print(futureSnake)
         
             #checking if future snake has route to tail
             if len(analyzer.headTailPath(futureSnake)) > 0: 
                 self.pelletPath = analyzer.fastPelletPath()
                 return
-            
+        
         self.pelletPath = deque()
         
     #finds a space for snake to move to next

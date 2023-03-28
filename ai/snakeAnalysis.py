@@ -2,6 +2,8 @@
 import graphtheory.pathFinder as search
 import graphtheory.graph as g
 from collections import deque
+import graphtheory.gridGraph as grid
+import graphtheory.hamiltonianCycle as h
 
 #adds padding to outside of rectangle within matrix
 #@param rectCoords - tuple of form ((x1,y1), (y1,y2)) 
@@ -11,19 +13,17 @@ from collections import deque
 #@param right - number of columnts to be added to right side of rectangle
 #@param up - number of rows to be added to upper side of rectangle
 #@param down - number of rows to be added to lower side of rectangle
-#returns new rectangle coordinates of form ((u1,v1), (u2,v2))
+#returns new rectangle coordinates of form (u1,v1,u2,v2)
 #   where (u1, v2) is upper left coordinates and (u2, v2) is lower right
 def padRectangle(rectCoords, left, right, up, down):
-    (upperLeft, lowerRight) = rectCoords
-    (x1, y1) = upperLeft
-    (x2, y2) = lowerRight
+    (x1,y1,x2,y2) = rectCoords
     
     x1 -= left
     x2 += right
     y1 -= up
     y2 += down
      
-    return ((x1,y1),(x2,y2))
+    return (x1,y1,x2,y2)
 
 #class with a bunch of functions that obtain data from a particular snake game
 class SnakeGameAnalyzer:
@@ -31,6 +31,17 @@ class SnakeGameAnalyzer:
     #@param game - SnakeGame object that this object will analyze
     def __init__(self, game):
         self.game = game
+        
+        vertexIDs = [[-1 for j in range(self.game.rows+2)] for i in range(self.game.cols+2)]
+        
+        #recording ids of each vertex in grid
+        for i in range(self.game.cols+2):
+            for j in range(self.game.rows+2):
+                vertexID = self.spaceID((i,j))
+                vertexIDs[i][j] = vertexID
+        
+        #print(vertexIDs)
+        self.wholeGridGraph = grid.GridGraph(self.game.cols+2, self.game.rows+2, vertexIDs)
         
     #changes game being analyzed
     #@param game - SnakeGame object
@@ -259,8 +270,6 @@ class SnakeGameAnalyzer:
             return (col - 1) % self.game.cols + self.game.cols*(row - 1)
         else:
             return self.__gameOverSpaceID(spaceCoords)
-        
-        return -1
     
     #obtains space id for a pair of space coordinates in out of bounds game over area
     #@param spaceCoords - tuple of form (colNum, rowNum) for space in grid
@@ -424,21 +433,27 @@ class SnakeGameAnalyzer:
     #finds new snake coordinates after it has moved down a certain path
     #@param path - deque of space coords representing path snake will take. 
     #   0th element is snake head.
+    #@param pelletCoords - coordinates of pellet. optional
     #returns deque coordinates snake will be at after moving down inputted path.
-    #   assumes no pellet along the way
-    def futureSnakeCoords(self, path):    
+    def futureSnakeCoords(self, path, pelletCoords=None):    
         futureSnake = deque(self.game.snakeCoords)
+        pathCopy = deque(path)
+        finalPathSpace = ()
+        
+        #checking if snake will chomp pellet along the way
+        if pelletCoords in path:
+            finalPathSpace = pathCopy[-1]
+            pathCopy.pop()
         
         #checking if path empty
-        if len(path) == 0:
+        if len(pathCopy) == 0:
             return futureSnake
         
         currentSegs = set(futureSnake)
-        trimmedPath = deque(path)
-        trimmedPath.popleft()
+        pathCopy.popleft()
         
         #going down path
-        for coords in trimmedPath:
+        for coords in pathCopy:
             assert self.spacesAreAdjacent(coords, futureSnake[0])
             
             currentSegs.remove(futureSnake[-1])
@@ -451,6 +466,10 @@ class SnakeGameAnalyzer:
                 return futureSnake
             if not self.coordsInBounds(futureSnake[0]):
                 return futureSnake
+            
+        #reattaching final space if needed
+        if finalPathSpace != ():
+            futureSnake.appendleft(finalPathSpace)
             
         return futureSnake
     
@@ -554,7 +573,7 @@ class SnakeGameAnalyzer:
     
     #finds smallest rectangle that bounds snake coordinates
     #@param snakeCoords - deque of space coordinates making up snake
-    #return tuple of form ((i, j), (u, v)) 
+    #return tuple of form (i, j, u, v) 
     #   where (i,j) are coordinates of upper left corner and 
     #   (u, v) are coordinates of bottom right corner
     def smallestBoundingRect(self, snakeCoords):
@@ -576,4 +595,278 @@ class SnakeGameAnalyzer:
             if y > maxY:
                 maxY = y
                 
-        return ((minX, minY), (maxX, maxY))
+        return (minX, minY, maxX, maxY)
+    
+    #adds padding to a rectangle such edge of rect and edge of grid have even distance
+    #@param rectCoords - tuple of form ((x1,y1), (y1,y2)) 
+    #   where (x1,y1) are col/row numbers for upper left corner 
+    #   and (x2,y2) are col/row numbers for lower right corner
+    #adds columns and rows until distance from rect edge to grid edge is even, if possible
+    #   ensures rectangle within grid bounds
+    #   returns rectangle as (u1,v1,u1,v2) if found, empty tuple otherwise
+    #   where (u1,v1) are col/row numbers for upper left corner 
+    #   and (u2,v2) are col/row numbers for lower right corner
+    def padRectEvenMargins(self, rectCoords):
+        (x1,y1,x2,y2) = rectCoords
+        m = x2 - x1 + 1
+        n = y2 - y1 + 1
+        rect = rectCoords
+        
+        #ensuring margins have even distance
+        if x1 % 2 == 0:
+            rect = padRectangle(rect, 1, 0, 0, 0)
+        if (self.game.cols - x2) % 2 == 1:
+            rect = padRectangle(rect, 0, 1, 0, 0)
+        if y1 % 2 == 0:
+            rect = padRectangle(rect, 0, 0, 1, 0)
+        if (self.game.rows - y2) % 2 == 1:
+            rect = padRectangle(rect, 0, 0, 0, 1)
+            
+        return rect
+    
+    #finds rectangle surrounding snake that could maybe hold hamiltonian cycle
+    #@param snakeCoords - deque of space coords representing snake
+    #returns rectangle as (u1,v1,u1,v2) if found, empty tuple otherwise
+    #   (u1,v1) is (colNum, rowNum) for upper left corner 
+    #   and (u2,v2) is (colNum, rowNum) for lower right corner
+    def snakeRectangle(self, snakeCoords):
+        rect = self.smallestBoundingRect(snakeCoords)
+        (u1, v1, u2, v2) = rect
+        
+        #print(rect)
+        rect = self.padRectEvenMargins(rect)
+        #print(rect)
+        
+        (x1,y1,x2,y2) = rect
+        m = x2 - x1 + 1
+        n = y2 - y1 + 1
+        
+        #checking if rectangle has even number of spaces
+        if m*n % 2 == 1:
+            return ()
+        
+        #adding extra padding to increase chance of hamiltonian cycle
+        if x1 > 2 and x1 == u1:
+            rect = padRectangle(rect, 2, 0, 0, 0)
+        if self.game.cols - x2 >= 2 and x2 == u2:
+            rect = padRectangle(rect, 0, 2, 0, 0)    
+        if y1 > 2 and y1 == v1:
+            rect = padRectangle(rect, 0, 0, 2, 0)
+        if self.game.rows - y2 >= 2 and y2 == v2:
+            rect = padRectangle(rect, 0, 0, 0, 2)
+        
+        return rect
+    
+    #searches for a pellet path and an escape route for current snake position
+    #returns dict of form {pelletPath:deque(), escapePath:deque()}
+    #   escape path allows snake to survive indefinitely after completing pellet path
+    def pelletPathInfo(self):
+        pelletPath = self.fastPelletPath()
+        #print(pelletPath)
+        
+        #checks if pellet path found
+        if len(pelletPath) == 0:
+            return {"pelletPath": deque(), "escapePath": deque()}
+        
+        futureSnake = self.futureSnakeCoords(pelletPath, pelletPath[-1])
+        print(futureSnake)
+        rect = self.snakeRectangle(futureSnake)
+        print(rect)
+        
+        #checking if rectangle found successfully
+        if rect == ():
+            return {"pelletPath": deque(), "escapePath": deque()}
+        
+        sub = self.wholeGridGraph.gridSubgraph(*rect)
+        #print(sub.getVertices())
+        #print(sub.getEdges())
+        futureSnakeIDs = deque([self.spaceID(coords) for coords in futureSnake])
+        futureSnakeIDs.reverse()
+        print("finding hamiltonian cycle")
+        rectCycle = h.finishHamiltonianCycle(sub, futureSnakeIDs)
+        print(rectCycle)
+        
+        #checking if hamiltonian cycle found
+        if len(rectCycle) == 0:
+            return {"pelletPath": deque(), "escapePath": deque()}
+        
+        m = self.game.cols
+        n = self.game.rows
+        pathGraph = g.SimpleUndirectedGraph({v for v in range((m+2)*(n+2))})
+        self.__addPathEdges(pathGraph, rectCycle)
+        #print(pathGraph.getVertices())
+        #print(pathGraph.getEdges())
+        
+        rectangles = self.inboundComplementRects(rect)
+        #print(rectangles)
+        
+        cycles = [deque() for i in range(len(rectangles))]
+        
+        #finding hamiltonian cycles for each rectangular subgraph
+        for i in range(len(rectangles)):
+            r = rectangles[i]
+            
+            #checking if valid rectangle
+            if len(r) > 0:
+                graph = self.wholeGridGraph.gridSubgraph(*r)
+                cycle = h.gridHamiltonianCycle(graph)
+                cycles[i] = cycle
+                self.__addPathEdges(pathGraph, cycle)
+                #print(cycle)
+      
+        #print(cycles)
+        #print(pathGraph.getVertices())
+        #print(pathGraph.getEdges())
+        (x1, y1, x2, y2) = rect
+        self.__combineCyclesHorizontal(pathGraph, x1, x2, y1-1)
+        self.__combineCyclesVertical(pathGraph, x2, y1, y2)
+        self.__combineCyclesHorizontal(pathGraph, x1, x2, y2)
+        self.__combineCyclesVertical(pathGraph, x1-1, y1, y2)
+        print("forming partial path")
+        
+        path = deque()
+        prevSpaces = set()
+        vertex = 0
+        
+        while vertex != -1:
+            #print(vertex)
+            path.append(self.spaceCoords(vertex))
+            prevSpaces.add(vertex)
+            neighbors = pathGraph.neighbors(vertex)
+            vertex = -1
+            
+            for v in neighbors:
+                if v not in prevSpaces:
+                    vertex = v
+                    break
+                
+        print(path)
+        
+        '''
+        #removing edge vertices from pathGraph
+        for k in range(m*n, (m+2)*(n+2)):
+            pathGraph.removeVertex(k)
+        
+        finalPath = h.hamiltonianCycle(pathGraph)
+        finalPath.pop()
+        finalPath = deque([self.spaceCoords(v) for v in finalPath])
+        space1Index = finalPath.index(pelletPath[0])
+        space2Index = finalPath.index(pelletPath[1])
+        
+        #reversing path elements if needed
+        if space2Index < space1Index:
+            #print("reversing path")
+            finalPath.reverse()
+        
+        pelletIndex = finalPath.index(pelletPath[-1])
+        finalPath.rotate(-pelletIndex)
+        finalPath.append(finalPath[0])
+        #print(finalPath)
+        return {"pelletPath": pelletPath, "escapePath": finalPath}
+        '''
+            
+    #checks whether a rectangle lies within inbound spaces of game grid
+    #@param rectCoords - tuple of form ((x1,y1), (y1,y2)) 
+    #   where (x1,y1) are col/row numbers for upper left corner 
+    #   and (x2,y2) are col/row numbers for lower right corner
+    #returns true is rectangle doesn't touch out of bounds game over spaces, false otherwise
+    def rectInBounds(self, rectCoords):
+        (i1, j1, i2, j2) = rectCoords
+        s1 = (i1, j1)
+        s2 = (i2, j2)
+        return self.coordsInBounds(s1) and self.coordsInBounds(s2)
+    
+    #obtains rectangle surround rectangle within inbound grid spaces
+    #@param rectCoords - tuple of form (x1,y1,y1,y2) 
+    #   where (x1,y1) are col/row numbers for upper left corner 
+    #   and (x2,y2) are col/row numbers for lower right corner
+    #returns list of rect tuples. rect list plus inputted rect will span
+    #   every inbound grid space without overlapping
+    def inboundComplementRects(self, rectCoords):
+        (i1, j1, i2, j2) = rectCoords
+        
+        rect1 = (1,1,self.game.cols,j1-1)
+        rect2 = (i2+1,j1,self.game.cols,self.game.rows)
+        rect3 = (1,j2+1,i2,self.game.rows)
+        rect4 = (1,j1,i1-1, j2)
+        
+        rectangles = [rect1, rect2, rect3, rect4]
+        filteredRect = [i for i in range(4)]
+        
+        #marking rectangles that are inbounds
+        for i in range(len(rectangles)):
+            r = rectangles[i]
+            
+            #checking if rectangle inbounds
+            if self.rectInBounds(r):
+                filteredRect[i] = r
+            else:
+                filteredRect[i] = ()
+        
+        return filteredRect
+    
+    #adds all edges within path to graph
+    #@param graph - SimpleUndirectedGraph object
+    #@param path - deque of vertex ids making up path. and edges in path added to graph
+    def __addPathEdges(self, graph, path):
+        pathList = list(path)
+        
+        #adding edges to graph
+        for i in range(len(pathList)-1):
+            v1 = pathList[i]
+            v2 = pathList[i+1]
+            graph.addEdge(v1,v2)
+
+    #combines adjacent hamiltonian cycles within grid along horizontal boundary
+    #@param graph - graph with each edge being part of hamiltonian cycle for subgraph
+    #   graph based on game grid
+    #@param x1 - col number of leftmost space in horizontal boundary between cycles
+    #@param x2 - col number of rightmost space in horizontal boundary between cycles
+    #@param y - row number
+    #analyzes spaces for x in [x1-x2], y in [y, y+1] for possible way to join
+    #   both surround hamiltonian cycles into 1. if cycles joined successfully
+    #   somewhere across horizontal boundary, returns True, else returns False
+    def __combineCyclesHorizontal(self, graph, x1, x2, y):
+        #exploring top edge of central rectangle
+        for i in range(x1, x2):
+            v1 = self.spaceID((i, y))
+            v2 = self.spaceID((i+1, y))
+            v3 = self.spaceID((i, y+1))
+            v4 = self.spaceID((i+1, y+1))
+            
+            #found parallel edges!
+            if graph.adjacent(v1, v2) and graph.adjacent(v3, v4):
+                graph.addEdge(v1, v3)
+                graph.addEdge(v2, v4)
+                graph.removeEdge(v1, v2)
+                graph.removeEdge(v3, v4)
+                return True
+            
+        return False
+    
+    #combines adjacent hamiltonian cycles within grid along vertical boundary
+    #@param graph - graph with each edge being part of hamiltonian cycle for subgraph
+    #   graph based on game grid
+    #@param x - col number of boundary between cycles
+    #@param y1 - row number of uppermost space in vertical boundary between cycles
+    #@param y2 - row number of lowermost space in verticl boundary between cycles
+    #analyzes spaces for x in [x, x+1], y in [y1, y2] for possible way to join
+    #   both surround hamiltonian cycles into 1. if cycles joined successfully
+    #   somewhere across vertical boundary, returns True, else returns False
+    def __combineCyclesVertical(self, graph, x, y1, y2):
+        #exploring top edge of central rectangle
+        for j in range(y1, y2):
+            v1 = self.spaceID((x, j))
+            v2 = self.spaceID((x, j+1))
+            v3 = self.spaceID((x+1, j))
+            v4 = self.spaceID((x+1, j+1))
+            
+            #found parallel edges!
+            if graph.adjacent(v1, v2) and graph.adjacent(v3, v4):
+                graph.addEdge(v1, v3)
+                graph.addEdge(v2, v4)
+                graph.removeEdge(v1, v2)
+                graph.removeEdge(v3, v4)
+                return True
+            
+        return False

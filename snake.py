@@ -19,8 +19,9 @@ from ai.surviveAI import SurviveAI
 from ai.greedyAI import GreedyAI
 from ai.basicAI import BasicAI
 from ai.loopAI import LoopAI
+from ai.advancedAI import AdvancedAI
 
-#prints a 2d array to the console
+#prints a 2d array to console
 #@param matrix - a 2d array
 #prints array elements to console, with 1st index interpreted as column, 2nd index interpreted as row.
 # 0th column is leftmost column, 0th row is topmost row with element printed left to right, top to bottom
@@ -210,8 +211,9 @@ class SnakeGame:
         #self.ai = DumbAI(self)
         #self.ai = SurviveAI(self)
         #self.ai = GreedyAI(self)
-        self.ai = BasicAI(self)
+        #self.ai = BasicAI(self)
         #self.ai = LoopAI(self)
+        self.ai = AdvancedAI(self)
         
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"

@@ -187,7 +187,7 @@ def colorHamiltonianSquares(squares):
                 squares[i][j] = 0 if j % 2 == 1 and i > 0 else 1
                 
 #tries to add vertices to existing path to form hamiltonian cycle for graph
-#@param graph - SimpleUndirectedGraph object
+#@param graph - SimpleUndirectedGraph or GridGraph object
 #@param path - deque of vertex ids making up existing path
 #returns deque of vertex ids as hamiltonian cycle if found
 def finishHamiltonianCycle(graph, path):
@@ -203,8 +203,8 @@ def finishHamiltonianCycle(graph, path):
         if vertex != path[0] and vertex != path[-1]:
             graphCopy.removeVertex(vertex)
             
-    print(graphCopy.getVertices())
-    print(graphCopy.getEdges())
+    #print(graphCopy.getVertices())
+    #print(graphCopy.getEdges())
     path2 = p.connectingHamiltonianPath(graphCopy, path[-1], path[0])
     
     #checking if path found

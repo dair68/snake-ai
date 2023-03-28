@@ -82,7 +82,7 @@ def hamiltonianHelper(graph, startVertex, finishVertex, path=None, visitStatus=N
         #marking nodes already in path as visited
         for vertex in path:
             visitStatus[vertex] = True
-        
+    
     currentVertex = path[-1]
     neighbors = graph.neighbors(currentVertex)
 
@@ -96,6 +96,7 @@ def hamiltonianHelper(graph, startVertex, finishVertex, path=None, visitStatus=N
         #vertex hasn't been visited
         if visitStatus[vertex] == False:
             path.append(vertex)
+           # print(path)
             visitStatus[vertex] = True
             possiblePath = hamiltonianHelper(graph, startVertex, finishVertex,
                                              path, visitStatus)

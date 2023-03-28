@@ -171,3 +171,49 @@ class SimpleUndirectedGraph:
         edge = (vertex1, vertex2) if vertex1 < vertex2 else (vertex2, vertex1)
         assert self.validEdge(edge)
         self.edgeValues[edge] = value
+        
+    #finds subgraph of this graph
+    #@param vertices - set of integer vertex ids
+    #@param edges - set of edges, each edge being tuple of form (v1, v2)
+    #returns SimpleUndirectedGraph object with inputted vertices and edges
+    #   vertex values and edge values from original graph are copied over
+    def subgraph(self, vertices, edges):
+        sub = SimpleUndirectedGraph(vertices, edges)
+        
+        #copying over vertex values
+        for v in vertices:
+            value = self.getVertexValue(v)
+            sub.setVertexValue(v, value)
+            
+        #copying over edge values
+        for e in edges:
+            (v1, v2) = e
+            edgeValue = self.getEdgeValue(v1, v2)
+            sub.setEdgeValue(v1, v2, edgeValue)
+            
+        return sub
+    
+    #finds subgraph for which all edges are preserved if their end nodes are preserved
+    #@param vertices - set of integer vertex ids
+    #returns SimpleUndirectedGraph object with inputted vertices
+    #   vertex value and edge values from original graph copied over
+    #   if any edge whose vertices are within subgraph will be carried over to subgraph
+    def edgePreservedSubgraph(self, vertices):
+        sub = SimpleUndirectedGraph(vertices)
+        
+        #transfering vertex values in subgraph
+        for v in sub.getVertices():
+            value = self.getVertexValue(v)
+            sub.setVertexValue(v, value)
+        
+        #copying over edges
+        for e in self.getEdges():
+            (v1, v2) = e
+            
+            #checking if both ends of edge are in subgraph
+            if sub.vertexIncluded(v1) and sub.vertexIncluded(v2):
+                sub.addEdge(v1, v2)
+                edgeValue = self.getEdgeValue(v1, v2)
+                sub.setEdgeValue(v1, v2, edgeValue)
+                
+        return sub
