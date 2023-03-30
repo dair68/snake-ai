@@ -597,6 +597,88 @@ class SnakeGameAnalyzer:
                 
         return (minX, minY, maxX, maxY)
     
+    #finds largest rectangle within region that doesn't contain snake coordinates
+    #@param snakeCoords - deque of space coordinates making up snake
+    #@param region - rectangle of form (x1, y1, x2, y2) where (x1,y1) is upper left, (x2, y2) is lower right
+    #   searches for larest empty rectangle within rect
+    #return tuple of form (i, j, u, v) 
+    #   where (i,j) are coordinates of upper left corner and 
+    #   (u, v) are coordinates of bottom right corner
+    def __largestEmptyRect(self, snakeCoords, region):
+        (x1, y1, x2, y2) = region
+        m = x2 - x1 + 1
+        n = y2 - y1 + 1
+        rectData = [[() for j in range(n)] for i in range(m)]
+        
+        #filling data with snake coordinates
+        for coord in snakeCoords:
+            (col, row) = coord
+            rectData[col-x1][row-y1] = (-1,-1)
+            
+        largestArea = 0
+        largestRectCoords = ()
+        
+        #filling matrix with data on possible rectangles
+        for i in range(m):
+            for j in range(n):
+                #checking column or row
+                if i == 0:
+                    data = ()
+                    
+                    #filling space based on row data
+                    if j == 0 and rectData[0][0] == ():
+                        data = (0,0)
+                    elif rectData[0][j] == ():
+                        data = (i,j) if rectData[0][j-1] == (-1,-1) else rectData[0][j-1]
+                    else:
+                        data = (-1,-1)
+                        
+                    rectData[0][j] = data
+                elif j == 0 and rectData[i][0] == ():    
+                    rectData[i][0] = (i,j) if rectData[i-1][0] == (-1,-1) else rectData[i-1][0]
+                elif rectData[i][j] == ():
+                    upperSpace = rectData[i][j-1]
+                    leftSpace = rectData[i-1][j]
+                    data = (-2,-2)
+                    
+                    #checking adjacent spaces
+                    if upperSpace == (-1,-1) and leftSpace == (-1,-1):
+                        data = (i,j)
+                    elif upperSpace == (-1,-1):
+                        data = (leftSpace[0], j)
+                    elif leftSpace == (-1,-1):
+                        data = (i, upperSpace[1])
+                    else:
+                        (u1,v1) = upperSpace
+                        (u2,v2) = leftSpace
+                        
+                        #checking dimensions relative to each other
+                        if u1 < u2 or v1 > v2:
+                            data = (u2, max(v1,v2))
+                        else:
+                            area1 = (i-u1+1)*(j-v1+1)
+                            area2 = (i-u2+1)*(j-v2+1)
+                            data = upperSpace if area1 > area2 else leftSpace 
+                            
+                    rectData[i][j] = data
+                    
+                #checking area of rectangle just found
+                if rectData[i][j] != (-1,-1):
+                    (i2,j2) = rectData[i][j]
+                    area = (i-i2+1)*(j-j2+1)
+                    
+                    #found larger area
+                    if area > largestArea:
+                        largestArea = area
+                        largestRectCoords = (i,j)
+        
+        #print(largestArea)
+        #print(largestRectCoords)
+        (col2, row2) = largestRectCoords
+        oppositeCorner = rectData[col2][row2]
+        (col1, row1) = oppositeCorner
+        return (col1 + x1, row1 + y1, col2 + x1, row2 + y1)
+    
     #adds padding to a rectangle such edge of rect and edge of grid have even distance
     #@param rectCoords - tuple of form ((x1,y1), (y1,y2)) 
     #   where (x1,y1) are col/row numbers for upper left corner 
@@ -657,6 +739,50 @@ class SnakeGameAnalyzer:
         
         return rect
     
+    #finds rectangle within snake rectangle that doesn't contain snake spaces
+    #@param snakeCoords - deque of space coords representing snake
+    #@param rect - rectangle containing all of snake
+    #returns rectangle as (u1,v1,u1,v2) if found, empty tuple otherwise
+    #   (u1,v1) is (colNum, rowNum) for upper left corner 
+    #   and (u2,v2) is (colNum, rowNum) for lower right corner
+    def snakeExcludedRectangle(self, snakeCoords, rect):
+        emptyRect = self.__largestEmptyRect(snakeCoords, rect)
+        print(emptyRect)
+        (u1, v1, u2, v2) = emptyRect
+        width = u2 - u1 + 1
+        height = v2 - v1 + 1
+        
+        #checking if rectangle at least 2 by 2
+        if width == 1 or height == 1:
+            print("rectangle too small")
+            return ()
+            
+        (x1, y1, x2, y2) = rect
+        
+        #checking if empty rectangle has odd number of entries
+        if width*height % 2 == 1:
+            #shrinking rectangle down to even dimensions
+            if u1 != x1:
+                emptyRect = (u1+1, v1, u2, v2)
+            elif u2 != x2:
+                emptyRect = (u1, v1, u2-1, v2)
+            elif v1 != y1:
+                emptyRect = (u1, v1+1, u2, v2)
+            elif v2 != y2:
+                emptyRect = (u1, v1, u2, v2-1)
+                
+        #further trimming rectangle
+        if u1 != x1 and u1 == emptyRect[0] and emptyRect[2] - emptyRect[0] > 2:
+            emptyRect = (u1+2, emptyRect[1], emptyRect[2], emptyRect[3])
+        if u2 != x2 and u2 == emptyRect[2] and emptyRect[2] - emptyRect[0] > 2:
+            emptyRect = (emptyRect[0], emptyRect[1], u2-2, emptyRect[3])
+        if v1 != y1 and v1 == emptyRect[1] and emptyRect[3] - emptyRect[1] > 2:
+            emptyRect = (emptyRect[0], v1+2, emptyRect[2], emptyRect[3])
+        if v2 != y2 and v2 == emptyRect[3] and emptyRect[3] - emptyRect[1] > 2:
+            emptyRect = (emptyRect[0], emptyRect[1], emptyRect[2], v2-2)
+                
+        return emptyRect
+    
     #searches for a pellet path and an escape route for current snake position
     #returns dict of form {pelletPath:deque(), escapePath:deque()}
     #   escape path allows snake to survive indefinitely after completing pellet path
@@ -677,14 +803,36 @@ class SnakeGameAnalyzer:
         if rect == ():
             return {"pelletPath": deque(), "escapePath": deque()}
         
-        sub = self.wholeGridGraph.gridSubgraph(*rect)
+        emptyRect = self.snakeExcludedRectangle(futureSnake, rect)
+        print(emptyRect)
+        
+        sub = grid.GridGraph(1,1)
+        innerGraph = grid.GridGraph(1,1)
+        
+        #determining subgraph surround snake
+        if emptyRect == ():
+            sub = self.wholeGridGraph.gridSubgraph(*rect)
+        else:
+            innerGraph = self.wholeGridGraph.gridSubgraph(*emptyRect)
+            #print(innerGraph.getVertices())
+            #print(innerGraph.getEdges())
+            outerGraph = self.wholeGridGraph.gridSubgraph(*rect)
+            sub = g.SimpleUndirectedGraph(outerGraph.getVertices(), outerGraph.getEdges())
+            
+            #removing unneeded vertices
+            for v in outerGraph.getVertices():
+                #vertex not in inner graph
+                if v in innerGraph.getVertices():
+                    sub.removeVertex(v)
+            
         #print(sub.getVertices())
         #print(sub.getEdges())
         futureSnakeIDs = deque([self.spaceID(coords) for coords in futureSnake])
         futureSnakeIDs.reverse()
+        
         print("finding hamiltonian cycle")
         rectCycle = h.finishHamiltonianCycle(sub, futureSnakeIDs)
-        print(rectCycle)
+        #print(rectCycle)
         
         #checking if hamiltonian cycle found
         if len(rectCycle) == 0:
@@ -696,6 +844,48 @@ class SnakeGameAnalyzer:
         self.__addPathEdges(pathGraph, rectCycle)
         #print(pathGraph.getVertices())
         #print(pathGraph.getEdges())
+        
+        #adding previously cut away rectangle to existing cycle
+        if emptyRect != ():
+            cycle = h.gridHamiltonianCycle(innerGraph)
+            #print(cycle)
+            self.__addPathEdges(pathGraph, cycle)
+            
+            (x1, y1, x2, y2) = emptyRect
+            combining = False
+            combining = self.__combineCyclesHorizontal(pathGraph, x1, x2, y1-1)
+            
+            #checking if rectangles combined successfully
+            if combining == False:
+                print("combining")
+                combining = self.__combineCyclesVertical(pathGraph, x2, y1, y2)    
+            if combining == False:
+                print("combining")
+                combining = self.__combineCyclesHorizontal(pathGraph, x1, x2, y2)
+            if combining == False:
+                print("combining")
+                combining = self.__combineCyclesVertical(pathGraph, x1-1, y1, y2)
+        
+        '''
+        print("forming partial path")
+        path = deque()
+        prevSpaces = set()
+        vertex = rectCycle[0]
+         
+        while vertex != -1:
+            #print(vertex)
+            path.append(self.spaceCoords(vertex))
+            prevSpaces.add(vertex)
+            neighbors = pathGraph.neighbors(vertex)
+            vertex = -1
+         
+            for v in neighbors:
+                if v not in prevSpaces:
+                    vertex = v
+                    break
+                 
+        print(path)
+        '''
         
         rectangles = self.inboundComplementRects(rect)
         #print(rectangles)
@@ -722,8 +912,9 @@ class SnakeGameAnalyzer:
         self.__combineCyclesVertical(pathGraph, x2, y1, y2)
         self.__combineCyclesHorizontal(pathGraph, x1, x2, y2)
         self.__combineCyclesVertical(pathGraph, x1-1, y1, y2)
+    
+        '''
         print("forming partial path")
-        
         path = deque()
         prevSpaces = set()
         vertex = 0
@@ -741,8 +932,9 @@ class SnakeGameAnalyzer:
                     break
                 
         print(path)
-        
         '''
+        
+        
         #removing edge vertices from pathGraph
         for k in range(m*n, (m+2)*(n+2)):
             pathGraph.removeVertex(k)
@@ -751,10 +943,12 @@ class SnakeGameAnalyzer:
         finalPath.pop()
         finalPath = deque([self.spaceCoords(v) for v in finalPath])
         space1Index = finalPath.index(pelletPath[0])
+        finalPath.rotate(-space1Index)
         space2Index = finalPath.index(pelletPath[1])
         
         #reversing path elements if needed
-        if space2Index < space1Index:
+        if space2Index != 1:
+            finalPath.rotate(-1)
             #print("reversing path")
             finalPath.reverse()
         
@@ -763,7 +957,7 @@ class SnakeGameAnalyzer:
         finalPath.append(finalPath[0])
         #print(finalPath)
         return {"pelletPath": pelletPath, "escapePath": finalPath}
-        '''
+        
             
     #checks whether a rectangle lies within inbound spaces of game grid
     #@param rectCoords - tuple of form ((x1,y1), (y1,y2)) 
