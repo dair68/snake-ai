@@ -430,13 +430,34 @@ class SnakeGameAnalyzer:
         
         return moves
     
+    #finds spaces snake can safely move to next turn
+    #returns set of space coords that snake can move next without game over
+    #   or messing up endgame
+    def extraSafeMoves(self):
+        moves = self.safeMoves()
+        safestMoves = set()
+        
+        #determining which moves won't mess up endgame
+        for move in moves:
+            headCoords = self.game.headCoords
+            futureSnake = self.futureSnakeCoords(deque([headCoords, move]))
+            spaces = self.badVacantSpaces(futureSnake)
+            
+            #checking if there are no singular empty spaces
+            if spaces == 0:
+                safestMoves.add(move)
+                
+        return safestMoves
+        
     #finds new snake coordinates after it has moved down a certain path
-    #@param path - deque of space coords representing path snake will take. 
+    #@param path - deque of space coords representing path snake will take.
+    #@param snake - deque of space coords making up snake. uses self.game.snakeCoords by default
     #   0th element is snake head.
     #@param pelletCoords - coordinates of pellet. optional
     #returns deque coordinates snake will be at after moving down inputted path.
-    def futureSnakeCoords(self, path, pelletCoords=None):    
-        futureSnake = deque(self.game.snakeCoords)
+    def futureSnakeCoords(self, path, snake=None, pelletCoords=None):    
+        futureSnake = deque(self.game.snakeCoords) if snake == None else snake
+        #print(futureSnake)
         pathCopy = deque(path)
         finalPathSpace = ()
         
@@ -454,6 +475,8 @@ class SnakeGameAnalyzer:
         
         #going down path
         for coords in pathCopy:
+            #print(f"coords: {coords}")
+            #print(f"futureSnake[0]: {futureSnake[0]}")
             assert self.spacesAreAdjacent(coords, futureSnake[0])
             
             currentSegs.remove(futureSnake[-1])
@@ -747,13 +770,13 @@ class SnakeGameAnalyzer:
     #   and (u2,v2) is (colNum, rowNum) for lower right corner
     def snakeExcludedRectangle(self, snakeCoords, rect):
         emptyRect = self.__largestEmptyRect(snakeCoords, rect)
-        print(emptyRect)
+        #print(emptyRect)
         (u1, v1, u2, v2) = emptyRect
         width = u2 - u1 + 1
         height = v2 - v1 + 1
         
         #checking if rectangle at least 2 by 2
-        if width == 1 or height == 1:
+        if width < 6 or height < 6:
             print("rectangle too small")
             return ()
             
@@ -831,7 +854,7 @@ class SnakeGameAnalyzer:
         futureSnakeIDs.reverse()
         
         print("finding hamiltonian cycle")
-        rectCycle = h.finishHamiltonianCycle(sub, futureSnakeIDs)
+        rectCycle = h.fastFinishHamiltonianCycle(sub, futureSnakeIDs)
         #print(rectCycle)
         
         #checking if hamiltonian cycle found
@@ -940,8 +963,10 @@ class SnakeGameAnalyzer:
             pathGraph.removeVertex(k)
         
         finalPath = h.hamiltonianCycle(pathGraph)
+        print(f"current pellet path: {pelletPath}")
         finalPath.pop()
         finalPath = deque([self.spaceCoords(v) for v in finalPath])
+        print(f"final path: {finalPath}")
         space1Index = finalPath.index(pelletPath[0])
         finalPath.rotate(-space1Index)
         space2Index = finalPath.index(pelletPath[1])
@@ -955,7 +980,7 @@ class SnakeGameAnalyzer:
         pelletIndex = finalPath.index(pelletPath[-1])
         finalPath.rotate(-pelletIndex)
         finalPath.append(finalPath[0])
-        #print(finalPath)
+        print(f"final path: {finalPath}")
         return {"pelletPath": pelletPath, "escapePath": finalPath}
         
             
@@ -1064,3 +1089,66 @@ class SnakeGameAnalyzer:
                 return True
             
         return False
+                        
+    #counts number of empty spaces that can hurt endgame for given snake
+    #@param snakeCoords - deque of snake space coordinates
+    #returns integer number of vacant spaces considered unfriendly for engame
+    def badVacantSpaces(self, snakeCoords):
+        grid = self.game.blankGrid(self.game.cols, self.game.rows)
+        self.game.fillGridWithSnake(grid, snakeCoords)
+        #self.game.printGrid(grid)
+        count = 0
+        
+        #examining spaces 1 by 1
+        for i in range(1, self.game.cols+1):
+            for j in range(1, self.game.rows+1):
+                #checking if space is in 1x1 vacant zone
+                if self.badVacantSpace(i, j, grid):
+                    count += 1
+                
+        return count
+    
+    #checks if a space is empty and surrounded by occupied spaces
+    #@param col - column number of space
+    #@param row - row number of space
+    #@param grid - game grid. uses current game state by default.
+    #returns True if space is empty and surrounded by occupied spaces
+    def unitVacantSpace(self, col, row, grid=None):
+        #checking if grid inputted
+        if grid == None:
+            grid = self.game.grid
+            
+        #checking if space empty
+        if grid[col][row] != "o":
+            return False
+        
+        neighbors = self.adjacentInboundSpaceCoords((col, row))
+        symbols = {grid[s[0]][s[1]] for s in neighbors}
+        
+        return "o" not in symbols 
+    
+    #checks if a space is empty and could lead to issues with endgame later
+    #@param col - column number of space
+    #@param row - row number of space
+    #@param grid - game grid. uses current game state by default.
+    #returns True if space is empty and surrounded by occupied spaces,
+    #   with the exception of a head AND tail space
+    def badVacantSpace(self, col, row, grid=None):
+        #checking if grid inputted
+        if grid == None:
+            grid = self.game.grid
+        
+        #checking if space if empty and surrounded by occupied spaces
+        if not self.unitVacantSpace(col, row, grid):
+            return False
+        
+        neighbors = self.adjacentInboundSpaceCoords((col, row))
+        symbols = {grid[s[0]][s[1]] for s in neighbors}
+        
+        return "H" not in symbols or "T" not in symbols
+    
+    #checks if a given snake can avoid inevitable game over down the line
+    #@param snakeCoords - deque of snake space coordinates
+    #returns True if snake can avert game over, False otherwise
+    def snakeSafe(self, snakeCoords):
+        return len(self.headTailPath(snakeCoords)) > 0

@@ -28,8 +28,8 @@ class BasicAI(SnakeAI):
             #print(futureSnake)
         
             #checking if future snake has route to tail
-            if len(analyzer.headTailPath(futureSnake)) > 0: 
-                self.pelletPath = analyzer.fastPelletPath()
+            if self.analyzer.snakeSafe(futureSnake): 
+                self.pelletPath = possiblePath
                 return
         
         self.pelletPath = deque()

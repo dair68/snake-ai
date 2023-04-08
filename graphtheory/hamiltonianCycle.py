@@ -224,3 +224,42 @@ def finishHamiltonianCycle(graph, path):
     pathCopy.extend(path2)
     pathCopy.append(path[0])
     return pathCopy
+
+#tries to add vertices to existing path to form hamiltonian cycle for graph
+#@param graph - SimpleUndirectedGraph or GridGraph object
+#@param path - deque of vertex ids making up existing path
+#returns deque of vertex ids as hamiltonian cycle if found quickly. else empty deque
+def fastFinishHamiltonianCycle(graph, path):
+    #checking length of path
+    if len(path) < 2:
+        return hamiltonianCycle(graph)
+    
+    graphCopy = SimpleUndirectedGraph(graph.getVertices(), graph.getEdges())
+    
+    #removing nodes that are irrelevant to hamiltonian cycle
+    for vertex in path:
+        #checking if vertex is in middle of path
+        if vertex != path[0] and vertex != path[-1]:
+            graphCopy.removeVertex(vertex)
+            
+    #print(graphCopy.getVertices())
+    #print(graphCopy.getEdges())
+    path2 = p.fastConnectingHamiltonianPath(graphCopy, path[-1], path[0])
+    
+    #checking if path found
+    if len(path2) == 0:
+        #print("no hamiltonian cycle found :(")
+        return deque()
+    
+    path2.pop()
+    
+    #checking if path has nonzero length
+    if len(path2) > 0:
+        path2.popleft()
+        
+    #print(path2)
+    
+    pathCopy = deque(path)
+    pathCopy.extend(path2)
+    pathCopy.append(path[0])
+    return pathCopy

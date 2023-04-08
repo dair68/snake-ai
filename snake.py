@@ -20,6 +20,8 @@ from ai.greedyAI import GreedyAI
 from ai.basicAI import BasicAI
 from ai.loopAI import LoopAI
 from ai.advancedAI import AdvancedAI
+from ai.experimentalAI import ExperimentalAI
+from ai.swirlAI import SwirlAI
 
 #prints a 2d array to console
 #@param matrix - a 2d array
@@ -213,7 +215,8 @@ class SnakeGame:
         #self.ai = GreedyAI(self)
         #self.ai = BasicAI(self)
         #self.ai = LoopAI(self)
-        self.ai = AdvancedAI(self)
+        #self.ai = ExperimentalAI(self)
+        self.ai = SwirlAI(self)
         
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"

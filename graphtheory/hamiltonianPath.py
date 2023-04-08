@@ -53,14 +53,39 @@ def hamiltonianPath(graph):
 def connectingHamiltonianPath(graph, startVertex, finishVertex):
     return hamiltonianHelper(graph, startVertex, finishVertex)
 
+counter = 0
+
+#finds hamiltonian path within graph that has 2 specific vertices as endpoints
+#@param graph - UndirectedSimpleGraph object
+#@param startVertex - integer vertex id of 1st vertex in path
+#@param finishVertex - integer vertex id of last vertex i path
+#returns deque of vertex ids forming path. return empty deque if no path found quickly.
+def fastConnectingHamiltonianPath(graph, startVertex, finishVertex):
+    iterations = 10000
+    global counter
+    counter = 0
+    return hamiltonianHelper(graph, startVertex, finishVertex, None, None, iterations)
+
 #helper function for connectingHamiltonianPath()
 #@param graph - SimpleUndirectedGraph object
 #@param startVertex - integer vertex id of 1st vertex in path
 #@param finishVertex - integer vertex id of last vertex i path
 #@param path - deque of current path formed. deque([0]) by default
 #@param visitStatus - dict mapping node ids booleans indicating if they've been visited yet
+#@param maxIter - number of times function is run before it terminates. optional.
+#@param currentIter - current number of times function ran. [0] by default
 #returns deque of vertex numbers representing path, if it exists
-def hamiltonianHelper(graph, startVertex, finishVertex, path=None, visitStatus=None):
+def hamiltonianHelper(graph, startVertex, finishVertex, path=None, visitStatus=None, 
+                      maxIter=-1):
+    global counter
+    counter += 1
+    #print(counter)
+    
+    #checking if maximum iterations reached
+    if maxIter > 0 and counter >= maxIter:
+        #print("reached threshold")
+        return deque()
+    
     #addressing special cases for extreme path lengths
     if path == None or len(path) == 0:
         path = deque([startVertex])
@@ -99,7 +124,7 @@ def hamiltonianHelper(graph, startVertex, finishVertex, path=None, visitStatus=N
            # print(path)
             visitStatus[vertex] = True
             possiblePath = hamiltonianHelper(graph, startVertex, finishVertex,
-                                             path, visitStatus)
+                                             path, visitStatus, maxIter)
             
             #found hamiltonian path!
             if len(possiblePath) > 0:
