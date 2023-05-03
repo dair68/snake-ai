@@ -213,10 +213,10 @@ class SnakeGame:
         #self.ai = DumbAI(self)
         #self.ai = SurviveAI(self)
         #self.ai = GreedyAI(self)
-        #self.ai = BasicAI(self)
+        self.ai = BasicAI(self)
         #self.ai = LoopAI(self)
         #self.ai = ExperimentalAI(self)
-        self.ai = SwirlAI(self)
+        #self.ai = SwirlAI(self)
         
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
@@ -264,6 +264,9 @@ class SnakeGame:
             self.up()
         else:
             print("Error. Invalid ai coordinates.")
+            print("snake head: " + str(self.headCoords()))
+            print("xShift: " + str(xShift))
+            print("yShift: " + str(yShift))
     
     #finds the shortest uninterrupted path between 2 spaces, if it exists
     #@param firstSpaceID - id number of first space

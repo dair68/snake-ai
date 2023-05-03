@@ -85,7 +85,7 @@ class SnakeGameAnalyzer:
     #reports all possible moves not in out of bounds game over zone snake can make
     #returns set of space coords of form (colNum, rowNum)
     def possibleInboundMoveCoords(self):
-        return {s for s in self.possibleMoveCoords() if self.coordsInBounds(s)}
+        return {s for s in self.possibleMoveCoords() if self.coordsInBounds(*s)}
     
     #reports all possible moves not in out of bounds game over zone snake can make
     #returns set of space ids
@@ -121,7 +121,7 @@ class SnakeGameAnalyzer:
         self.assertValidSpaceCoords(spaceCoords)
         
         neighbors = self.adjacentSpaceCoords(spaceCoords)
-        return {space for space in neighbors if self.coordsInBounds(space)}
+        return {space for space in neighbors if self.coordsInBounds(*space)}
     
     #finds all space adjacent to given space that is in area that 
     #   won't result in out of bounds game over
@@ -266,7 +266,7 @@ class SnakeGameAnalyzer:
         (col, row) = spaceCoords
         
         #finding id number depending on if space causes out of bounds game over
-        if self.coordsInBounds(spaceCoords):
+        if self.coordsInBounds(col, row):
             return (col - 1) % self.game.cols + self.game.cols*(row - 1)
         else:
             return self.__gameOverSpaceID(spaceCoords)
@@ -276,7 +276,7 @@ class SnakeGameAnalyzer:
     #returns integer id corresponding to the space's id number
     def __gameOverSpaceID(self, spaceCoords):
         self.assertValidSpaceCoords(spaceCoords)
-        assert not self.coordsInBounds(spaceCoords)
+        assert not self.coordsInBounds(*spaceCoords)
             
         (col, row) = spaceCoords
             
@@ -340,11 +340,11 @@ class SnakeGameAnalyzer:
         return (col, row)
         
     #checks if a space is in zone that won't result in out of bounds game over
-    #@param spaceCoords - tuple of form (colNum, rowNum) for space in grid
+    #@param col - col number of space
+    #@param row - row number of space
     #returns True is space is in bounds, false otherwise
-    def coordsInBounds(self, spaceCoords):
-        self.assertValidSpaceCoords(spaceCoords)
-        (col, row) = spaceCoords
+    def coordsInBounds(self, col, row):
+        self.assertValidSpaceCoords((col, row))
         return self.columnInBounds(col) and self.rowInBounds(row)
     
     #checks if a space is in zone that won't result in out of bounds game over
@@ -456,7 +456,7 @@ class SnakeGameAnalyzer:
     #@param pelletCoords - coordinates of pellet. optional
     #returns deque coordinates snake will be at after moving down inputted path.
     def futureSnakeCoords(self, path, snake=None, pelletCoords=None):    
-        futureSnake = deque(self.game.snakeCoords) if snake == None else snake
+        futureSnake = deque(self.game.snakeCoords) if snake == None else deque(snake)
         #print(futureSnake)
         pathCopy = deque(path)
         finalPathSpace = ()
@@ -487,7 +487,7 @@ class SnakeGameAnalyzer:
             #snake has reached game over
             if len(currentSegs) < len(futureSnake):
                 return futureSnake
-            if not self.coordsInBounds(futureSnake[0]):
+            if not self.coordsInBounds(*futureSnake[0]):
                 return futureSnake
             
         #reattaching final space if needed
@@ -702,7 +702,8 @@ class SnakeGameAnalyzer:
         (col1, row1) = oppositeCorner
         return (col1 + x1, row1 + y1, col2 + x1, row2 + y1)
     
-    #adds padding to a rectangle such edge of rect and edge of grid have even distance
+    #adds padding to a rectangle s.t. edge of rect and edge of grid have 
+    #   even distance
     #@param rectCoords - tuple of form ((x1,y1), (y1,y2)) 
     #   where (x1,y1) are col/row numbers for upper left corner 
     #   and (x2,y2) are col/row numbers for lower right corner
@@ -993,7 +994,7 @@ class SnakeGameAnalyzer:
         (i1, j1, i2, j2) = rectCoords
         s1 = (i1, j1)
         s2 = (i2, j2)
-        return self.coordsInBounds(s1) and self.coordsInBounds(s2)
+        return self.coordsInBounds(i1, j1) and self.coordsInBounds(i2, j2)
     
     #obtains rectangle surround rectangle within inbound grid spaces
     #@param rectCoords - tuple of form (x1,y1,y1,y2) 

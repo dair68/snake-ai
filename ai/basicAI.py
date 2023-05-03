@@ -21,11 +21,14 @@ class BasicAI(SnakeAI):
     def refreshAI(self):
         analyzer = self.getAnalyzer()
         possiblePath = analyzer.fastPelletPath()
+        snake = self.getGame().snakeCoords
+        print("snake: " + str(snake))
         
         #checking if path found
         if len(possiblePath) > 0:
-            futureSnake = analyzer.futureSnakeCoords(possiblePath, possiblePath[-1])
+            futureSnake = analyzer.futureSnakeCoords(possiblePath, snake, possiblePath[-1])
             #print(futureSnake)
+            print("snake: " + str(snake))
         
             #checking if future snake has route to tail
             if self.analyzer.snakeSafe(futureSnake): 
