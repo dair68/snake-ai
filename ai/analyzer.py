@@ -3,7 +3,6 @@ import graphtheory.pathFinder as search
 import graphtheory.graph as g
 from collections import deque
 import graphtheory.gridGraph as grid
-import graphtheory.hamiltonianCycle as h
 
 #adds padding to outside of rectangle within matrix
 #@param rectCoords - tuple of form ((x1,y1), (y1,y2)) 
@@ -26,7 +25,7 @@ def padRectangle(rectCoords, left, right, up, down):
     return (x1,y1,x2,y2)
 
 #class with a bunch of functions that obtain data from a particular snake game
-class SnakeGameAnalyzer:
+class SnakeAnalyzer:
     #constructor
     #@param game - SnakeGame object that this object will analyze
     def __init__(self, game):

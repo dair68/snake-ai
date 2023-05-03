@@ -1,17 +1,17 @@
 #module for hosting the snakeAI class
-from ai.snakeAnalysis import SnakeGameAnalyzer
+from ai.analyzer import SnakeAnalyzer
 
 #base class for all snake game ai classes
 class SnakeAI():
     #constructor
     #@param game - SnakeGame object that ai will recommend moves for
     def __init__(self, game):
-        self.analyzer = SnakeGameAnalyzer(game)
+        self.analyzer = SnakeAnalyzer(game)
     
     #lets user change the game being analyzed by this ai
     #@param game - SnakeGame object that ai will recommend moves for
     def setGame(self, game):
-        self.analyzer = SnakeGameAnalyzer(game)
+        self.analyzer = SnakeAnalyzer(game)
         
     #obtains game being analyzed
     #returns reference to game attached to ai

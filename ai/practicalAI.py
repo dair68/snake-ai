@@ -1,12 +1,12 @@
 #module hosting ai that will allow snake to win in reasonable timeframe
 from ai.snakeAI import SnakeAI
-import ai.snakeRect as r
+from ai.advancedAnalyzer import AdvancedSnakeAnalyzer
 
 class PracticalAI(SnakeAI):
     #constructor
     #@param game - SnakeGame object this ai will recommend moves for
     def __init__(self, game):
-        super().__init__(game)
+        self.analyzer = AdvancedSnakeAnalyzer(game)
         self.snakeRect = []
         cols = game.cols
         rows = game.rows
@@ -16,7 +16,8 @@ class PracticalAI(SnakeAI):
     #run this if the game hasn't been following all the previous recommended moves
     def refreshAI(self):
         (col, row) = self.getGame().headCoords()
-        self.snakeRect = r.coordBoundingRect(self.getAnalyzer(), col, row)
+        a = self.getAnalyzer()
+        self.snakeRect = a.coordBoundingRect(col, row)
         print(self.snakeRect)
         
     #finds a space for snake to move to next

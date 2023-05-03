@@ -16,12 +16,7 @@ from collections import deque
 from ai.snakeAI import SnakeAI
 from ai.dumbAI import DumbAI
 from ai.surviveAI import SurviveAI
-from ai.greedyAI import GreedyAI
 from ai.basicAI import BasicAI
-from ai.loopAI import LoopAI
-from ai.advancedAI import AdvancedAI
-from ai.experimentalAI import ExperimentalAI
-from ai.swirlAI import SwirlAI
 
 #prints a 2d array to console
 #@param matrix - a 2d array

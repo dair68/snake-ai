@@ -7,11 +7,9 @@ Created on Mon May 23 22:29:28 2022
 
 from snake import SnakeGame
 from tkinter import *
-import ai.snakeAnalysis as a
+import ai.analyzer as a
 import graphtheory.pathFinder as path
 import graphtheory.sampleGraphs as sg
-import graphtheory.hamiltonianCycle as h
-import graphtheory.hamiltonianPath as p
 import graphtheory.graph as g
 import graphtheory.gridGraph as grid
 import ai.practicalAI as ai
@@ -36,6 +34,6 @@ game.grid = game.createGrid(game.cols, game.rows, game.snakeCoords)
 game.drawPellet(game.pelletCol, game.pelletRow)
 game.printGrid()
 artificialIntelligence = ai.PracticalAI(game)
-analyzer = a.SnakeGameAnalyzer(game)
+analyzer = a.SnakeAnalyzer(game)
 artificialIntelligence.refreshAI()
 root.mainloop()
