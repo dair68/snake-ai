@@ -8,91 +8,106 @@ class AdvancedSnakeAnalyzer(SnakeAnalyzer):
     def __init__(self, game):
         super().__init__(game)
     
-    #finds rect bounding specific point in grid that allows for hamiltonian cycle
-    #@param col - column number of coordinate
-    #@param row - row number of coordinate
-    #returns rectangle as tuple of form (x1, y1, x2, y2) 
-    #   where (x1,y1) is upper left coord and (x2,y2) is bottom right coord
-    def coordBoundingRect(self, col, row):
-        game = self.getGame()
-        assert game.snakeLength() == 1
-        (col, row) = game.headCoords()
-        cols = game.cols
-        rows = game.rows
-        rect = [col, row, col, row]
-    
-        #analyzing squares bounding snake square
-        if self.coordsInBounds(col-1, row-1) and self.coordsInBounds(col, row):
-            rect[0] = col - 1 
-            rect[1] = row - 1
-        elif self.coordsInBounds(col, row-1) and self.coordsInBounds(col+1, row):
-            rect[1] = row - 1 
-            rect[2] = col + 1
-        elif self.coordsInBounds(col-1, row) and self.coordsInBounds(col, row+1):
-            rect[0] = col - 1 
-            rect[3] = row + 1
-        else:
-            rect[2] = col + 1
-            rect[3] = row + 1
-        
-        self.__adjustRect(rect)
-        return rect
-
-    #adjusts dimensions of rectangle to ensure hamiltonian cycle could occur
-    #@param rect - list of form [x1, y1, x2, y2]
-    #   (x1, y1) is upper corner, (x2, y2) is lower corner
-    def __adjustRect(self, rect):
-        self.__createEvenMargins(rect)
-        self.__createEvenRect(rect)
-
-    #adjust dimensions of rectangle to ensure surround rectangles are even
-    #@param rect - list of form [x1, y1, x2, y2]
-    #   (x1, y1) is upper corner, (x2, y2) is lower corner
-    def __createEvenMargins(self, rect):
-        x1, y1, x2, y2 = rect
-        game = self.getGame()
-    
-        leftMargin = x1 - 1
-        rightMargin = game.cols  - x2
-        upperMargin = y1 - 1
-        lowerMargin = game.rows - y2
-    
-        #ensuring even margins
-        if leftMargin*game.rows % 2 == 1 or leftMargin == 1:
-            rect[0] -= 1
-        if rightMargin*game.rows % 2 == 1 or rightMargin == 1:
-            rect[2] += 1
-        if upperMargin*game.cols % 2 == 1 or upperMargin == 1:
-            rect[1] -= 1
-        if lowerMargin*game.cols % 2 == 1 or lowerMargin == 1:
-            rect[3] += 1
-
-    #adjust dimensions of rectangle to ensure rectangle (and margins) even
-    #@param analyzer - SnakeGameAnalyzer for a given snake game
-    #@param rect - list of form [x1, y1, x2, y2]
-    #   (x1, y1) is upper corner, (x2, y2) is lower corner
-    def __createEvenRect(self, rect):
-        x1, y1, x2, y2 = rect
-        game = self.getGame()
-    
-        #checking if rectangle has even area
-        if not self.__evenRect(x1, y1, x2, y2):
-            #ensuring rectangle has even area
-            if x1 > 3 and (x1 - 2)*game.rows % 2 == 0:
-                rect[0] -= 1
-            elif x2 < game.cols - 3 and (game.cols - x2 - 1)*game.rows % 2 == 0:
-                rect[1] += 1
-            elif y1 > 3 and (y1 - 2)*game.cols % 2 == 0:
-                rect[2] -= 1
-            else:
-                rect[3] += 1
-    
-    #checks if a given rectangle has even area
+    #finds hamiltonian cycle within rectangular submatrix
+    #@param matrix - nested lists forming matrix
     #@param x1 - upper left column number
     #@param y1 - upper left row number
     #@param x2 - lower right column number
     #@param y2 - lower right row number
-    def __evenRect(self, x1, y1, x2, y2):
+    #updates rect [x1,y1,x2,y2] of matrix s.t. matrix[i][j]
+    #   maps to next space in cycle. inputted rect be even length and/or width
+    def rectHCycle(self, matrix, x1, y1, x2, y2):
         m = x2 - x1 + 1
         n = y2 - y1 + 1
-        return m*n % 2 == 0
+        assert self.__evenRect(x1, y1, x2, y2)
+        
+        #checking if there are even number of columns
+        if m % 2 == 0:
+            #creating rectangle loops spanning rectangle
+            for col in range(x1, x2, 2):
+                self.clockwiseRectLoop(matrix, col, y1, col+1, y2)
+                
+            #merging loops together to form one cycle
+            for col in range(x1+1, x2, 2):
+                self.__mergeCycles(matrix, col, y1)
+        else:
+            #creating rectangle loops spanning rectangle
+            for row in range(y1, y2, 2):
+                self.clockwiseRectLoop(matrix, x1, row, x2, row+1)
+                
+            #merging loops together to form one cycle
+            for row in range(y1+1, y2, 2):
+                self.__mergeCycles(matrix, x1, row)
+        
+    #creates clockwise rectangular loop within rectangular submatrix
+    #@param matrix - nested lists forming matrix
+    #@param x1 - upper left column number
+    #@param y1 - upper left row number
+    #@param x2 - lower right column number
+    #@param y2 - lower right row number
+    #updates rect [x1,y1,x2,y2] of matrix s.t. matrix[i][j]
+    #   maps to next space in loop. loop is in a rectangle spanning rect edges
+    def clockwiseRectLoop(self, matrix, x1, y1, x2, y2):
+        #forming top and bottom edges of loop
+        for col in range(x1, x2):
+            matrix[col][y1] = (col + 1, y1)
+            matrix[col+1][y2] = (col, y2)
+            
+        #forming left and right edges of loop
+        for row in range(y1, y2):
+            matrix[x2][row] = (x2, row + 1)
+            matrix[x1][row+1] = (x1, row)
+            
+    #creates counterclockwise rectangular loop within rectangular submatrix
+    #@param matrix - nested lists forming matrix
+    #@param x1 - upper left column number
+    #@param y1 - upper left row number
+    #@param x2 - lower right column number
+    #@param y2 - lower right row number
+    #updates rect [x1,y1,x2,y2] of matrix s.t. matrix[i][j]
+    #   maps to next space in loop. loop is in a rectangle spanning rect edges
+    def counterClockwiseRectLoop(self, matrix, x1, y1, x2, y2):
+        #forming top and bottom edges of loop
+        for col in range(x1, x2):
+            matrix[col][y2] = (col + 1, y2)
+            matrix[col+1][y1] = (col, y1)
+            
+        #forming left and right edges of loop
+        for row in range(y1, y2):
+            matrix[x1][row] = (x1, row + 1)
+            matrix[x2][row+1] = (x2, row)
+            
+    #attempts to merge two hamiltonian cycles together
+    #@param matrix - nested lists forming movement matrix
+    #@param x - upper left column number
+    #@param y - upper left row number
+    #updates matrix to have mapping now include two cyles merged into one,
+    #   merge occurs within square (x, y, x+1, y+1)
+    #   returns True if merge occured, False otherwise
+    def __mergeCycles(self, matrix, x, y):
+        assert x < len(matrix) - 1
+        assert y < len(matrix) - 1
+        
+        #checking if edges are parallel
+        if matrix[x][y] == (x+1,y) and matrix[x+1][y+1] == (x,y+1):
+            #print("horizontal merge")
+            matrix[x][y] = (x, y+1)
+            matrix[x+1][y+1] = (x+1, y)
+            return True
+        elif matrix[x+1][y] == (x,y) and matrix[x][y+1] == (x+1,y+1):
+            #print("horizontal merge")
+            matrix[x+1][y] = (x+1, y+1)
+            matrix[x][y+1] = (x, y)
+            return True
+        elif matrix[x][y] == (x,y+1) and matrix[x+1][y+1] == (x+1,y):
+            #print("vertical merge")
+            matrix[x][y] = (x+1, y)
+            matrix[x+1][y+1] = (x, y+1)
+            return True 
+        elif matrix[x][y+1] == (x,y) and matrix[x+1][y] == (x+1,y+1):
+            #print("vertical merge")
+            matrix[x][y+1] = (x+1, y+1)
+            matrix[x+1][y] = (x, y)
+            return True 
+        else:
+            return False
