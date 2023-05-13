@@ -207,9 +207,9 @@ class SnakeGame:
         self.aiMode = True
         #self.ai = SnakeAI(self)
         #self.ai = DumbAI(self)
-        #self.ai = SurviveAI(self)
+        self.ai = SurviveAI(self)
         #self.ai = BasicAI(self)
-        self.ai = AdvancedAI(self)
+        #self.ai = AdvancedAI(self)
         
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"

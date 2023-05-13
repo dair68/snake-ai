@@ -26,7 +26,7 @@ class SnakeAI():
     #reports all possible moves snake can make at the moment
     #returns set of space coords of from (col, row) as possible spaces snake can travel to
     def possibleMoves(self):
-        return self.analyzer.possibleMoves()
+        return self.analyzer.moveCoords()
     
     #has ai search the grid once more to recalibrate movement recommendations
     #run this if the game hasn't been following all the previously recommended 

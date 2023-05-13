@@ -20,7 +20,8 @@ class BasicAI(SnakeAI):
     #run this if the game hasn't been following all the previous recommended moves
     def refreshAI(self):
         analyzer = self.getAnalyzer()
-        possiblePath = analyzer.fastPelletPath()
+        #possiblePath = analyzer.fastPelletPath()
+        possiblePath = analyzer.pelletPath()
         snake = self.getGame().snakeCoords
         print("snake: " + str(snake))
         
