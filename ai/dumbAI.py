@@ -13,6 +13,7 @@ class DumbAI(SnakeAI):
     #returns tuple of from (colNum, rowNum) for space that snake is to visit next
     def nextMove(self):
         print("dumb ai move")
-        moves = self.analyzer.moveCoords()
+        self.update()
+        moves = self.getAnalyzer().moveCoords()
         #print(f"moves: {moves}")
         return r.randElement(moves)

@@ -1,6 +1,7 @@
 #module that hosts SnakeGameAnalyzer class
 import graphtheory.path as g
 from collections import deque
+import os
 
 #class with a bunch of functions that obtain data from a particular snake game
 class SnakeAnalyzer:
@@ -30,6 +31,7 @@ class SnakeAnalyzer:
                     moveMatrix[i][j] = spaces
             
         self.moveMap = {}
+        self.prevTailID = self.tailID()
             
         #iterating over every pair of coordinates
         for i in range(c):
@@ -224,7 +226,7 @@ class SnakeAnalyzer:
         for n in neighbors:
             #checking if neighbor currently exists in graph
             if n in self.graph:
-                self.graph[n].discard(vertex)
+                self.graph[n].remove(vertex)
                 
     #adds a certain vertex to self.graph
     #@param vertex - space id of space to be added to graph
@@ -247,6 +249,42 @@ class SnakeAnalyzer:
             #checking if there's edge from n to vertex
             if vertex in self.moveMap[n]:
                 self.graph[n].add(vertex)
+              
+    #refreshes analyzer's fields. after each snake move.
+    def update(self):
+        prev = self.prevTailID
+        
+        #deleting head space if needed
+        if self.headID() != prev:
+            self.removeVertex(self.headID())
+     
+        #checking if snake tail moved
+        if prev != self.tailID() and prev != self.headID():
+            self.addVertex(self.prevTailID)
+            
+        self.prevTailID = self.tailID()
+        #assert self.__correctGraph()
+                    
+    #checks if graph correctly matches current state of game grid
+    #returns True if graph is correct, False otherwise
+    def __correctGraph(self):
+        graph = self.graph
+        
+        for i in range(1, self.game.cols + 1):
+            for j in range(1, self.game.rows + 1):
+                space = self.spaceID((i,j))
+                if (i,j) in self.game.snakeCoords and space in graph:
+                    print(f"Error. Vertex {space} should have been deleted")
+                    return False
+                if (i,j) not in self.game.snakeCoords and space not in graph:
+                    print(f"Error. Vertex {space} should be present.")
+                    return False
+                    
+        return True
+            
+    #completely reinitializes analyzer. run when move recs not followed. 
+    def reset(self):
+        self.createGraph()
     
     #creates adjacency list for every inbound space in game grid
     #returns dict adjacency list containing visitable adjacent spaces
@@ -419,13 +457,13 @@ class SnakeAnalyzer:
     #finds spaces snake can safely move to next turn
     #returns set of space coords that snake can move next without game over
     def safeMoves(self):
+        #assert self.__correctGraph()
+        #self.createGraph()
         moveSet = self.moveIDs()
-        
-        self.createGraph()
         moves = {m for m in moveSet if m in self.graph and self.idInBounds(m)}
         
-        #checking if tail ifsadjacent space
-        if self.tailID() in moveSet:
+        #checking if tail is adjacent space
+        if self.game.snakeLength() > 2 and self.tailID() in moveSet:
             moves.add(self.tailID())
         
         self.removeVertex(self.pelletID())
@@ -434,7 +472,7 @@ class SnakeAnalyzer:
         target = self.tailID()
         
         #checking if snake has length 2
-        if self.game.snakeLength() >= 2:
+        if self.game.snakeLength() > 2:
             penultimate = self.game.snakeCoords[-2]
             target = self.spaceID(penultimate)
             self.addVertex(target)
@@ -444,7 +482,7 @@ class SnakeAnalyzer:
         self.addVertex(self.pelletID())
         
         #checking if penultimate vertex must be removed
-        if self.game.snakeLength() >= 2:
+        if self.game.snakeLength() > 2:
             self.removeVertex(target)
         
         movesLeft = set(moves)
@@ -460,6 +498,7 @@ class SnakeAnalyzer:
         newMoves = {m for m in data if data[m]}
         moves |= newMoves
         self.removeVertex(self.tailID())
+        #assert self.__correctGraph()
         return {self.spaceCoords(m) for m in moves}
         
     #finds new snake coordinates after it has moved down a certain path

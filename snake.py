@@ -70,11 +70,14 @@ def rotateVector90Deg(x, y):
 class SnakeGame:
     #constructor
     #@param root - parent tk widget
+    #@param cols - number of columns in game grid. at least 2. 10 by default
+    #@param rows - number of rows in game grid. at least 2. 10 by default
     #@dimensions - tuple of form (columns, rows) indicating size of game grid. (10, 10) by default
-    def __init__(self, root, dimensions=None):
-        #setting initial dimentions if needed
-        if dimensions == None:
-            dimensions = (10, 10)
+    def __init__(self, root, cols=10, rows=10):
+        assert cols >= 2
+        assert rows >= 2
+        self.cols = cols
+        self.rows = rows
         
         #root.title("Snake")
         #root.rowconfigure(0, weight=1)
@@ -103,7 +106,6 @@ class SnakeGame:
         self.gameMsgLabel.grid(column=0, row=2)
         self.mainFrame.grid_rowconfigure(2, minsize=48, weight=1)
         
-        (self.cols, self.rows) = dimensions
         #self.cols = 9
         #self.rows = 10
         #self.cols = 9
@@ -1737,8 +1739,11 @@ class SnakeGame:
         #having ai choose direction in ai mode
         if self.aiMode:
             self.aiSteer()
-        
-        self.moveSnake()
+            self.moveSnake()
+            self.ai.update()
+        else:
+            self.moveSnake()
+            
         self.steering = True
         
         #returning arrow key movement for player control

@@ -15,17 +15,21 @@ class SurviveAI(SnakeAI):
     def safeMoves(self):
         return self.getAnalyzer().safeMoves()
     
+    #has ai search the grid once more to recalibrate movement recommendations
+    #run this if the game hasn't been following all the previously recommended 
+    #   moves since the last refresh
+    def reset(self):
+        print("reinitializing ai")
+        self.getAnalyzer().reset()
+    
+    #updates game data stored in ai. run after doing each move recommendation.
+    def update(self):
+        self.getAnalyzer().update()
+    
     #finds a space for snake to move to next
     #returns tuple of from (colNum, rowNum) for space that snake is to visit next
     #   chooses random space that will prevent game over both short and long term
     def nextMove(self):
-        moves = self.safeMoves()
-        
-        #checking if safe moves exists
-        if len(moves) > 0:
-            print("survive move")
-            return r.randElement(self.safeMoves())
-        else:
-            print("no safe moves found. :(")
-            ai = DumbAI(self.getGame())
-            return ai.nextMove()
+        print("survive move")
+        moves = self.safeMoves() 
+        return r.randElement(self.safeMoves())

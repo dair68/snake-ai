@@ -64,7 +64,9 @@ def singleSourcePaths(graph, start, targets=None):
 #@param startNodes - nonnegative integer id numbers of vertices for which paths begin. chooses set of all vertices in graph by default
 #returns dict mapping vertex ids to deques of ids making up shortest path from them
 def singleTargetPaths(graph, target, startNodes=None):
+    assert target in graph
     reverseGraph = {}
+    reverseGraph[target] = set()
     
     #reversing edge directions in graph
     for v in graph:
@@ -76,6 +78,7 @@ def singleTargetPaths(graph, target, startNodes=None):
             
             reverseGraph[neighbor].add(v)
     
+    assert target in reverseGraph
     paths = singleSourcePaths(reverseGraph, target, startNodes)
     
     #reversing the paths in path dictionary

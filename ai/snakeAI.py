@@ -7,6 +7,7 @@ class SnakeAI():
     #@param game - SnakeGame object that ai will recommend moves for
     def __init__(self, game):
         self.analyzer = SnakeAnalyzer(game)
+        self.reset()
     
     #lets user change the game being analyzed by this ai
     #@param game - SnakeGame object that ai will recommend moves for
@@ -31,14 +32,19 @@ class SnakeAI():
     #has ai search the grid once more to recalibrate movement recommendations
     #run this if the game hasn't been following all the previously recommended 
     #   moves since the last refresh
-    def refreshAI(self):
-        print("updating ai movement reccommendations")
+    def reset(self):
+        print("reinitializing ai")
+        
+    #updates game data stored in ai. run after doing each move recommendation.
+    def update(self):
+        print("updating ai")
     
     #finds and removes next recommended move from queue
     #returns tuple of from (colNum, rowNum) for space that snake is to visit next
     #   chooses first accessible space it finds
     def nextMove(self):
         print("snake ai move")
+        self.update()
         moves = self.possibleMoves()
         iterator = iter(moves)
         return next(iterator)
