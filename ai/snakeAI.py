@@ -5,8 +5,10 @@ from ai.analyzer import SnakeAnalyzer
 class SnakeAI():
     #constructor
     #@param game - SnakeGame object that ai will recommend moves for
-    def __init__(self, game):
-        self.analyzer = SnakeAnalyzer(game)
+    #@param moveMatrix - matrix where arr[i][j] is set of all spaces snake can
+    #   move to from coordinate (i,j). optional.
+    def __init__(self, game, moveMatrix=None):
+        self.analyzer = SnakeAnalyzer(game, moveMatrix)
         self.reset()
     
     #lets user change the game being analyzed by this ai
@@ -25,7 +27,7 @@ class SnakeAI():
         return self.analyzer
     
     #reports all possible moves snake can make at the moment
-    #returns set of space coords of from (col, row) as possible spaces snake can travel to
+    #returns set of space coords of form (col, row)
     def possibleMoves(self):
         return self.analyzer.moveCoords()
     
@@ -35,16 +37,17 @@ class SnakeAI():
     def reset(self):
         print("reinitializing ai")
         
-    #updates game data stored in ai. run after doing each move recommendation.
+    #updates game data stored in ai
+    #run this after following a move recommended by self.nextMove()
     def update(self):
         print("updating ai")
     
-    #finds and removes next recommended move from queue
-    #returns tuple of from (colNum, rowNum) for space that snake is to visit next
+    #recommends a space for snake to visit next
+    #returns tuple of from (colNum, rowNum) 
     #   chooses first accessible space it finds
+    #   run self.update() after following move returned by function
     def nextMove(self):
         print("snake ai move")
-        self.update()
         moves = self.possibleMoves()
         iterator = iter(moves)
         return next(iterator)

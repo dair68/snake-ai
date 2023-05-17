@@ -19,16 +19,18 @@ class SurviveAI(SnakeAI):
     #run this if the game hasn't been following all the previously recommended 
     #   moves since the last refresh
     def reset(self):
-        print("reinitializing ai")
+        print("setting up graph")
         self.getAnalyzer().reset()
     
-    #updates game data stored in ai. run after doing each move recommendation.
+    #updates game data stored in ai
+    #run this after following a move recommended by self.nextMove()
     def update(self):
         self.getAnalyzer().update()
     
-    #finds a space for snake to move to next
-    #returns tuple of from (colNum, rowNum) for space that snake is to visit next
-    #   chooses random space that will prevent game over both short and long term
+    #recommends a space for snake to visit next
+    #returns tuple of from (colNum, rowNum) 
+    #   chooses random space that avoids eventual game over
+    #   run self.update() after following move returned by function
     def nextMove(self):
         print("survive move")
         moves = self.safeMoves() 

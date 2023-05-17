@@ -11,9 +11,9 @@ class DumbAI(SnakeAI):
         
     #reports random space for the snake to make next
     #returns tuple of from (colNum, rowNum) for space that snake is to visit next
+    #   run self.update() after following move returned by function
     def nextMove(self):
         print("dumb ai move")
-        self.update()
-        moves = self.getAnalyzer().moveCoords()
+        moves = self.possibleMoves()
         #print(f"moves: {moves}")
         return r.randElement(moves)

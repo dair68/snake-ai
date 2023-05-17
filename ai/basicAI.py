@@ -11,47 +11,37 @@ class BasicAI(SnakeAI):
         super().__init__(game)
         self.pelletPath = deque()
         
-    #obtains path to pellet currently recorded by ai
-    #returns deque of space coords for path from snake head to pellet. may be empty.
-    def getPelletPath(self):
-        return deque(self.pelletPath)
-     
+    #computes a path to the pellet from snake's current state
+    #returns deque of space coords for path from snake head to pellet
+    def findPelletPath(self):
+        return self.getAnalyzer().pelletPath()
+    
     #has ai search the grid once more to recalibrate movement recommendations
-    #run this if the game hasn't been following all the previous recommended moves
-    def refreshAI(self):
-        analyzer = self.getAnalyzer()
-        #possiblePath = analyzer.fastPelletPath()
-        possiblePath = analyzer.pelletPath()
-        snake = self.getGame().snakeCoords
-        print("snake: " + str(snake))
-        
-        #checking if path found
-        if len(possiblePath) > 0:
-            futureSnake = analyzer.futureSnakeCoords(possiblePath, snake, possiblePath[-1])
-            #print(futureSnake)
-            print("snake: " + str(snake))
-        
-            #checking if future snake has route to tail
-            if self.analyzer.snakeSafe(futureSnake): 
-                self.pelletPath = possiblePath
-                return
-        
+    #run this if the game hasn't been following all the previously recommended 
+    #   moves since the last refresh
+    def reset(self):
+        print("reinitializing ai")
+        self.getAnalyzer().reset()
         self.pelletPath = deque()
+    
+    #updates game data stored in ai
+    #run this after following a move recommended by self.nextMove()
+    def update(self):
+        self.getAnalyzer().update()
         
-    #finds a space for snake to move to next
-    #returns tuple of from (colNum, rowNum) for space that snake is to visit next
-    #   chooses space that will bring snake closer to pellet, while maintaining safety
-    #   assumes game has been following previously recommended moves.
-    #   if game has not been following every previous move, run self.refreshAI() first
+    #recommends a space for snake to visit next.
+    #move chosen based on pellet proximity and safety
+    #returns tuple of from (colNum, rowNum) 
+    #   run self.update() after following move returned by function
     def nextMove(self):
         print("basic ai move")
          
         #checking if pellet path exists
         if len(self.pelletPath) <= 1:
-             self.refreshAI()
+             self.pelletPath = self.findPelletPath()
              
         #recommending move
-        if len(self.pelletPath) > 0:
+        if self.pelletPath:
             self.pelletPath.popleft()
             return self.pelletPath[0]
         else:

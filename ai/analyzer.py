@@ -191,19 +191,20 @@ class SnakeAnalyzer:
     #rebuilds self.graph to represent current state of game grid
     #@param snakeSegs - deque of space coords making up snake.
     #   uses snake stored in game attached to analyzer by default
-    #graph does not include spaces within game over zone or occupied by snake
-    def createGraph(self, snakeSegs=None):
+    #graph includes spaces within game over zone. 
+    # does not include spaces occupied by snake
+    def __createGraph(self, snakeSegs=None):
         #populating snakeCoords if needed
         if snakeSegs == None:
             snakeSegs = self.game.snakeCoords
         
         snakeIDs = {self.spaceID(coords) for coords in snakeSegs}
-        cols = self.game.cols
-        rows = self.game.rows
-        self.graph = {v:set() for v in range(cols*rows) if v not in snakeIDs}
+        c = self.game.cols + 2
+        r = self.game.rows + 2
+        self.graph = {v:set() for v in range(c*r) if v not in snakeIDs}
     
         #adding edges to graph
-        for v in range(cols*rows):
+        for v in range(c*r):
             #checking if space is occupied
             if v in snakeIDs:
                 continue
@@ -218,19 +219,19 @@ class SnakeAnalyzer:
                     
     #removes a certain vertex from self.graph
     #@param vertex - space id of space to be removed from graph
-    def removeVertex(self, vertex):
+    def __removeVertex(self, vertex):
         del self.graph[vertex]
         neighbors = self.adjacentSpaceIDs(vertex)
         
         #removing edges from neighbors
         for n in neighbors:
             #checking if neighbor currently exists in graph
-            if n in self.graph:
+            if n in self.graph and self.idInBounds(n):
                 self.graph[n].remove(vertex)
                 
     #adds a certain vertex to self.graph
     #@param vertex - space id of space to be added to graph
-    def addVertex(self, vertex):
+    def __addVertex(self, vertex):
         if vertex in self.graph:
             return
         
@@ -256,11 +257,11 @@ class SnakeAnalyzer:
         
         #deleting head space if needed
         if self.headID() != prev:
-            self.removeVertex(self.headID())
+            self.__removeVertex(self.headID())
      
         #checking if snake tail moved
         if prev != self.tailID() and prev != self.headID():
-            self.addVertex(self.prevTailID)
+            self.__addVertex(self.prevTailID)
             
         self.prevTailID = self.tailID()
         #assert self.__correctGraph()
@@ -268,23 +269,23 @@ class SnakeAnalyzer:
     #checks if graph correctly matches current state of game grid
     #returns True if graph is correct, False otherwise
     def __correctGraph(self):
-        graph = self.graph
+        snake = self.game.snakeCoords
         
-        for i in range(1, self.game.cols + 1):
-            for j in range(1, self.game.rows + 1):
-                space = self.spaceID((i,j))
-                if (i,j) in self.game.snakeCoords and space in graph:
-                    print(f"Error. Vertex {space} should have been deleted")
+        for i in range(self.game.cols + 2):
+            for j in range(self.game.rows + 2):
+                s = self.spaceID((i,j))
+                if (i,j) in snake and s in self.graph:
+                    print(f"Error. Vertex {s} should have been deleted")
                     return False
-                if (i,j) not in self.game.snakeCoords and space not in graph:
-                    print(f"Error. Vertex {space} should be present.")
+                if (i,j) not in snake and s not in self.graph:
+                    print(f"Error. Vertex {s} should be present.")
                     return False
                     
         return True
             
     #completely reinitializes analyzer. run when move recs not followed. 
     def reset(self):
-        self.createGraph()
+        self.__createGraph()
     
     #creates adjacency list for every inbound space in game grid
     #returns dict adjacency list containing visitable adjacent spaces
@@ -466,8 +467,9 @@ class SnakeAnalyzer:
         if self.game.snakeLength() > 2 and self.tailID() in moveSet:
             moves.add(self.tailID())
         
-        self.removeVertex(self.pelletID())
-        self.addVertex(self.tailID())
+        assert self.pelletID() in self.graph
+        self.__removeVertex(self.pelletID())
+        self.__addVertex(self.tailID())
         
         target = self.tailID()
         
@@ -475,15 +477,15 @@ class SnakeAnalyzer:
         if self.game.snakeLength() > 2:
             penultimate = self.game.snakeCoords[-2]
             target = self.spaceID(penultimate)
-            self.addVertex(target)
+            self.__addVertex(target)
         
         #finding tail paths that do NOT involve pellet
         data = g.singleTargetPaths(self.graph, target, moves)
-        self.addVertex(self.pelletID())
+        self.__addVertex(self.pelletID())
         
         #checking if penultimate vertex must be removed
         if self.game.snakeLength() > 2:
-            self.removeVertex(target)
+            self.__removeVertex(target)
         
         movesLeft = set(moves)
         moves = {m for m in data if data[m]}
@@ -491,13 +493,13 @@ class SnakeAnalyzer:
         
         #checking all spaces already accounted for
         if not movesLeft:
-            self.removeVertex(self.tailID())
+            self.__removeVertex(self.tailID())
             return {self.spaceCoords(m) for m in moves}
         
         data = g.singleTargetPaths(self.graph, self.tailID(), movesLeft)
         newMoves = {m for m in data if data[m]}
         moves |= newMoves
-        self.removeVertex(self.tailID())
+        self.__removeVertex(self.tailID())
         #assert self.__correctGraph()
         return {self.spaceCoords(m) for m in moves}
         
@@ -551,7 +553,7 @@ class SnakeAnalyzer:
     #finds shortest path from pellet's current location to tail's current location
     #returns deque of space coords if path found
     def pelletTailPath(self):
-        self.addVertex(self.tailID())
+        self.__addVertex(self.tailID())
         path = g.shortestPath(self.graph, self.pelletID(), self.tailID())
         return deque([self.spaceCoords(spaceID) for spaceID in path])
     
@@ -606,14 +608,15 @@ class SnakeAnalyzer:
                 graph[vertex].add(spaceID)
                 graph[spaceID].add(vertex)
                 
-    #finds shortest path from head's current location to pellet's current location
-    #path does not account for snake moving body parts out of the way
-    #returns path represented as deque of space coords. empty deque if no path found 
+    #finds shortest path from snake head to pellet
+    #path does not require snake to move itself out of the way
+    #returns path represented as deque of space coords
+    #   path returned may cause game over down the line
     def pelletPath(self):
-       graph = self.freeInboundSpaceGraph()
-       graph[self.headID()] = set()
-       self.addAdjInboundFreeEdges(graph, self.headID())
-       path = g.shortestPath(graph, self.headID(), self.pelletID())
+       self.__addVertex(self.headID())
+       path = g.shortestPath(self.graph, self.headID(), self.pelletID())
+       self.__removeVertex(self.headID())
+       assert self.__correctGraph()
        return deque([self.spaceCoords(spaceID) for spaceID in path])
    
     #finds absolutely shortest path from head's current location to pellet's current location
