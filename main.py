@@ -9,7 +9,6 @@ from snake import SnakeGame
 from tkinter import *
 import ai.analyzer as a
 import ai.basicAI as ai
-import graphtheory.path as path
 from graphtheory.sampleGraphs import graphs
 
 root = Tk()
@@ -20,13 +19,14 @@ game = SnakeGame(root)
 root.mainloop()
 
 '''
-#game.snakeCoords = [(1,1),(1,2),(2,2),(3,2),(3,1),(4,1)]
-#game.snakeCoords = [(1,1),(1,2),(2,2),(3,2),(4,2),(4,1)]
+#game.snakeCoords = [(1,1)]
 #game.snakeCoords = [(1,1), (1,2), (2,2), (2,1)]
-#game.snakeCoords = [(1,1), (2,1)]
-game.snakeCoords = [(1,1), (1,2), (2,2), (2,1),(3,1)]
+#game.snakeCoords = [(1,1), (1,2), (2,2), (2,1), (3,1)]
+#game.snakeCoords = [(3,2),(3,3),(2,3),(1,3),(1,2),(1,1),(2,1),(3,1),(4,1),(4,2)]
+#game.snakeCoords = [(2,2),(1,2),(1,3),(2,3),(3,3),(4,3),(4,2),(4,1),(3,1)]
+game.snakeCoords = [(2,2),(1,2),(1,3),(2,3),(3,3),(4,3),(4,2),(4,1),(3,1),(2,1)]
 game.pelletCol = 3
-game.pelletRow = 3
+game.pelletRow = 2
 (game.cols, game.rows) = (4, 3)
 game.grid = game.createGrid(game.cols, game.rows, game.snakeCoords)
 game.drawPellet(game.pelletCol, game.pelletRow)
@@ -34,7 +34,7 @@ game.printGrid()
 analyzer = a.SnakeAnalyzer(game)
 #analyzer = a.SnakeAnalyzer(game, matrix)
 analyzer.reset()
-print(analyzer.graph)
-print(analyzer.pelletPath())
+path = analyzer.safePelletPath()
+print(path)
 root.mainloop()
 '''

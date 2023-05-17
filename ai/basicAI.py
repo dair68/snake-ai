@@ -14,7 +14,8 @@ class BasicAI(SnakeAI):
     #computes a path to the pellet from snake's current state
     #returns deque of space coords for path from snake head to pellet
     def findPelletPath(self):
-        return self.getAnalyzer().pelletPath()
+        #return self.getAnalyzer().pelletPath()
+        return self.getAnalyzer().safePelletPath()
     
     #has ai search the grid once more to recalibrate movement recommendations
     #run this if the game hasn't been following all the previously recommended 
@@ -39,7 +40,10 @@ class BasicAI(SnakeAI):
         #checking if pellet path exists
         if len(self.pelletPath) <= 1:
              self.pelletPath = self.findPelletPath()
-             
+        
+        print("pellet path: ")
+        print(self.pelletPath)
+        
         #recommending move
         if self.pelletPath:
             self.pelletPath.popleft()

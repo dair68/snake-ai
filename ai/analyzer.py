@@ -1,7 +1,6 @@
 #module that hosts SnakeGameAnalyzer class
-import graphtheory.path as g
+import graphtheory.graphPath as g
 from collections import deque
-import os
 
 #class with a bunch of functions that obtain data from a particular snake game
 class SnakeAnalyzer:
@@ -441,14 +440,16 @@ class SnakeAnalyzer:
         assert self.validSpaceID(spaceID), "Invalid space id"
         
     #obtains spaceID for snake's head space
+    #@param snakeCoords - deque of snake space coords. optional
     #returns integer id number of space occupied by snake head
-    def headID(self):
-        return self.spaceID(self.game.headCoords())
+    def headID(self, snakeCoords=None):
+        return self.spaceID(self.game.headCoords(snakeCoords))
     
     #obtains spaceID for snake's tail space
+    #@param snakeCoords - deque of snake space coords. optional
     #returns integer id number of space occupied by snake tail
-    def tailID(self):
-        return self.spaceID(self.game.tailCoords())
+    def tailID(self, snakeCoords=None):
+        return self.spaceID(self.game.tailCoords(snakeCoords))
     
     #obtains spaceID for pellet space
     #returns integer id number of space occupied by pellet
@@ -505,50 +506,61 @@ class SnakeAnalyzer:
         
     #finds new snake coordinates after it has moved down a certain path
     #@param path - deque of space coords representing path snake will take.
-    #@param snake - deque of space coords making up snake. uses self.game.snakeCoords by default
-    #   0th element is snake head.
-    #@param pelletCoords - coordinates of pellet. optional
-    #returns deque coordinates snake will be at after moving down inputted path.
-    def futureSnakeCoords(self, path, snake=None, pelletCoords=None):    
-        futureSnake = deque(self.game.snakeCoords) if snake == None else deque(snake)
+    #@param pelletCoords - (col, row) coordinates of pellet. optional.
+    #@param snake - deque of space coords making up snake. optional.
+    #returns deque coordinates snake will be at after moving down path
+    #   assumes no pellets on route
+    def futureSnake(self, path, snake=None):
+        originalSnake = self.game.snakeCoords if snake == None else snake
+        future = deque(originalSnake)
         #print(futureSnake)
         pathCopy = deque(path)
         finalPathSpace = ()
         
-        #checking if snake will chomp pellet along the way
-        if pelletCoords in path:
-            finalPathSpace = pathCopy[-1]
-            pathCopy.pop()
-        
         #checking if path empty
         if len(pathCopy) == 0:
-            return futureSnake
+            return future
         
-        currentSegs = set(futureSnake)
+        currentSegs = set(future)
         pathCopy.popleft()
         
         #going down path
         for coords in pathCopy:
             #print(f"coords: {coords}")
             #print(f"futureSnake[0]: {futureSnake[0]}")
-            assert self.spacesAreAdjacent(coords, futureSnake[0])
+            assert self.spacesAreAdjacent(coords, future[0])
             
-            currentSegs.remove(futureSnake[-1])
-            futureSnake.pop()
+            currentSegs.remove(future[-1])
+            future.pop()
             currentSegs.add(coords)
-            futureSnake.appendleft(coords)
+            future.appendleft(coords)
            
             #snake has reached game over
-            if len(currentSegs) < len(futureSnake):
-                return futureSnake
-            if not self.coordsInBounds(*futureSnake[0]):
-                return futureSnake
+            if len(currentSegs) < len(future):
+                return future
+            if not self.coordsInBounds(*future[0]):
+                return future
             
-        #reattaching final space if needed
-        if finalPathSpace != ():
-            futureSnake.appendleft(finalPathSpace)
-            
-        return futureSnake
+        return future
+    
+    #finds new snake coordinates after it has moved down a certain path
+    #@param path - deque of space coords representing path snake will take.
+    #@param snake - deque of space coords making up snake. optional.
+    #returns deque coordinates snake will be at after moving down path
+    #   assumes snake will eat exactly one pellet somewhere along path
+    def elongatedFutureSnake(self, path, snake=None):
+        originalSnake = self.game.snakeCoords if snake == None else snake
+        
+        #checking if path empty
+        if not path:
+            return originalSnake
+        
+        finalSpace = path[-1]
+        path.pop()
+        future = self.futureSnake(path, originalSnake)
+        path.append(finalSpace)
+        future.appendleft(finalSpace)
+        return future
     
     #finds shortest path from pellet's current location to tail's current location
     #returns deque of space coords if path found
@@ -557,38 +569,26 @@ class SnakeAnalyzer:
         path = g.shortestPath(self.graph, self.pelletID(), self.tailID())
         return deque([self.spaceCoords(spaceID) for spaceID in path])
     
-    #finds shortest path from head's current location to tail's current location
-    #@param snakeCoords - deque of space coordinates making up snake.
-    #   uses snake stored in game attached to analyzer by default
+    #finds shortest path from snake's head to tail
+    #@param snakeCoords - deque of space coords making up snake. optional
     def headTailPath(self, snakeCoords=None):
         #populating snakeCoords if needed
         if snakeCoords == None:
             snakeCoords = deque(self.game.snakeCoords)
             
-        #checking for nonempty snake
-        if len(snakeCoords) == 0:
-            return deque()
-            
-        snakeSegs = set(snakeCoords)
-        graph = self.freeInboundSpaceGraph(snakeSegs)
-        headID = self.spaceID(snakeCoords[0])
-        tailID = self.spaceID(snakeCoords[-1])
+        head = self.headID(snakeCoords)
+        tail = self.tailID(snakeCoords)
         
-        graph[headID] = set()
-        graph[tailID] = set()
+        self.__addVertex(head)
+        self.__addVertex(tail)
+        path = g.shortestPath(self.graph, head, tail)
+        self.__removeVertex(head)
         
-        self.addAdjInboundFreeEdges(graph, headID, snakeSegs)
-        self.addAdjInboundFreeEdges(graph, tailID, snakeSegs)
+        #checking if tail and head are same
+        if tail != head:
+            self.__removeVertex(tail)
         
-        headCoords = self.spaceCoords(headID)
-        tailCoords = self.spaceCoords(tailID)
-        
-        #checking if head next to tail for snakes longer than 2
-        if self.spacesAreAdjacent(headCoords, tailCoords) and len(snakeCoords) > 2:
-            graph.addEdge(headID, tailID)
-            
-        path = g.shortestPath(graph, headID, tailID)
-        return deque([self.spaceCoords(spaceID) for spaceID in path])
+        return deque([self.spaceCoords(s) for s in path])
     
     #adds edges connecting space to adjacent inbound spaces not occupied by snake to a graph
     #@param graph - SimpleUndirectedGraph object representing state of game
@@ -618,6 +618,53 @@ class SnakeAnalyzer:
        self.__removeVertex(self.headID())
        assert self.__correctGraph()
        return deque([self.spaceCoords(spaceID) for spaceID in path])
+   
+    #finds shortest safe path from snake head to pellet
+    #path does not require snake to move itself out of the way
+    #returns path represented as deque of space coords
+    #   path will avoid inevitable game over
+    def safePelletPath(self):
+        path = self.pelletPath()
+        
+        #checking if pellet path found
+        if not path:
+            return deque()
+        
+        future = self.elongatedFutureSnake(path)
+        addedVertices = set()
+        
+        #adjusting graph to match future snake
+        for space in reversed(self.game.snakeCoords):
+            #checking if space is in future snake
+            if space in future:
+                break
+            
+            v = self.spaceID(space)
+            self.__addVertex(v)
+            addedVertices.add(v)
+            
+        removedVertices = set()
+        
+        #adjusting graph to match future snake
+        for space in future:
+            #checking if space is in original
+            if space in self.game.snakeCoords:
+                break
+            
+            v = self.spaceID(space)
+            self.__removeVertex(v)
+            removedVertices.add(v)
+        
+        result = path if self.snakeSafe(future) else deque()
+        
+        #restoring graph
+        for v in removedVertices:
+            self.__addVertex(v)
+        for v in addedVertices:
+            self.__removeVertex(v)
+        
+        #assert self.__correctGraph()
+        return result
    
     #finds absolutely shortest path from head's current location to pellet's current location
     #path found with knowledge that snake can move body parts out of the way
@@ -662,7 +709,7 @@ class SnakeAnalyzer:
             graph.addEdge(v1,v2)
     
     #checks if a given snake can avoid inevitable game over down the line
-    #@param snakeCoords - deque of snake space coordinates
+    #@param snakeCoords - deque of snake space coordinates. optional.
     #returns True if snake can avert game over, False otherwise
-    def snakeSafe(self, snakeCoords):
-        return len(self.headTailPath(snakeCoords)) > 0
+    def snakeSafe(self, snakeCoords=None):
+        return bool(self.headTailPath(snakeCoords))

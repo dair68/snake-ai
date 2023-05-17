@@ -209,8 +209,8 @@ class SnakeGame:
         self.aiMode = True
         #self.ai = SnakeAI(self)
         #self.ai = DumbAI(self)
-        self.ai = SurviveAI(self)
-        #self.ai = BasicAI(self)
+        #self.ai = SurviveAI(self)
+        self.ai = BasicAI(self)
         #self.ai = AdvancedAI(self)
         
         self.unbindArrowKeys()
@@ -1484,7 +1484,7 @@ class SnakeGame:
     #gets coordinates of head square
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns coordinates in form (col, row). if head doesn't exist returns empty tuple.
-    def headCoords(self, snakeSeg = None):
+    def headCoords(self, snakeSeg=None):
         #using self.snakeCoords if needed
         if snakeSeg is None:
             #print("using self.snakeCoords")
