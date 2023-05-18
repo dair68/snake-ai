@@ -8,7 +8,7 @@ Created on Mon May 23 22:29:28 2022
 from snake import SnakeGame
 from tkinter import *
 import ai.analyzer as a
-import ai.basicAI as ai
+import ai.advancedAI as ai
 from graphtheory.sampleGraphs import graphs
 import graphtheory.graphPath as path
 
@@ -16,7 +16,7 @@ root = Tk()
 root.title("Snake")
 root.resizable(False, False)
 game = SnakeGame(root)
-#game = SnakeGame(root, 6, 6)
+#game = SnakeGame(root, 4, 4)
 root.mainloop()
 
 '''
@@ -29,16 +29,13 @@ root.mainloop()
 game.snakeCoords = [(1,2),(1,3), (2,3), (2,2), (2,1), (1,1)]
 game.pelletCol = 3
 game.pelletRow = 3
-(game.cols, game.rows) = (4, 3)
+(game.cols, game.rows) = (4, 4)
 game.grid = game.createGrid(game.cols, game.rows, game.snakeCoords)
 game.drawPellet(game.pelletCol, game.pelletRow)
 game.printGrid()
 analyzer = a.SnakeAnalyzer(game)
 #analyzer = a.SnakeAnalyzer(game, matrix)
 analyzer.reset()
-path = analyzer.fastPelletPath()
-print(path)
-future = analyzer.elongatedFutureSnake(path)
-print(future)
+artificialIntelligence = ai.AdvancedAI(game)
 root.mainloop()
 '''

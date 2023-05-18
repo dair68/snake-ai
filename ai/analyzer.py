@@ -38,6 +38,8 @@ class SnakeAnalyzer:
                 space = self.spaceID((i,j))
                 moves = {self.spaceID(s) for s in moveMatrix[i][j]}
                 self.moveMap[space] = moves
+                
+        #print(self.moveMap)
         
     #changes game being analyzed
     #@param game - SnakeGame object
@@ -225,8 +227,8 @@ class SnakeAnalyzer:
         #removing edges from neighbors
         for n in neighbors:
             #checking if neighbor currently exists in graph
-            if n in self.graph and self.idInBounds(n):
-                self.graph[n].remove(vertex)
+            if n in self.graph:
+                self.graph[n].discard(vertex)
                 
     #adds a certain vertex to self.graph
     #@param vertex - space id of space to be added to graph
