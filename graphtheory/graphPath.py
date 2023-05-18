@@ -1,12 +1,11 @@
 #module which a variety of graph traversal functions
 from collections import deque
-from queue import Queue
 
 #finds the path between two vertices that traverses the fewest number of edges
 #@param graph - dict containing graph adjacency list
 #@param start - integer id number of start vertex
 #@param end - integer id number of targaet vertex
-#returns deque of vertex ids representing shortest path from startVertex to targetVertex, if it exists
+#returns deque of vertex ids representing shortest path from start to target
 def shortestPath(graph, start, end):
     pathData = singleSourcePaths(graph, start, {end})
     return pathData[end]
@@ -26,16 +25,16 @@ def singleSourcePaths(graph, start, targets=None):
     targetsLeft = set(targets)
     targetsLeft.discard(start)
     
-    nextNodes = Queue(maxsize=len(graph))
-    nextNodes.put_nowait(start)
+    nodeQueue = deque()
+    nodeQueue.append(start)
     
     #exploring nodes
-    while not nextNodes.empty():
+    while nodeQueue:
         #checking if all targets have been found
         if not targetsLeft:
             break
         
-        node = nextNodes.get_nowait()
+        node = nodeQueue.popleft()
         
         #adding unexplored neighbors to queue
         for neighbor in graph[node]:
@@ -43,7 +42,7 @@ def singleSourcePaths(graph, start, targets=None):
             if neighbor not in parents:
                 parents[neighbor] = node
                 targetsLeft.discard(neighbor)
-                nextNodes.put_nowait(neighbor)
+                nodeQueue.append(neighbor)
                 
     paths = {v:deque() for v in targets}
     
@@ -81,51 +80,42 @@ def singleTargetPaths(graph, target, startNodes=None):
     return paths
 
 #finds the path between two vertices that traverses the fewest number of edges
-#for a graphs where nodes have values indicating min number of edges from start 
-#node they must be to be accessed
 #@param graph - dict containing graph adjacency list
-#   each node within graph has integer value indicating number of edges that must
-#   be traversed before it can be reached
-#   many edges must be touches before node becomes accessible
-#@param startVertex - integer id number of start vertex
-#@param targetVertex - integer id number of targaet vertex
-#returns deque of vertex ids representing shortest path from startVertex to targetVertex, if it exists
-def distanceGatedShortestPath(graph, startNode, targetNode): 
-    visitStatus = {v:False for v in graph.getVertices()}
-    nextNodes = Queue(maxsize=len(graph.getVertices()))
-    nodeDist = {}
-    parentIDs = {}
-    
+#@param start - integer id number of start vertex
+#@param end - integer id number of targaet vertex
+#@param nodeThres - dict mapping node ids to integer representing distance from start the path must traverse before node can be visited
+#returns deque of vertex ids representing shortest path from start to target
+def distGatedPath(graph, start, end, nodeThres):
     #checking if start node can be visited
-    if graph.getVertexValue(startNode) == 0:
-        visitStatus[startNode] = True
-        parentIDs = {startNode: -1}
-        nextNodes.put_nowait(startNode)
-        nodeDist[startNode] = 0
+    if nodeThres[start] > 0:
+        return deque()
+    
+    parents = {start: -1}  
+    nodeQueue = deque()
+    nodeQueue.append((start, 0))
     
     #exploring nodes
-    while not nextNodes.empty():
-        node = nextNodes.get_nowait()
+    while nodeQueue:
+        data = nodeQueue.popleft()
+        (node, dist) = data
         
-        #checking if target has been found
-        if node == targetNode:
+        #checking if target found
+        if node == end:
             break
         
         #adding unexplored neighbors to queue
-        for v in graph.neighbors(node):
-            #checking if unexplored accessible vertex
-            if visitStatus[v] == False and nodeDist[node]+1 >= graph.getVertexValue(v):
-                visitStatus[v] = True
-                parentIDs[v] = node
-                nodeDist[v] = nodeDist[node] + 1
-                nextNodes.put_nowait(v)
+        for neighbor in graph[node]:
+            #vertex unexplored
+            if neighbor not in parents and dist + 1 >= nodeThres[neighbor]:
+                parents[neighbor] = node
+                nodeQueue.append((neighbor, dist + 1))
                 
     path = deque()
-    vertex = targetNode
-    
-    #assembling path
-    while vertex in parentIDs:
-        path.appendleft(vertex)
-        vertex = parentIDs[vertex]
+    node = end
+
+    #forming path for certain end node
+    while node in parents:
+        path.appendleft(node)
+        node = parents[node]
         
     return path
