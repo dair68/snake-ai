@@ -95,41 +95,47 @@ class SnakeGame:
         self.buttonStyle.configure("Bold.TButton", font=self.buttonFont)
         
         self.score = 0
-        self.scoreLabel = ttk.Label(self.mainFrame, text=f"Score: {self.score}", style="Bold.TLabel")
+        self.scoreLabel = ttk.Label(self.mainFrame, style="Bold.TLabel")
+        self.scoreLabel["text"] = f"Score: {self.score}"
         self.scoreLabel.grid(column=0, row=0)
         
         self.gameFrame = ttk.Frame(self.mainFrame)
         self.gameFrame.grid(column=0, row=1)
         
-        self.gameMsgLabel = ttk.Label(self.mainFrame, text="Select mode below", style="Bold.TLabel")
+        self.gameMsgLabel = ttk.Label(self.mainFrame, style="Bold.TLabel")
+        self.gameMsgLabel["text"] = "Select mode below"
         self.gameMsgLabel.config(wraplength=200, justify="center")
         self.gameMsgLabel.grid(column=0, row=2)
         self.mainFrame.grid_rowconfigure(2, minsize=48, weight=1)
         
-        #self.cols = 9
-        #self.rows = 10
-        #self.cols = 9
-        #self.rows = 9
         self.squareLength = 30
         self.grid = []
         
         self.buttonFrame = ttk.Frame(self.mainFrame)
-        self.buttonFrame.grid(column=0, row=3)
-        self.playAgainBtn = ttk.Button(self.buttonFrame, text="Play", 
-                                       command = self.startCentered, style="Bold.TButton")
+        self.buttonFrame.grid(column=0, row=3) 
+        self.playBtn = ttk.Button(self.buttonFrame, style="Bold.TButton")
+        self.playBtn["text"] = "Play"
+        self.playBtn["command"] = self.startCentered
         self.mainFrame.grid_rowconfigure(3, minsize=30, weight=1)
-        self.playAgainBtn.grid(column=0, row=0)
+        self.playBtn.grid(column=0, row=0)
         
-        self.aiBtn = ttk.Button(self.buttonFrame, text="Run AI", style="Bold.TButton",
-                                command= self.startAICentered)
-        #self.aiBtn = ttk.Button(self.buttonFrame, text="Run AI", style="Bold.TButton",
-        #                        command = lambda : self.startAI(2, 1))
+        self.aiBtn = ttk.Button(self.buttonFrame, style="Bold.TButton")
+        self.aiBtn["text"] = "Run AI"
+        self.aiBtn["command"] = self.startAICentered
         self.aiBtn.grid(column=1, row=0)
         
-        canvasHeight = self.squareLength*self.rows
-        canvasWidth = self.squareLength*self.cols
-        self.canvas = Canvas(self.gameFrame, height=canvasHeight, width=canvasWidth)
-        self.canvas.configure(bg="black", borderwidth=0, highlightthickness=0)
+        self.aiEnd = False
+        self.stopBtn = ttk.Button(self.buttonFrame, style="Bold.TButton")
+        self.stopBtn["text"] = "Stop"
+        self.stopBtn["command"] = self.stopAI
+        self.stopBtn.grid(column=0, row=0)
+        self.stopBtn.grid_remove()
+        
+        h = self.squareLength*self.rows
+        w = self.squareLength*self.cols
+        self.canvas = Canvas(self.gameFrame, height=h, width=w)
+        self.canvas.configure(bg="black", borderwidth=0)
+        self.canvas.configure(highlightthickness=0)
         self.canvas.focus_set()
         self.canvas.pack()
         
@@ -177,8 +183,9 @@ class SnakeGame:
         
         self.canvas.delete("all")
         self.canvas.focus_set()
-        self.playAgainBtn.grid_remove()
+        self.playBtn.grid_remove()
         self.aiBtn.grid_remove()
+        self.stopBtn.grid_remove()
         
         startSquare = self.drawUnitSquare(col, row, "blue", "white")
         self.gameMsgLabel["text"] = "Move the blue square with the arrow keys!"
@@ -192,6 +199,7 @@ class SnakeGame:
         self.bindArrowKeys()
         self.aiMode = False
         self.ai = None
+        self.aiEnd = False
         self.pelletPath = deque()
         self.postPelletPath = deque()
         self.loopMoves = 0
@@ -207,6 +215,7 @@ class SnakeGame:
         print("starting ai")
         self.start(col, row)
         self.aiMode = True
+        self.aiEnd = False
         #self.ai = SnakeAI(self)
         #self.ai = DumbAI(self)
         #self.ai = SurviveAI(self)
@@ -215,6 +224,7 @@ class SnakeGame:
         
         self.unbindArrowKeys()
         self.gameMsgLabel["text"] = "Witness the AI guide the snake!"
+        self.stopBtn.grid()
         self.steering = True
         self.mainFrame.after(3000, self.runTurn)
         
@@ -225,7 +235,7 @@ class SnakeGame:
     #runs app in debug mode
     def __debugMode(self):
         print("Entering debug mode!")
-        self.playAgainBtn["state"] = "disable"
+        self.playBtn["state"] = "disable"
         self.aiBtn["state"] = "disable"
         
         #self.cols = 4
@@ -1750,6 +1760,13 @@ class SnakeGame:
         if not self.aiMode:
             self.bindArrowKeys()
           
+        #ending ai if needed
+        if self.aiEnd:
+            self.restoreModeButtons()
+            self.playBtn.config(text="Play")
+            self.gameMsgLabel["text"] = "Select mode below"
+            return
+          
         #game over if snake touches edge or itself
         if self.grid[self.headCol()][self.headRow()] == "X":
             self.gameOver()
@@ -1836,12 +1853,18 @@ class SnakeGame:
                 
         self.canvas.pack()
         
+    #stops ai from running game
+    def stopAI(self):
+        print("terminating ai")
+        self.aiEnd = True
+        
     #displays game over
     def gameOver(self):
         loseText = "Game Over!"
         print(loseText)
         self.gameMsgLabel["text"] = loseText
         self.restoreModeButtons()
+        self.playBtn.config(text="Play Again")
         
     #displays that the user has won
     def win(self):
@@ -1849,11 +1872,12 @@ class SnakeGame:
         print(winText)
         self.gameMsgLabel["text"] = winText
         self.restoreModeButtons()
+        self.playBtn.config(text="Play Again")
         
     #restores the mode selection buttons to screen
     def restoreModeButtons(self):
-        self.playAgainBtn.config(text="Play Again")
-        self.playAgainBtn.grid()
+        self.stopBtn.grid_remove()
+        self.playBtn.grid()
         self.aiBtn.grid()
         
     #prints a game grid to the console
