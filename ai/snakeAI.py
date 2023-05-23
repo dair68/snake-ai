@@ -31,9 +31,9 @@ class SnakeAI():
     def possibleMoves(self):
         return self.analyzer.moveCoords()
     
-    #has ai search the grid once more to recalibrate movement recommendations
-    #run this if the game hasn't been following all the previously recommended 
-    #   moves since the last refresh
+    #has ai search the grid to recalibrate move recommendations
+    #run this if the game hasn't been following all the prev 
+    #   move recs since last refresh
     def reset(self):
         print("reinitializing ai")
         
@@ -49,5 +49,4 @@ class SnakeAI():
     def nextMove(self):
         print("snake ai move")
         moves = self.possibleMoves()
-        iterator = iter(moves)
-        return next(iterator)
+        return next(iter(moves))

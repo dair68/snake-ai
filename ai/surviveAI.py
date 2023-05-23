@@ -1,7 +1,6 @@
 #module that hosts SurviveAI class
 from ai.snakeAI import SnakeAI
 import randomElement as r
-from ai.dumbAI import DumbAI
 
 #ai class that focuses on having the snake not die
 class SurviveAI(SnakeAI):
@@ -15,9 +14,9 @@ class SurviveAI(SnakeAI):
     def safeMoves(self):
         return self.getAnalyzer().safeMoves()
     
-    #has ai search the grid once more to recalibrate movement recommendations
-    #run this if the game hasn't been following all the previously recommended 
-    #   moves since the last refresh
+    #has ai search the grid once more to recalibrate move recommendations
+    #run this if the game hasn't been following all the previous
+    #   move recs since the last refresh
     def reset(self):
         print("setting up graph")
         self.getAnalyzer().reset()

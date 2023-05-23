@@ -17,9 +17,9 @@ class BasicAI(SnakeAI):
         #return self.getAnalyzer().safePelletPath()
         return self.getAnalyzer().fastSafePelletPath()
     
-    #has ai search the grid once more to recalibrate movement recommendations
-    #run this if the game hasn't been following all the previously recommended 
-    #   moves since the last refresh
+    #has ai search the grid once more to recalibrate move recommendations
+    #run this if the game hasn't been following all previous move recs
+    #   since the last refresh
     def reset(self):
         print("reinitializing ai")
         self.getAnalyzer().reset()

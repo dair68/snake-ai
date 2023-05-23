@@ -1,7 +1,7 @@
 #module which a variety of graph traversal functions
 from collections import deque
 
-#finds the path between two vertices that traverses the fewest number of edges
+#finds path between vertices containing fewest number of edges
 #@param graph - dict containing graph adjacency list
 #@param start - integer id number of start vertex
 #@param end - integer id number of targaet vertex
@@ -10,7 +10,7 @@ def shortestPath(graph, start, end):
     pathData = singleSourcePaths(graph, start, {end})
     return pathData[end]
 
-#finds paths between one vertex and other vertices that contains fewest number of edges
+#finds paths between one vertex and other vertices containing fewest number of edges
 #@param graph - dict containing graph adjacency list
 #@param start - nonnegative integer id number of start vertex
 #@param targets - set of vertex ids for which paths are to end.

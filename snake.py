@@ -9,10 +9,10 @@ from tkinter import *
 from tkinter import ttk
 import tkinter.font as tkFont
 from collections import deque
-from ai.snakeAI import SnakeAI
-from ai.dumbAI import DumbAI
-from ai.surviveAI import SurviveAI
-from ai.basicAI import BasicAI
+#from ai.snakeAI import SnakeAI
+#from ai.dumbAI import DumbAI
+#from ai.surviveAI import SurviveAI
+#from ai.basicAI import BasicAI
 from ai.advancedAI import AdvancedAI
 from randomElement import randElement
 
@@ -20,17 +20,13 @@ from randomElement import randElement
 class SnakeGame:
     #constructor
     #@param root - parent tk widget
-    #@param cols - number of columns in game grid. at least 2. 10 by default
-    #@param rows - number of rows in game grid. at least 2. 10 by default
+    #@param cols - number of columns in grid. must be >= 2. 10 by default
+    #@param rows - number of rows in grid. must be >= 2. 10 by default
     def __init__(self, root, cols=10, rows=10):
         assert cols >= 2
         assert rows >= 2
         self.cols = cols
         self.rows = rows
-        
-        #root.title("Snake")
-        #root.rowconfigure(0, weight=1)
-        #root.rowconfigure(1, weight=5)
         
         self.mainFrame = ttk.Frame(root)
         self.mainFrame.pack()
@@ -108,9 +104,9 @@ class SnakeGame:
         self.postPelletPath = deque()
         self.loopMoves = 0
         
-    #begins new game of player controlled snake with start snake segment at a certain position
-    #@param col - column number of start snake segment.
-    #@param row - row number of start snake segment.
+    #begins new game with start snake at a certain position
+    #@param col - column number of start snake segment
+    #@param row - row number of start snake segment
     def start(self, col=1, row=1):
         self.score = 0
         self.updateScoreDisplay()
@@ -220,31 +216,30 @@ class SnakeGame:
         self.steering = False
         
     #draw unit square in game area of certain color
-    #@param col - column number from 1 to 20
-    #@param row - row number from 1 to 20
-    #@param fillColor - color string
-    #@param outlineColor - color string
+    #@param col - column number from 1 to 10
+    #@param row - row number from 1 to 10
+    #@param fill - color string. "white" by default.
+    #@param outline - color string. "white" by default.
     #returns reference to square drawn
-    def drawUnitSquare(self, col, row, fillColor="white", outlineColor="white"):
-        square = self.drawRect(col, row, col, row, fillColor, outlineColor)
-        return square
+    def drawUnitSquare(self, col, row, fill="white", outline="white"):
+        return self.drawRect(col, row, col, row, fill, outline)
     
     #draws rectangle with 2 particular spaces at its corners
-    #@param col1 - column number from 1 to 20
-    #@param row1 - row number from 1 to 20
-    #@param col2 - column number from 1 to 20
-    #@param row2 - row number from 1 to 20
-    #@param fillColor - color string
-    #@param outlineColor - color string
+    #@param col1 - column number from 1 to 10
+    #@param row1 - row number from 1 to 10
+    #@param col2 - column number from 1 to 10
+    #@param row2 - row number from 1 to 10
+    #@param fill - color string. "white" by default.
+    #@param outline - color string. "white" by default.
     #returns reference to rectangle drawn
-    def drawRect(self, col1, row1, col2, row2, fillColor="white", outlineColor="white"):
+    def drawRect(self, col1, row1, col2, row2, fill="white", outline="white"):
         #ensuring that col2 is to the right of col1
         if col2 < col1:
-            return self.drawRect(col2, row1, col1, row2, fillColor, outlineColor)
+            return self.drawRect(col2, row1, col1, row2, fill, outline)
         
         #ensuring that row1 is above row2
         if row1 > row2:
-            return self.drawRect(col1, row2, col2, row1, fillColor, outlineColor)
+            return self.drawRect(col1, row2, col2, row1, fill, outline)
             
         k = self.squareLength*0.60
         margin = (self.squareLength - k)/2
@@ -253,20 +248,9 @@ class SnakeGame:
         width = (col2 - col1)*self.squareLength + k
         height = (row2 - row1)*self.squareLength + k
         rect = self.canvas.create_rectangle(x, y, x + width, y + height)
-        self.canvas.itemconfig(rect, fill=fillColor, outline=outlineColor)
+        self.canvas.itemconfig(rect, fill=fill, outline=outline)
         self.canvas.pack()
         return rect
-    
-    #moves an existing white unit square to a particular place in game area
-    #@param square - reference to square drawn
-    #@param col - column number from 1 to 20
-    #@param row - row number from 1 to 20
-    def moveUnitSquare(self, square, col, row):
-        k = self.squareLength*0.75
-        margin = (self.squareLength - k)/2
-        x = (col - 1)*self.squareLength + margin
-        y = (row - 1)*self.squareLength + margin
-        self.canvas.coords(square, x, y, x + k, y + k)
         
     #counts segments in snake
     #returns numbers of squares making up snake
@@ -279,27 +263,25 @@ class SnakeGame:
     def headCoords(self, snakeSeg=None):
         #using self.snakeCoords if needed
         if snakeSeg is None:
-            #print("using self.snakeCoords")
             snakeSeg = self.snakeCoords
         
-        #print(self.snakeCoords)
         return snakeSeg[0]
     
     #gets column snake head is in
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns grid column number of head. if no head returns -1
-    def headCol(self, snakeSeg = None):
+    def headCol(self, snakeSeg=None):
         return self.headCoords(snakeSeg)[0]
     
     #gets row snake head is in
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #return grid row number of head
-    def headRow(self, snakeSeg = None):
+    def headRow(self, snakeSeg=None):
         return self.headCoords(snakeSeg)[1]
     
-    #obtains head square
+    #obtains head square in canvas
     #returns reference to head unit square in canvas. if none returns None
-    def getHead(self):
+    def headSquare(self):
         return self.snakeSquares[0] if self.snakeLength() > 0 else None
     
     #obtains space coords of the space pellet is occupying
@@ -307,15 +289,15 @@ class SnakeGame:
     def pelletCoords(self):
         return (self.pelletCol, self.pelletRow)
     
-    #obtains tail square
+    #obtains tail square in canvas
     #returns reference to tail unit square
-    def getTail(self):
+    def tailSquare(self):
         return self.snakeSquares[-1] if self.snakeLength() > 0 else None
     
     #obtains tail coordinates
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns tail grid coordinates as (col, row). if no tail returns empty tuple
-    def tailCoords(self, snakeSeg = None):
+    def tailCoords(self, snakeSeg=None):
         #using self.snakeCoords if needed
         if snakeSeg is None:
             snakeSeg = self.snakeCoords
@@ -325,24 +307,18 @@ class SnakeGame:
     #obtains tail column
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns tail grid column number. if no tail returns -1
-    def getTailCol(self, snakeSeg = None):
+    def tailCol(self, snakeSeg=None):
         return self.tailCoords(snakeSeg)[0]
     
     #obatins tail row
     #@param snakeSeg - list of snake coords. self.snakeCoords by default
     #returns tail grid row number. if no tail returns -1
-    def getTailRow(self, snakeSeg = None):
+    def tailRow(self, snakeSeg=None):
         return self.tailCoords(snakeSeg)[1]
     
-    #obtains id of space tail is occupying
-    #@param snakeSeg - list of snake coords. self.snakeCoords by default
-    #returns id of space tail of occupying
-    def getTailID(self, snakeSeg = None):
-        return self.spaceID(self.getTailCol(snakeSeg), self.getTailRow(snakeSeg))
-    
-    #draws a yellow unit square that will be treated as pellet for snake to eat
-    #@param col - column number from 1 to 20
-    #@param row - row number from 1 to 20
+    #draws pellet unit square
+    #@param col - column number from 1 to 10
+    #@param row - row number from 1 to 10
     def drawPellet(self, col, row):
         self.pelletCol = col
         self.pelletRow = row
@@ -374,18 +350,21 @@ class SnakeGame:
     #has the snake eat the pellet currently on screen to elongate it
     def eatPellet(self):
         print("eating pellet")
-        self.grid[self.prevTailCol][self.prevTailRow] = "T"
+        prevCol = self.prevTailCol 
+        prevRow = self.prevTailRow
+        self.grid[prevCol][prevRow] = "T"
+        
+        col = self.tailCol()
+        row = self.tailRow()
         
         #changing tail of multilength snake to S before it extends.
-        if not self.grid[self.getTailCol()][self.getTailRow()] == "H":
-            self.grid[self.getTailCol()][self.getTailRow()] = "S"
-        #print(f"prev tail: {self.prevTailCol}, {self.prevTailRow}")
-        #print(f"current tail: {self.getTailCol()}, {self.getTailRow()}")
-        tail = self.drawRect(self.prevTailCol, self.prevTailRow, self.getTailCol(), self.getTailRow())
+        if not self.grid[col][row] == "H":
+            self.grid[col][row] = "S"
+     
+        tail = self.drawRect(prevCol, prevRow, col, row)
         self.canvas.tag_lower(tail)
-        #tail = self.drawUnitSquare(self.prevTailCol, self.prevTailRow)
         self.snakeSquares.append(tail)
-        self.snakeCoords.append((self.prevTailCol, self.prevTailRow))
+        self.snakeCoords.append((prevCol, prevRow))
         
         self.score += 1
         self.updateScoreDisplay()
@@ -477,7 +456,7 @@ class SnakeGame:
         if self.gameStarted and not self.snakeMoving:
             self.startMovement()
             
-    #steers snake based on velocities inputed. snake can't make 180 degree turn
+    #steers snake based inputted velocities. snake can't turn 180 degrees.
     #@param xVelocity - -1, 0, or 1
     #@param yVelocity - -1, 0, or 1
     #steers snake based on x and y velocities. if parameters are invalid, snake persists in current direction
@@ -497,7 +476,8 @@ class SnakeGame:
             print(f"y velocity: {yVelocity}")
             print(f"snake head velocity: ({self.headXVel}, {self.headYVel})")
                     
-    #shifts the snake one spot and makes new pellet if none on screen
+    #shifts the snake one spot based on arrow keys pressed
+    #makes new pellet if needed
     def runTurn(self):
         prevHeadCol = self.headCol()
         prevHeadRow = self.headRow()
@@ -549,50 +529,46 @@ class SnakeGame:
         #milliseconds = 1000
         milliseconds = 100
         self.canvas.after(milliseconds, self.runTurn)
-        
+            
     #shift the snake one spot based on x and y velocities recorded by game
     def moveSnake(self):
-        #snakeLength = len(self.snakeSquares)
         snakeLength = self.snakeLength()
-        #print(f"snakelength: {snakeLength}")
-        
+   
         #turning previous head square to normal body square
         prevHeadCol = self.headCol()
         prevHeadRow = self.headRow()
         self.grid[prevHeadCol][prevHeadRow] = "S"
         
         #removing snake's old tail square
-        self.prevTailCol = self.getTailCol()
-        self.prevTailRow = self.getTailRow()
-        self.grid[self.getTailCol()][self.getTailRow()] = "o"
-        self.canvas.delete(self.getTail())
-        #snakeLength = len(self.snakeSquares)
-        #print(f"snakelength: {snakeLength}")
+        self.prevTailCol = self.tailCol()
+        self.prevTailRow = self.tailRow()
+        self.grid[self.tailCol()][self.tailRow()] = "o"
+        self.canvas.delete(self.tailSquare())
+    
         self.snakeCoords.pop()
         self.snakeSquares.pop()
         
         #marking tail with "T" on grid if snake has multiple segments
         if snakeLength > 1:
-            self.grid[self.getTailCol()][self.getTailRow()] = "T"
+            self.grid[self.tailCol()][self.tailRow()] = "T"
         
         #inserting block at snake's new head destination
         headCol = prevHeadCol + self.headXVel
         headRow = prevHeadRow + self.headYVel
         headCoords = (headCol, headRow)
         
-        #replacing old head with rectangle block for snakes of multiple segments
+        #replacing old head with rectangle block for snakes length > 1
         if snakeLength > 1:
             #print("replacing head with rectangle")
-            oldHead = self.snakeSquares[0]
+            oldHead = self.snakeSquares.popleft()
             self.canvas.delete(oldHead)
-            self.snakeSquares.popleft()
             rect = self.drawRect(prevHeadCol, prevHeadRow, headCol, headRow)
             self.snakeSquares.appendleft(rect)
         
         #drawing head block with blue unit square
         self.snakeCoords.appendleft(headCoords)
         head = self.drawUnitSquare(headCol, headRow)
-        self.snakeSquares.insert(0, head)
+        self.snakeSquares.appendleft(head)
         headDestination = self.grid[headCol][headRow]
         
         #affecting game based on space head touches

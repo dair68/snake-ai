@@ -35,8 +35,8 @@ class SnakeAnalyzer:
         #iterating over every pair of coordinates
         for i in range(c):
             for j in range(r):
-                space = self.spaceID((i,j))
-                moves = {self.spaceID(s) for s in moveMatrix[i][j]}
+                space = self.spaceID(i,j)
+                moves = {self.spaceID(c,r) for (c,r) in moveMatrix[i][j]}
                 self.moveMap[space] = moves
                 
         #print(self.moveMap)
@@ -79,48 +79,51 @@ class SnakeAnalyzer:
     #reports all possible moves the snake can make it's current state
     #returns set of space ids. includes game over moves
     def moveIDs(self):
-        return {self.spaceID(coords) for coords in self.moveCoords()}
+        return {self.spaceID(col,row) for (col,row) in self.moveCoords()}
     
     #finds all spaces adjacent to a given space
-    #@param spaceCoords - tuple of form (colNum, rowNum) for space in question
+    #@param col - column number of space
+    #@param row - row number of space
     #returns set of space coords of form (colNum, rowNum) for all spaces adjacent to spaceCoords.
     #       includes game over moves
-    def adjacentSpaceCoords(self, spaceCoords):
-        self.assertValidCoords(spaceCoords)
+    def adjacentCoords(self, col, row):
+        self.assertValidCoords(col, row)
         
-        shifts = ((1, 0), (-1, 0), (0, 1), (0, -1))
-        (x, y) = spaceCoords
-        return {(x+u, y+v) for (u,v) in shifts if self.validCoords((x+u, y+v))}
+        shifts = [(1, 0), (-1, 0), (0, 1), (0, -1)]
+        x = col
+        y = row
+        return {(x+u, y+v) for (u,v) in shifts if self.validCoords(x+u, y+v)}
     
     #finds all spaces adjacent to a given space
     #@param spaceID - integer id number of space in question
     #returns set of space ids for all spaces adjacent to space spaceID.
     #       includes game over moves
-    def adjacentSpaceIDs(self, spaceID):
-        self.assertValidSpaceID(spaceID)
+    def adjacentIDs(self, spaceID):
+        self.assertValidID(spaceID)
         
-        coords = self.spaceCoords(spaceID)
-        return {self.spaceID(s) for s in self.adjacentSpaceCoords(coords)}
+        (c, r) = self.spaceCoords(spaceID)
+        return {self.spaceID(x,y) for (x,y) in self.adjacentCoords(c, r)}
     
     #finds all spaces adjacent to given space that is in area that 
     #   won't result in out of bounds game over
-    #@param spaceCoords - tuple of form (colNum, rowNum) for space in question
+    #@param col - column number
+    #@param row - row number
     #returns set of space coords for adjacent spaces not within game over zone
-    def adjacentInboundSpaceCoords(self, spaceCoords):
-        self.assertValidCoords(spaceCoords)
+    def adjacentInboundCoords(self, col, row):
+        self.assertValidCoords(col,row)
         
-        neighbors = self.adjacentSpaceCoords(spaceCoords)
-        return {space for space in neighbors if self.coordsInBounds(*space)}
+        neighbors = self.adjacentCoords(col, row)
+        return {s for s in neighbors if self.coordsInBounds(*s)}
     
     #finds all space adjacent to given space that is in area that 
     #   won't result in out of bounds game over
     #@param spaceID - integer id number for space in question
     #returns set of space ids for adjacent spaces not within game over zone
     def adjacentInboundSpaceIDs(self, spaceID):
-        self.assertValidSpaceID(spaceID)
+        self.assertValidID(spaceID)
         
         coords = self.spaceCoords(spaceID)
-        return {self.spaceID(s) for s in self.adjacentInboundSpaceCoords(coords)}
+        return {self.spaceID(*s) for s in self.adjacentInboundCoords(coords)}
     
     #finds all space adjacent to head that is in area that 
     #   won't result in out of bounds game over
@@ -129,12 +132,12 @@ class SnakeAnalyzer:
         return self.adjacentInboundSpaceIDs(self.headID())
     
     #checks if 2 spaces are adjacent to each each other
-    #@param spaceCoords1 - space coordinates of first space. (colNum, rowNum)
-    #@param spaceCoords2 - space coordinates of second space. (colNum, rowNum)
+    #@param spaceCoords1 - (colNum, rowNum) of first space
+    #@param spaceCoords2 - (colNum, rowNum) of second space
     #returns True if spaces are adjacent, False otherwise
     def spacesAreAdjacent(self, spaceCoords1, spaceCoords2):
-        self.assertValidCoords(spaceCoords1)
-        self.assertValidCoords(spaceCoords2)
+        self.assertValidCoords(*spaceCoords1)
+        self.assertValidCoords(*spaceCoords2)
         
         (x1, y1) = spaceCoords1
         (x2, y2) = spaceCoords2
@@ -147,16 +150,12 @@ class SnakeAnalyzer:
         else:
             return False
     
-    #checks if tuple is a valid pair of coordinates for a space within game grid,
+    #checks if numbers are valid pair of coordinates within game grid
     #   including out of bounds game over spaces
-    #@param spaceCoords - tuple of form (colNum, rowNum) for space in question
+    #@param col - column number
+    #@param row - row number
     #returns True is spaceCoords is valid pair of coordinates, False otherwise
-    def validCoords(self, spaceCoords):
-        #checking if tuple has 2 entries
-        if len(spaceCoords) != 2:
-            return False
-        
-        (col, row) = spaceCoords
+    def validCoords(self, col, row):
         return self.validCol(col) and self.validRow(row)
     
     #checks if an integer is a valid space id
@@ -167,13 +166,13 @@ class SnakeAnalyzer:
         totalRows = self.game.rows + 2
         return 0 <= spaceID and spaceID < totalCols*totalRows
             
-    #checks if a number if a valid column number, including out of bounds game over spaces
+    #checks if a number is a valid column. includes game over zone.
     #@param colNum - column number
     #returns True if it's a valid column in game, False otherwise
     def validCol(self, colNum):
         return 0 <= colNum and colNum <= self.game.cols + 1
     
-    #checks if a number if a valid row number, including out of bounds game over spaces
+    #checks if a number if a valid row. includes game over zone
     #@param rowNum - row number
     #returns True if it's a valid row in game, False otherwise
     def validRow(self, rowNum):
@@ -189,7 +188,7 @@ class SnakeAnalyzer:
         if snakeSegs == None:
             snakeSegs = self.game.snakeCoords
         
-        snakeIDs = {self.spaceID(coords) for coords in snakeSegs}
+        snakeIDs = {self.spaceID(col,row) for (col,row) in snakeSegs}
         c = self.game.cols + 2
         r = self.game.rows + 2
         self.graph = {v:set() for v in range(c*r) if v not in snakeIDs}
@@ -212,7 +211,7 @@ class SnakeAnalyzer:
     #@param vertex - space id of space to be removed from graph
     def __removeVertex(self, vertex):
         del self.graph[vertex]
-        neighbors = self.adjacentSpaceIDs(vertex)
+        neighbors = self.adjacentIDs(vertex)
         
         #removing edges from neighbors
         for n in neighbors:
@@ -227,7 +226,7 @@ class SnakeAnalyzer:
             return
         
         self.graph[vertex] = set()
-        neighbors = self.adjacentSpaceIDs(vertex)
+        neighbors = self.adjacentIDs(vertex)
             
         #figuring out which neighbors are present in graph
         for n in neighbors:
@@ -264,7 +263,7 @@ class SnakeAnalyzer:
         
         for i in range(self.game.cols + 2):
             for j in range(self.game.rows + 2):
-                s = self.spaceID((i,j))
+                s = self.spaceID(i,j)
                 if (i,j) in snake and s in self.graph:
                     print(f"Error. Vertex {s} should have been deleted")
                     return False
@@ -277,73 +276,55 @@ class SnakeAnalyzer:
     #completely reinitializes analyzer. run when move recs not followed. 
     def reset(self):
         self.__createGraph()
-    
-    #creates adjacency list for every inbound space in game grid
-    #returns dict adjacency list containing visitable adjacent spaces
-    #   does not include spaces within game over zone. includes spaces with snake.
-    def inboundSpaceGraph(self):
-        graph = {v:set() for v in range(self.game.cols*self.game.rows)}
-        
-        #adding nodes to adjacency list
-        for spaceID in range(self.game.cols*self.game.rows):
-            for vertexID in self.adjacentInboundSpaceIDs(spaceID):
-                graph[spaceID].add(vertexID)
-                graph[vertexID].add(spaceID)
-                
-        return graph
                 
     #checking if certain space in game grid contains snake segment
-    #@param spaceCoords - tuple of form (colNum, rowNum) describing space coordinates
+    #@param col - column number
+    #@param row - row number
     #returns True is snake is currently occupying inputted space within grid
-    def isSnakeSpaceCoords(self, spaceCoords):
-        self.assertValidCoords(spaceCoords)
-        
+    def isSnakeCoords(self, col, row):
+        self.assertValidCoords(col, row)   
         snakeSymbols = {"H", "S", "T"}
-        (col, row) = spaceCoords
-        
         return self.game.grid[col][row] in snakeSymbols
     
     #checking if certain space in game grid contains snake segment
     #@param spaceID - integer space id number
     #returns True is snake is currently occupying inputted space within grid
-    def isSnakeSpaceID(self, spaceID):
-        self.assertValidSpaceID(spaceID)
-        return self.isSnakeSpaceCoords(self.spaceCoords(spaceID))
+    def isSnakeID(self, spaceID):
+        self.assertValidID(spaceID)
+        return self.isSnakeCoords(self.spaceCoords(spaceID))
     
     #obtains space id for a pair of space coordinates
-    #@param spaceCoords - tuple of form (colNum, rowNum) for space in grid
+    #@param col - column number
+    #@param row - row number
     #returns integer corresponding to the space's id number
-    def spaceID(self, spaceCoords):
-        self.assertValidCoords(spaceCoords)
+    def spaceID(self, col, row):
+        self.assertValidCoords(col, row)
         
-        (col, row) = spaceCoords
-        
-        #finding id number depending on if space causes out of bounds game over
+        #checking if coords are in game over zone
         if self.coordsInBounds(col, row):
             return (col - 1) % self.game.cols + self.game.cols*(row - 1)
         else:
-            return self.__gameOverSpaceID(spaceCoords)
+            return self.__gameOverID(col, row)
     
-    #obtains space id for a pair of space coordinates in out of bounds game over area
-    #@param spaceCoords - tuple of form (colNum, rowNum) for space in grid
+    #obtains space id for a pair of space coordinates in game over zone
+    #@param col - column number
+    #@param row - row number
     #returns integer id corresponding to the space's id number
-    def __gameOverSpaceID(self, spaceCoords):
-        self.assertValidCoords(spaceCoords)
-        assert not self.coordsInBounds(*spaceCoords)
-            
-        (col, row) = spaceCoords
+    def __gameOverID(self, col, row):
+        self.assertValidCoords(col, row)
+        assert not self.coordsInBounds(col, row)
             
         #assigning id based on location in game over boundary
         if row == 0:
             return self.game.cols*self.game.rows + col
         elif col == self.game.cols + 1:
-            return self.__gameOverSpaceID((col, 0)) + row
+            return self.__gameOverID(col, 0) + row
         elif row == self.game.rows + 1:
-            cornerID = self.__gameOverSpaceID((self.game.cols + 1, row))
+            cornerID = self.__gameOverID(self.game.cols + 1, row)
             n = cornerID + self.game.cols + 1
             return n - col
         else:
-            cornerID = self.__gameOverSpaceID((0, self.game.rows + 1))
+            cornerID = self.__gameOverID(0, self.game.rows + 1)
             n = cornerID + self.game.rows + 1
             return n - row
             
@@ -351,7 +332,7 @@ class SnakeAnalyzer:
     #@param spaceID - integer id number of space in question
     #returns space coordinates of from (colNum, rowNum) matching spaceID
     def spaceCoords(self, spaceID):
-        self.assertValidSpaceID(spaceID)
+        self.assertValidID(spaceID)
          
         #figuring out space coordinates based on id
         if spaceID < self.game.cols*self.game.rows:
@@ -359,13 +340,13 @@ class SnakeAnalyzer:
             row = spaceID // self.game.cols + 1
             return (col, row)
         else:
-            return self.__gameOverSpaceCoords(spaceID)
+            return self.__gameOverCoords(spaceID)
     
     #obtains space coordinates for an id in the game over zone
     #@param spaceID - integer id of space in game over zone
     #returns coords in form (colNum, rowNum) for inputted id
-    def __gameOverSpaceCoords(self, spaceID):
-        self.assertValidSpaceID(spaceID)
+    def __gameOverCoords(self, spaceID):
+        self.assertValidID(spaceID)
         assert not self.idInBounds(spaceID)
         
         cols = self.game.cols
@@ -374,7 +355,8 @@ class SnakeAnalyzer:
         upperRightID = upperLeftID + cols + 1
         lowerRightID = upperRightID + rows + 1
         lowerLeftID = lowerRightID + cols + 1
-        (col, row) = (-1, -1)
+        col = -1
+        row = -1
             
         #determining space coordinates
         if spaceID <= upperRightID:
@@ -392,61 +374,62 @@ class SnakeAnalyzer:
                 
         return (col, row)
         
-    #checks if a space is in zone that won't result in out of bounds game over
+    #checks if a space is not in the out of bounds game over zone
     #@param col - col number of space
     #@param row - row number of space
     #returns True is space is in bounds, false otherwise
     def coordsInBounds(self, col, row):
-        self.assertValidCoords((col, row))
-        return self.columnInBounds(col) and self.rowInBounds(row)
+        self.assertValidCoords(col, row)
+        return self.colInBounds(col) and self.rowInBounds(row)
     
-    #checks if a space is in zone that won't result in out of bounds game over
+    #checks if a space is not in the out of bounds game over zone
     #@param spaceID - integer id number of space in grid
     #returns True is space is in bounds, false otherwise
     def idInBounds(self, spaceID):
-        self.assertValidSpaceID(spaceID)
+        self.assertValidID(spaceID)
         return spaceID < self.game.cols*self.game.rows
         
-    #checks if a certain column is within grid that won't cause out of bounds game over
+    #checks if column is not in game over zone
     #@param colNum - column number of column in question
     #returns True if column in bounds, False otherwise
-    def columnInBounds(self, colNum):
+    def colInBounds(self, colNum):
         return 1 <= colNum and colNum <= self.game.cols
     
-    #checks if a certain row is within grid that won't cause out of bounds game over
+    #checks if row is not in game over zone
     #@param rowNum - row number of row in question
     #returns True if row in bounds, False otherwise
     def rowInBounds(self, rowNum):
         return 1 <= rowNum and rowNum <= self.game.rows
         
     #runs assert procedure to ensure a set of space coordinates is valid
-    #@param spaceCoords - tuple of from (colNum, rowNum)
+    #@param col - column number
+    #@param row - row number
     #raises AssertionError if invalid coordinates inputted
-    def assertValidCoords(self, spaceCoords):
-        assert self.validCoords(spaceCoords), "Invalid space coordinates."
+    def assertValidCoords(self, col, row):
+        assert self.validCoords(col,row), "Invalid space coordinates."
         
     #runs assert procedure to ensure a space id is valid
     #@param spaceID - integer space id
     #raises AssertionError if invalid space id inputted
-    def assertValidSpaceID(self, spaceID):
+    def assertValidID(self, spaceID):
         assert self.validSpaceID(spaceID), "Invalid space id"
         
     #obtains spaceID for snake's head space
     #@param snakeCoords - deque of snake space coords. optional
     #returns integer id number of space occupied by snake head
     def headID(self, snakeCoords=None):
-        return self.spaceID(self.game.headCoords(snakeCoords))
+        return self.spaceID(*self.game.headCoords(snakeCoords))
     
     #obtains spaceID for snake's tail space
     #@param snakeCoords - deque of snake space coords. optional
     #returns integer id number of space occupied by snake tail
     def tailID(self, snakeCoords=None):
-        return self.spaceID(self.game.tailCoords(snakeCoords))
+        return self.spaceID(*self.game.tailCoords(snakeCoords))
     
     #obtains spaceID for pellet space
     #returns integer id number of space occupied by pellet
     def pelletID(self):
-        return self.spaceID(self.game.pelletCoords())
+        return self.spaceID(*self.game.pelletCoords())
     
     #finds spaces snake can safely move to next turn
     #returns set of space coords that snake can move next without game over
@@ -468,8 +451,8 @@ class SnakeAnalyzer:
         
         #checking if snake has length 2
         if self.game.snakeLength() > 2:
-            penultimate = self.game.snakeCoords[-2]
-            target = self.spaceID(penultimate)
+            (col, row) = self.game.snakeCoords[-2]
+            target = self.spaceID(col, row)
             self.__addVertex(target)
         
         #finding tail paths that do NOT involve pellet
@@ -539,7 +522,7 @@ class SnakeAnalyzer:
     #@param snake - deque of space coords making up snake. optional.
     #returns deque coordinates snake will be at after moving down path
     #   assumes snake will eat exactly one pellet somewhere along path
-    def elongatedFutureSnake(self, path, snake=None):
+    def extendedFutureSnake(self, path, snake=None):
         originalSnake = self.game.snakeCoords if snake == None else snake
         
         #checking if path empty
@@ -554,7 +537,7 @@ class SnakeAnalyzer:
     
     #finds shortest path from snake's head to tail
     #@param snakeCoords - deque of space coords making up snake. optional
-    def headTailPath(self, snakeCoords=None):
+    def tailPath(self, snakeCoords=None):
         #populating snakeCoords if needed
         if snakeCoords == None:
             snakeCoords = deque(self.game.snakeCoords)
@@ -600,30 +583,30 @@ class SnakeAnalyzer:
         if not path:
             return True
         
-        future = self.elongatedFutureSnake(path)
+        future = self.extendedFutureSnake(path)
         addedVertices = set()
         
         #adjusting graph to match future snake
-        for space in reversed(self.game.snakeCoords):
+        for (col, row) in reversed(self.game.snakeCoords):
             #checking if space is in future snake
-            if space in future:
+            if (col, row) in future:
                 #break
                 continue
             
-            v = self.spaceID(space)
+            v = self.spaceID(col, row)
             self.__addVertex(v)
             addedVertices.add(v)
             
         removedVertices = set()
         
         #adjusting graph to match future snake
-        for space in future:
+        for (col, row) in future:
             #checking if space is in original
-            if space in self.game.snakeCoords:
+            if (col, row) in self.game.snakeCoords:
                 #break
                 continue
             
-            v = self.spaceID(space)
+            v = self.spaceID(col, row)
             self.__removeVertex(v)
             removedVertices.add(v)
         
@@ -652,8 +635,8 @@ class SnakeAnalyzer:
         i = 1
         
         #recording distance data from snake segments
-        for space in reversed(self.game.snakeCoords):
-            v = self.spaceID(space)
+        for (col, row) in reversed(self.game.snakeCoords):
+            v = self.spaceID(col, row)
             thres[v] = i
             i += 1
         
@@ -674,4 +657,4 @@ class SnakeAnalyzer:
     #@param snakeCoords - deque of snake space coordinates. optional.
     #returns True if snake can avert game over, False otherwise
     def __snakeSafe(self, snakeCoords=None):
-        return bool(self.headTailPath(snakeCoords))
+        return bool(self.tailPath(snakeCoords))

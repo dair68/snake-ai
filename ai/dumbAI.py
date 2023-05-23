@@ -10,7 +10,7 @@ class DumbAI(SnakeAI):
         super().__init__(game)
         
     #reports random space for the snake to make next
-    #returns tuple of from (colNum, rowNum) for space that snake is to visit next
+    #returns tuple of from (col, row) for space that snake is to visit next
     #   run self.update() after following move returned by function
     def nextMove(self):
         print("dumb ai move")
