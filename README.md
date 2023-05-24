@@ -8,7 +8,7 @@ But after a whole lot of graph theory, I finally created an AI that can reliably
 Because the app has a 10 by 10 grid, the AI is designed for games with even x even dimensions. However, the idea behind the "AdvancedAI" class could be adapted for
 games with even x odd or odd x odd dimensions, believe it or not.
 
-This app was developed in Windows 11.
+This app was developed in Windows 11. Download it [here](https://github.com/dair68/snake-ai/releases/tag/v1.0)!
 
 ![snakeScreenshot1](https://github.com/dair68/snake-ai/assets/36572214/2a28e3a1-ad7a-4a83-9922-52c8fb18b185)
 ![snakeScreenshot2](https://github.com/dair68/snake-ai/assets/36572214/ef7a40a5-3f55-4699-9145-e3c50860606a)
