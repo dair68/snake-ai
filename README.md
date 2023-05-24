@@ -9,3 +9,6 @@ Because the app has a 10 by 10 grid, the AI is designed for games with even x ev
 games with even x odd or odd x odd dimensions, believe it or not.
 
 This app was developed in Windows 11.
+
+![snakeScreenshot1](https://github.com/dair68/snake-ai/assets/36572214/2a28e3a1-ad7a-4a83-9922-52c8fb18b185)
+![snakeScreenshot2](https://github.com/dair68/snake-ai/assets/36572214/ef7a40a5-3f55-4699-9145-e3c50860606a)
